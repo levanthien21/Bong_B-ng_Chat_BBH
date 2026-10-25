@@ -226,6 +226,7 @@ const INITIAL_DB = {
   ],
   sessions: {},
   evaluations: [],
+  chat_sessions: [],
   logs: [
     {
       id: 'log_01',
@@ -272,6 +273,8 @@ function loadDB() {
     // Ensure tester and leader have canManageConfig in testing studio
     if (db.roles?.tester?.permissions) db.roles.tester.permissions.canManageConfig = true;
     if (db.roles?.leader?.permissions) db.roles.leader.permissions.canManageConfig = true;
+    db.evaluations = Array.isArray(db.evaluations) ? db.evaluations : [];
+    db.chat_sessions = Array.isArray(db.chat_sessions) ? db.chat_sessions : [];
     return db;
   } catch (err) {
     console.error('[DB] Error loading DB:', err);
@@ -1330,6 +1333,9 @@ async function handleRequest(req, res) {
       const userEvals = (auth.user?.role === 'admin')
         ? db.evaluations
         : db.evaluations.filter(e => e.tester_id === auth.user?.id);
+      const userChatSessions = (auth.user?.role === 'admin')
+        ? (db.chat_sessions || [])
+        : (db.chat_sessions || []).filter(s => s.user_id === auth.user?.id);
       return sendJSON(res, 200, {
         ok: true,
         user: sanitizeUser(auth.user),
@@ -1343,6 +1349,7 @@ async function handleRequest(req, res) {
         promptRules: userFiles.pr,
         autoTestSuite,
         evaluations: userEvals,
+        chat_sessions: userChatSessions,
         users: db.users.map(sanitizeUser),
         logs: db.logs.slice(0, 30)
       });
@@ -1809,8 +1816,9 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
       }
 
       // Record evaluation if available
+      let evalRecord = null;
       if (agentTurn && agentTurn.evaluation && lastBotResponse) {
-        const record = {
+        evalRecord = {
           id: 'eval_agent_' + Date.now(),
           tester_id: auth ? auth.user.id : 'usr_tester_01',
           tester_name: auth ? auth.user.name : 'AI Agent Tester',
@@ -1825,28 +1833,85 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
           analysis: agentTurn.evaluation.reason || 'Agent đánh giá ngữ cảnh tự động.',
           created_at: new Date().toISOString()
         };
-        db.evaluations.unshift(record);
+        db.evaluations = db.evaluations || [];
+        db.evaluations.unshift(evalRecord);
+        if (auth && auth.user) auth.user.tests_submitted = (auth.user.tests_submitted || 0) + 1;
         saveDB(db);
       }
 
       return sendJSON(res, 200, {
         ok: true,
         agentTurn,
-        engine
+        engine,
+        record: evalRecord
       });
     }
 
-    // 6. Evaluations CRUD
-    if (pathname.startsWith('/api/evaluations') && req.method === 'GET') {
+    // 6. Evaluations & Chat Sessions CRUD
+    if (pathname === '/api/evaluations' && req.method === 'GET') {
       const userEvals = (auth.user?.role === 'admin')
-        ? db.evaluations
-        : db.evaluations.filter(e => e.tester_id === auth.user?.id);
+        ? (db.evaluations || [])
+        : (db.evaluations || []).filter(e => e.tester_id === auth.user?.id);
       return sendJSON(res, 200, { ok: true, evaluations: userEvals });
     }
 
     if (pathname.startsWith('/api/evaluations/') && req.method === 'DELETE') {
       const id = pathname.split('/').pop();
-      db.evaluations = db.evaluations.filter(e => e.id !== id);
+      db.evaluations = (db.evaluations || []).filter(e => e.id !== id);
+      saveDB(db);
+      return sendJSON(res, 200, { ok: true });
+    }
+
+    if (pathname === '/api/evaluations' && req.method === 'DELETE') {
+      if (auth.user?.role === 'admin') {
+        db.evaluations = [];
+      } else {
+        db.evaluations = (db.evaluations || []).filter(e => e.tester_id !== auth.user?.id);
+      }
+      saveDB(db);
+      return sendJSON(res, 200, { ok: true, message: 'Đã xóa toàn bộ lịch sử đánh giá.' });
+    }
+
+    // Chat Sessions (Persistent multi-turn & manual dialogues)
+    if (pathname === '/api/chat-sessions' && req.method === 'GET') {
+      const userSessions = (auth.user?.role === 'admin')
+        ? (db.chat_sessions || [])
+        : (db.chat_sessions || []).filter(s => s.user_id === auth.user?.id);
+      return sendJSON(res, 200, { ok: true, sessions: userSessions });
+    }
+
+    if (pathname === '/api/chat-sessions' && req.method === 'POST') {
+      const body = await parseBody(req);
+      const session = {
+        id: body.id || ('session_' + Date.now()),
+        user_id: auth.user.id,
+        user_name: auth.user.name,
+        title: body.title || `Hội thoại: ${body.persona || 'Khách hàng'} (${body.turns?.length || 0} lượt)`,
+        type: body.type || 'agent',
+        persona: body.persona || 'Khách hàng',
+        turns: Array.isArray(body.turns) ? body.turns : [],
+        turn_count: Array.isArray(body.turns) ? body.turns.length : 0,
+        verdict_summary: body.verdictSummary || 'pass',
+        average_score: typeof body.averageScore === 'number' ? body.averageScore : 5,
+        created_at: body.createdAt || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      db.chat_sessions = db.chat_sessions || [];
+      const existingIdx = db.chat_sessions.findIndex(s => s.id === session.id);
+      if (existingIdx >= 0) {
+        db.chat_sessions[existingIdx] = session;
+      } else {
+        db.chat_sessions.unshift(session);
+      }
+      saveDB(db);
+
+      return sendJSON(res, 200, { ok: true, session });
+    }
+
+    if (pathname.startsWith('/api/chat-sessions/') && req.method === 'DELETE') {
+      const id = pathname.split('/').pop();
+      db.chat_sessions = (db.chat_sessions || []).filter(s => s.id !== id);
       saveDB(db);
       return sendJSON(res, 200, { ok: true });
     }

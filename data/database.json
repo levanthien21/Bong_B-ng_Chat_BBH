@@ -108,13 +108,59 @@
         "updated_at": "2026-10-25T10:39:25.426Z"
       },
       "created_at": "2026-10-25T08:20:08.743Z",
-      "last_login": "2026-10-25T08:34:42.251Z",
-      "tests_submitted": 0
+      "last_login": "2026-10-25T11:56:29.020Z",
+      "tests_submitted": 1
     }
   ],
-  "sessions": {},
+  "sessions": {
+    "bd7f13d3403742f71ce161a546f2ed2dbbe016ee1f51e35ff5088741066f8224": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-25T11:55:48.902Z"
+    },
+    "6340c4bdb29fb42826012c7b79a850eb54ffc89d4b6bdd12d9710cae49a29d90": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-25T11:55:56.709Z"
+    },
+    "a79539f226921bbf0d51225c9c6009c56c309613ca283c643fda914205f0cb50": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-25T11:56:04.012Z"
+    },
+    "cb80de0211dd67d30b9a868d04c25a757cb0bb48d64d0a68ada348237e538339": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-25T11:56:29.020Z"
+    }
+  },
   "evaluations": [],
+  "chat_sessions": [],
   "logs": [
+    {
+      "id": "log_1792929389020_kspy",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-25T11:56:29.020Z"
+    },
+    {
+      "id": "log_1792929364012_1hvz",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-25T11:56:04.012Z"
+    },
+    {
+      "id": "log_1792929356709_2f5b",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-25T11:55:56.709Z"
+    },
+    {
+      "id": "log_1792929348902_ftas",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-25T11:55:48.902Z"
+    },
     {
       "id": "log_1792924764051_0ua9",
       "actor": "test_colleague2",

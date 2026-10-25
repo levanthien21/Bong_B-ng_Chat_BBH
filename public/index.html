@@ -412,8 +412,22 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
 
           <!-- TAB 2: LUỒNG ĐÀM THOẠI AGENT (MULTI-TURN TRANSCRIPT) -->
           <div id="pane-transcript" class="right-pane-content" style="display: none;">
+            <!-- Session Selector Bar -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle);">
+              <div style="display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0;">
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); white-space: nowrap;">Phiên:</span>
+                <select id="transcript-session-select" class="select select-xs" style="flex: 1; font-size: 11px; font-weight: 600; min-width: 0;">
+                  <option value="live">🔴 Phiên Live Hiện Tại</option>
+                </select>
+              </div>
+              <div style="display: flex; gap: 4px;">
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-new-agent-chat" title="Bắt đầu phiên đàm thoại mới" style="padding: 2px 7px; font-size: 10.5px;">➕ Mới</button>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-delete-agent-chat" title="Xóa phiên đã lưu này" style="display: none; padding: 2px 6px; font-size: 10.5px; color: var(--danger);">🗑️</button>
+              </div>
+            </div>
+
             <div id="agent-transcript-feed" class="transcript-feed">
-              <div class="empty-state-card">
+              <div class="empty-state-card" id="agent-transcript-empty">
                 <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Chưa có phiên đàm thoại Agent</div>
                 <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
                   Chuyển sang tab <b>"Agent Ngữ Cảnh"</b> ở bên trái và bấm Khởi chạy để theo dõi toàn bộ luồng hội thoại đa lượt tại đây.
@@ -422,17 +436,42 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
             </div>
           </div>
 
-          <!-- TAB 3: LỊCH SỬ BÁO CÁO -->
+          <!-- TAB 3: LỊCH SỬ BÁO CÁO & LỊCH SỬ CHAT -->
           <div id="pane-history" class="right-pane-content" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Đã lưu <b id="eval-count-badge">0</b> kết quả</span>
-              <div style="display: flex; gap: 3px;">
-                <button type="button" class="btn btn-secondary btn-xs active" id="btn-filter-all">Tất cả</button>
-                <button type="button" class="btn btn-secondary btn-xs" id="btn-filter-fails" style="color: var(--danger);">Chỉ lỗi</button>
+            <!-- Sub-tab Selector inside History -->
+            <div class="history-subtabs-nav" style="display: flex; gap: 4px; padding-bottom: 6px; margin-bottom: 8px; border-bottom: 1px solid var(--border-subtle);">
+              <button type="button" class="history-subtab-btn active" id="subtab-btn-evals" data-sub="evals">
+                <span>🎯 Đánh Giá (<span id="eval-count-badge">0</span>)</span>
+              </button>
+              <button type="button" class="history-subtab-btn" id="subtab-btn-chats" data-sub="chats">
+                <span>💬 Lịch Sử Chat (<span id="chat-count-badge">0</span>)</span>
+              </button>
+            </div>
+
+            <!-- SUBPANE 1: LỊCH SỬ ĐÁNH GIÁ CHI TIẾT -->
+            <div id="subpane-history-evals" class="history-subpane-content active">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Kết quả đối chiếu 2 file</span>
+                <div style="display: flex; gap: 3px; align-items: center;">
+                  <button type="button" class="btn btn-secondary btn-xs active" id="btn-filter-all">Tất cả</button>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-filter-fails" style="color: var(--danger);">Chỉ lỗi</button>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-clear-all-evals" title="Xóa toàn bộ lịch sử đánh giá" style="color: var(--text-muted); padding: 2px 6px;">🗑️</button>
+                </div>
+              </div>
+              <div id="evaluations-list" style="display: flex; flex-direction: column; gap: 6px;">
+                <!-- Dynamic Evaluation Cards -->
               </div>
             </div>
-            <div id="evaluations-list" style="display: flex; flex-direction: column; gap: 6px;">
-              <!-- Dynamic Evaluation Cards -->
+
+            <!-- SUBPANE 2: LỊCH SỬ CÁC PHIÊN CHAT / HỘI THOẠI -->
+            <div id="subpane-history-chats" class="history-subpane-content" style="display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">Các phiên đàm thoại đã thực hiện</span>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-refresh-chat-sessions" title="Tải lại danh sách phiên chat" style="padding: 2px 6px;">🔄 Làm mới</button>
+              </div>
+              <div id="chat-sessions-list" style="display: flex; flex-direction: column; gap: 6px;">
+                <!-- Dynamic Chat Session Cards -->
+              </div>
             </div>
           </div>
         </div>

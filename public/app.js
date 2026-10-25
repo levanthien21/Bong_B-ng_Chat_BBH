@@ -16,6 +16,9 @@
     promptRules: { title: '', content: '' },
     autoTestSuite: [],
     evaluations: [],
+    chatSessions: [],
+    historySubtab: 'evals',
+    selectedSessionId: 'live',
     users: [],
     sdkReady: false,
     chatIsOpen: false,
@@ -172,10 +175,22 @@
     btnAutoEvaluate: document.getElementById('btn-auto-evaluate'),
     btnSubmitEval: document.getElementById('btn-submit-eval'),
     agentTranscriptFeed: document.getElementById('agent-transcript-feed'),
+    transcriptSessionSelect: document.getElementById('transcript-session-select'),
+    btnNewAgentChat: document.getElementById('btn-new-agent-chat'),
+    btnDeleteAgentChat: document.getElementById('btn-delete-agent-chat'),
+    agentTranscriptEmpty: document.getElementById('agent-transcript-empty'),
     evalCountBadge: document.getElementById('eval-count-badge'),
     btnFilterAll: document.getElementById('btn-filter-all'),
     btnFilterFails: document.getElementById('btn-filter-fails'),
     evaluationsList: document.getElementById('evaluations-list'),
+    subtabBtnEvals: document.getElementById('subtab-btn-evals'),
+    subtabBtnChats: document.getElementById('subtab-btn-chats'),
+    subpaneHistoryEvals: document.getElementById('subpane-history-evals'),
+    subpaneHistoryChats: document.getElementById('subpane-history-chats'),
+    chatCountBadge: document.getElementById('chat-count-badge'),
+    chatSessionsList: document.getElementById('chat-sessions-list'),
+    btnClearAllEvals: document.getElementById('btn-clear-all-evals'),
+    btnRefreshChatSessions: document.getElementById('btn-refresh-chat-sessions'),
 
     // Modal: 2 Training Files & DeepSeek
     modalTraining: document.getElementById('modal-training'),
@@ -1626,6 +1641,35 @@
     }
   }
 
+  async function saveManualQuestionsSession(questions) {
+    if (!questions || !questions.length) return;
+    try {
+      const turns = questions.map((q, idx) => ({
+        turn: idx + 1,
+        user: q,
+        assistant: '(Đã gửi vào khung chat AI Sandbox)',
+        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      }));
+
+      const payload = {
+        title: `Kịch bản Q&A: ${turns.length} câu hỏi kiểm thử`,
+        type: 'manual',
+        persona: 'Tester Kịch Bản',
+        turns: turns,
+        verdictSummary: 'pass',
+        averageScore: 5
+      };
+
+      const res = await api('/api/chat-sessions', 'POST', payload);
+      if (res && res.session) {
+        state.chatSessions.unshift(res.session);
+        renderChatSessions();
+      }
+    } catch (e) {
+      console.warn('[MANUAL] Failed to auto-save session:', e);
+    }
+  }
+
   function onManualQuestionFinished() {
     if (!state.manualRunner.isRunning) return;
     if (state.manualRunner.timerId) clearTimeout(state.manualRunner.timerId);
@@ -1654,7 +1698,8 @@
 
     if (nextIdx >= totalQ) {
       stopManualRunner(false);
-      showToast('🎉 Đã hoàn thành kiểm thử toàn bộ danh sách câu hỏi!', 'success');
+      saveManualQuestionsSession(state.manualRunner.questions);
+      showToast('🎉 Đã hoàn thành kiểm thử toàn bộ danh sách câu hỏi! Lịch sử đánh giá và chat đã được lưu.', 'success');
       return;
     }
 
@@ -1785,6 +1830,13 @@
       const nextMsg = turnData.nextMessage;
       el.agentThoughtProcess.textContent = turnData.thoughtProcess || `Agent đã phản hồi bám sát câu trả lời của bot.`;
 
+      // If an evaluation record was created for previous turn response, update evaluations in real time
+      if (res.record) {
+        state.evaluations.unshift(res.record);
+        renderEvaluations(res.record.id);
+        updateMetrics();
+      }
+
       // Render Customer Message Card into transcript feed
       renderTranscriptCustomerTurn(state.agentRunner.turnIndex, nextMsg, turnData.thoughtProcess);
 
@@ -1814,6 +1866,41 @@
     }
   }
 
+  async function saveCompletedAgentSession() {
+    if (!state.agentRunner.history || state.agentRunner.history.length === 0) return;
+    try {
+      const turns = [];
+      for (let i = 0; i < state.agentRunner.history.length; i += 2) {
+        const u = state.agentRunner.history[i];
+        const a = state.agentRunner.history[i + 1];
+        turns.push({
+          turn: Math.floor(i / 2) + 1,
+          user: u ? u.content : '',
+          assistant: a ? a.content : '',
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        });
+      }
+
+      const personaName = el.agentPersonaSelect?.selectedOptions?.[0]?.text || state.agentRunner.persona || 'Khách hàng';
+      const payload = {
+        title: `Phiên Agent: ${personaName} (${turns.length} lượt)`,
+        type: 'agent',
+        persona: personaName,
+        turns: turns,
+        verdictSummary: 'pass',
+        averageScore: 5
+      };
+
+      const res = await api('/api/chat-sessions', 'POST', payload);
+      if (res && res.session) {
+        state.chatSessions.unshift(res.session);
+        renderChatSessions();
+      }
+    } catch (e) {
+      console.warn('[AGENT] Failed to auto-save chat session:', e);
+    }
+  }
+
   async function onAgentTurnResponseReceived(previousTurnData) {
     if (!state.agentRunner.isRunning) return;
     if (state.agentRunner.timerId) clearTimeout(state.agentRunner.timerId);
@@ -1836,6 +1923,9 @@
     if (isFinalTurn) {
       renderTranscriptCompletion();
 
+      // Automatically persist full completed session to database
+      saveCompletedAgentSession();
+
       // Auto /reset trigger
       if (el.agentAutoResetCheckbox && el.agentAutoResetCheckbox.checked) {
         setTimeout(() => {
@@ -1843,7 +1933,7 @@
           showToast('🎉 Hoàn thành cuộc trò chuyện! Đã tự động gửi /reset làm mới AI.', 'success');
         }, 1200);
       } else {
-        showToast('🎉 Đã hoàn thành cuộc đàm thoại đa lượt!', 'success');
+        showToast('🎉 Đã hoàn thành cuộc đàm thoại đa lượt! Toàn bộ lịch sử chat đã được lưu.', 'success');
       }
 
       stopAgentRunner();
@@ -2020,8 +2110,33 @@
   }
 
   if (el.btnSubmitEval) {
-    el.btnSubmitEval.addEventListener('click', () => {
-      showToast('Kết quả đã được tự động lưu vào báo cáo.', 'info');
+    el.btnSubmitEval.addEventListener('click', async () => {
+      let promptText = (el.activePromptDisplay && el.activePromptDisplay.textContent.trim()) || '';
+      if (!promptText || promptText === '(Chưa gửi câu hỏi)') {
+        const manualLines = getManualQuestionsList();
+        promptText = manualLines.length ? manualLines[0] : 'Câu hỏi kiểm thử';
+        if (el.activePromptDisplay) el.activePromptDisplay.textContent = promptText;
+      }
+
+      let aiResponse = el.evalResponseInput ? el.evalResponseInput.value.trim() : '';
+      if (!aiResponse) {
+        aiResponse = `(AI đã phản hồi trong bong bóng chat lúc ${new Date().toLocaleTimeString('vi-VN')})`;
+        if (el.evalResponseInput) el.evalResponseInput.value = aiResponse;
+      }
+
+      try {
+        el.btnSubmitEval.disabled = true;
+        el.btnSubmitEval.innerHTML = '<span>⏳ Đang lưu...</span>';
+        const res = await evaluateActiveQuestion(aiResponse, promptText);
+        showToast('🎉 Đã chấm điểm và lưu kết quả vào Lịch Sử Báo Cáo!', 'success');
+        switchRightTab('history');
+        switchHistorySubtab('evals');
+      } catch (err) {
+        showToast('Lỗi khi lưu báo cáo: ' + err.message, 'error');
+      } finally {
+        el.btnSubmitEval.disabled = false;
+        el.btnSubmitEval.innerHTML = '<span>💾 Lưu báo cáo</span>';
+      }
     });
   }
 
@@ -2042,41 +2157,341 @@
     });
   }
 
-  function renderEvaluations() {
-    let list = state.evaluations;
+  // Sub-tabs switcher inside Right Panel History
+  function switchHistorySubtab(subtabKey) {
+    state.historySubtab = subtabKey;
+    if (el.subtabBtnEvals) el.subtabBtnEvals.classList.toggle('active', subtabKey === 'evals');
+    if (el.subtabBtnChats) el.subtabBtnChats.classList.toggle('active', subtabKey === 'chats');
+    if (el.subpaneHistoryEvals) el.subpaneHistoryEvals.style.display = subtabKey === 'evals' ? 'block' : 'none';
+    if (el.subpaneHistoryChats) el.subpaneHistoryChats.style.display = subtabKey === 'chats' ? 'block' : 'none';
+    if (subtabKey === 'chats') {
+      renderChatSessions();
+    }
+  }
+
+  if (el.subtabBtnEvals) el.subtabBtnEvals.addEventListener('click', () => switchHistorySubtab('evals'));
+  if (el.subtabBtnChats) el.subtabBtnChats.addEventListener('click', () => switchHistorySubtab('chats'));
+
+  function renderEvaluations(highlightId = null) {
+    let list = state.evaluations || [];
     if (state.evalFilter === 'fail') {
       list = list.filter(e => e.result === 'fail' || e.result === 'warning');
     }
 
-    el.evalCountBadge.textContent = state.evaluations.length;
+    if (el.evalCountBadge) el.evalCountBadge.textContent = state.evaluations.length;
+    if (!el.evaluationsList) return;
     el.evaluationsList.innerHTML = '';
 
     if (list.length === 0) {
-      el.evaluationsList.innerHTML = `<div style="text-align:center;padding:14px;color:var(--text-muted);font-size:11px;">Chưa có lượt đánh giá nào.</div>`;
+      el.evaluationsList.innerHTML = `
+        <div style="text-align:center;padding:24px 14px;color:var(--text-muted);font-size:11.5px;background:var(--bg-panel);border-radius:8px;border:1px dashed var(--border-subtle);">
+          <div style="font-size:18px;margin-bottom:4px;">📋</div>
+          <b>Chưa có lượt đánh giá nào được lưu.</b>
+          <div style="font-size:11px;margin-top:4px;">Chạy kịch bản câu hỏi hoặc nhập phản hồi của AI và bấm <b>"💾 Lưu báo cáo"</b> để lưu kết quả đối chiếu.</div>
+        </div>
+      `;
       return;
     }
 
-    list.slice(0, 25).forEach(ev => {
+    list.slice(0, 50).forEach(ev => {
       const card = document.createElement('div');
-      card.className = 'auto-question-card';
-      const stars = '⭐'.repeat(ev.score);
-      const time = new Date(ev.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      card.className = 'auto-question-card' + (highlightId && ev.id === highlightId ? ' highlight-saved-card' : '');
+      const stars = '⭐'.repeat(ev.score || 5);
+      const time = new Date(ev.created_at || Date.now()).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      const date = new Date(ev.created_at || Date.now()).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
 
       card.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <span class="verdict-badge ${ev.result}">${ev.result === 'pass' ? 'PASS' : ev.result === 'warning' ? 'WARN' : 'FAIL'}</span>
-          <span style="font-size:10px;color:var(--text-muted);">${stars} • ${time}</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="verdict-badge ${ev.result}">${ev.result === 'pass' ? 'PASS' : ev.result === 'warning' ? 'WARN' : 'FAIL'}</span>
+            <span style="font-size:10.5px;color:var(--text-muted);font-weight:600;">${stars}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:10px;color:var(--text-muted);">${time} • ${date}</span>
+            <button type="button" class="btn btn-secondary btn-xs btn-delete-eval" data-id="${ev.id}" title="Xóa lượt đánh giá này" style="padding:1px 5px;font-size:9.5px;color:var(--danger);line-height:1;">✕</button>
+          </div>
         </div>
-        <div style="font-size:11.5px;font-weight:600;color:var(--text-primary);line-height:1.3;">"${escapeHtml(ev.prompt_used)}"</div>
-        ${ev.ai_response_summary ? `<div style="font-size:11px;color:var(--text-secondary);background:var(--bg-panel);padding:4px 7px;border-radius:5px;white-space:pre-wrap;">${escapeHtml(ev.ai_response_summary)}</div>` : ''}
-        ${ev.analysis ? `<div style="font-size:10.5px;color:var(--accent);"><b>Nhận xét:</b> ${escapeHtml(ev.analysis)}</div>` : ''}
-        <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text-muted);">
-          <span>Persona: <b>${escapeHtml(ev.persona || 'Khách')}</b></span>
+        <div style="font-size:11.5px;font-weight:700;color:var(--text-primary);line-height:1.35;margin-top:2px;">
+          🗣️ "${escapeHtml(ev.prompt_used)}"
+        </div>
+        ${ev.ai_response_summary ? `
+          <div style="font-size:11px;color:var(--text-secondary);background:var(--bg-panel);padding:5px 8px;border-radius:6px;line-height:1.4;white-space:pre-wrap;max-height:85px;overflow-y:auto;border-left:2px solid var(--accent);">
+            🤖 ${escapeHtml(ev.ai_response_summary)}
+          </div>
+        ` : ''}
+        ${ev.analysis ? `
+          <div style="font-size:10.5px;color:var(--accent);line-height:1.35;background:rgba(217,119,87,0.04);padding:4px 6px;border-radius:5px;">
+            <b>⚖️ Nhận xét:</b> ${escapeHtml(ev.analysis)}
+          </div>
+        ` : ''}
+        ${ev.recommendation ? `
+          <div style="font-size:10px;color:var(--text-muted);line-height:1.3;">
+            <b>💡 Đề xuất:</b> ${escapeHtml(ev.recommendation)}
+          </div>
+        ` : ''}
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:9.5px;color:var(--text-muted);padding-top:2px;border-top:1px dashed var(--border-subtle);">
+          <span>Persona: <b>${escapeHtml(ev.persona || 'Khách hàng')}</b></span>
           <span class="mono-badge" style="font-size:9px;">${escapeHtml(ev.judge_engine || 'AI Judge')}</span>
         </div>
       `;
 
+      const deleteBtn = card.querySelector('.btn-delete-eval');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('Bạn có chắc chắn muốn xóa lượt đánh giá này?')) return;
+          try {
+            await api(`/api/evaluations/${ev.id}`, 'DELETE');
+            state.evaluations = state.evaluations.filter(x => x.id !== ev.id);
+            renderEvaluations();
+            updateMetrics();
+            showToast('Đã xóa lượt đánh giá.', 'info');
+          } catch (err) {
+            showToast('Lỗi xóa đánh giá: ' + err.message, 'error');
+          }
+        });
+      }
+
       el.evaluationsList.appendChild(card);
+    });
+  }
+
+  function renderChatSessions() {
+    const list = state.chatSessions || [];
+    if (el.chatCountBadge) el.chatCountBadge.textContent = list.length;
+
+    // Update Tab 2 session selector
+    if (el.transcriptSessionSelect) {
+      const currentVal = el.transcriptSessionSelect.value;
+      el.transcriptSessionSelect.innerHTML = `<option value="live">🔴 Phiên Live Hiện Tại</option>`;
+      list.forEach(sess => {
+        const timeStr = new Date(sess.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        const dateStr = new Date(sess.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+        const opt = document.createElement('option');
+        opt.value = sess.id;
+        opt.textContent = `${dateStr} ${timeStr} - ${sess.persona || 'Khách'} (${sess.turn_count || sess.turns?.length || 0} lượt)`;
+        el.transcriptSessionSelect.appendChild(opt);
+      });
+      el.transcriptSessionSelect.value = list.some(s => s.id === currentVal) ? currentVal : 'live';
+      if (el.btnDeleteAgentChat) {
+        el.btnDeleteAgentChat.style.display = el.transcriptSessionSelect.value !== 'live' ? 'inline-flex' : 'none';
+      }
+    }
+
+    if (!el.chatSessionsList) return;
+    el.chatSessionsList.innerHTML = '';
+
+    if (list.length === 0) {
+      el.chatSessionsList.innerHTML = `
+        <div style="text-align:center;padding:24px 14px;color:var(--text-muted);font-size:11.5px;background:var(--bg-panel);border-radius:8px;border:1px dashed var(--border-subtle);">
+          <div style="font-size:18px;margin-bottom:4px;">💬</div>
+          <b>Chưa có phiên hội thoại nào được lưu.</b>
+          <div style="font-size:11px;margin-top:4px;">Khởi chạy <b>Agent Ngữ Cảnh</b> hoặc hoàn thành kịch bản để tự động lưu toàn bộ các lượt trò chuyện tại đây.</div>
+        </div>
+      `;
+      return;
+    }
+
+    list.forEach(sess => {
+      const card = document.createElement('div');
+      card.className = 'chat-session-card';
+      const timeStr = new Date(sess.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      const dateStr = new Date(sess.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+      const turnCount = sess.turn_count || sess.turns?.length || 0;
+
+      const firstTurn = sess.turns && sess.turns[0];
+      const previewText = firstTurn 
+        ? `🗣️ "${firstTurn.user || firstTurn.content || 'Khởi đầu'}"`
+        : 'Chưa có tin nhắn';
+
+      card.innerHTML = `
+        <div class="chat-session-header">
+          <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
+            <span class="mono-badge" style="background:var(--accent-soft);color:var(--accent);font-weight:700;">${sess.type === 'agent' ? 'AGENT' : 'Q&A'}</span>
+            <span class="chat-session-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(sess.title || sess.persona)}</span>
+          </div>
+          <span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">${timeStr} • ${dateStr}</span>
+        </div>
+        <div class="chat-session-turns-preview">
+          ${escapeHtml(previewText)}
+        </div>
+        <div class="chat-session-actions">
+          <span style="font-size:10.5px;font-weight:600;color:var(--text-muted);">
+            📊 ${turnCount} lượt đàm thoại
+          </span>
+          <div style="display:flex;gap:4px;">
+            <button type="button" class="btn btn-primary btn-xs btn-view-chat" style="font-size:10.5px;padding:3px 8px;">
+              👁️ Xem hội thoại
+            </button>
+            <button type="button" class="btn btn-secondary btn-xs btn-delete-chat" title="Xóa phiên chat này" style="color:var(--danger);padding:3px 6px;">
+              🗑️
+            </button>
+          </div>
+        </div>
+      `;
+
+      card.querySelector('.btn-view-chat').addEventListener('click', () => {
+        loadSessionIntoTranscriptFeed(sess);
+      });
+
+      card.querySelector('.btn-delete-chat').addEventListener('click', async () => {
+        if (!confirm(`Bạn có chắc chắn muốn xóa phiên "${sess.title}"?`)) return;
+        try {
+          await api(`/api/chat-sessions/${sess.id}`, 'DELETE');
+          state.chatSessions = state.chatSessions.filter(s => s.id !== sess.id);
+          renderChatSessions();
+          showToast('Đã xóa phiên hội thoại thành công!', 'info');
+        } catch (e) {
+          showToast('Lỗi xóa phiên chat: ' + e.message, 'error');
+        }
+      });
+
+      el.chatSessionsList.appendChild(card);
+    });
+  }
+
+  function loadSessionIntoTranscriptFeed(session) {
+    if (!el.agentTranscriptFeed) return;
+    switchRightTab('transcript');
+    if (el.transcriptSessionSelect) {
+      el.transcriptSessionSelect.value = session.id;
+      if (el.btnDeleteAgentChat) el.btnDeleteAgentChat.style.display = 'inline-flex';
+    }
+
+    el.agentTranscriptFeed.innerHTML = '';
+    const turns = session.turns || [];
+    if (turns.length === 0) {
+      el.agentTranscriptFeed.innerHTML = `<div class="empty-state-card"><div style="font-size:12px;color:var(--text-muted);">Phiên này không có tin nhắn nào.</div></div>`;
+      return;
+    }
+
+    turns.forEach((t, idx) => {
+      const turnNum = t.turn || idx + 1;
+      const uMsg = t.user || (t.role === 'user' ? t.content : '');
+      const aMsg = t.assistant || (t.role === 'assistant' ? t.content : '');
+
+      if (uMsg) {
+        renderTranscriptCustomerTurn(turnNum, uMsg, t.thought || '');
+      }
+      if (aMsg) {
+        renderTranscriptBotReply(turnNum, aMsg, t.evaluation || { verdict: t.verdict || 'pass', score: t.score || 5 });
+      }
+    });
+
+    const completionCard = document.createElement('div');
+    completionCard.className = 'transcript-turn';
+    completionCard.style.background = 'rgba(13, 148, 136, 0.08)';
+    completionCard.style.borderColor = 'rgba(13, 148, 136, 0.3)';
+    completionCard.style.textAlign = 'center';
+    completionCard.innerHTML = `
+      <div style="font-weight:700;font-size:11.5px;color:var(--success);">
+        📜 Đang xem lại phiên đã lưu: ${escapeHtml(session.title)}
+      </div>
+      <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">
+        Được lưu lúc ${new Date(session.created_at).toLocaleString('vi-VN')} • Tổng cộng ${turns.length} lượt
+      </div>
+    `;
+    el.agentTranscriptFeed.appendChild(completionCard);
+  }
+
+  // Clear all evaluations
+  if (el.btnClearAllEvals) {
+    el.btnClearAllEvals.addEventListener('click', async () => {
+      if (!state.evaluations || state.evaluations.length === 0) {
+        showToast('Chưa có đánh giá nào để xóa.', 'info');
+        return;
+      }
+      if (!confirm('Bạn có chắc chắn muốn xóa TOÀN BỘ lịch sử đánh giá? Thao tác này không thể hoàn tác.')) return;
+      try {
+        await api('/api/evaluations', 'DELETE');
+        state.evaluations = [];
+        renderEvaluations();
+        updateMetrics();
+        showToast('Đã xóa sạch toàn bộ lịch sử đánh giá!', 'success');
+      } catch (e) {
+        showToast('Lỗi khi xóa: ' + e.message, 'error');
+      }
+    });
+  }
+
+  // Refresh chat sessions
+  if (el.btnRefreshChatSessions) {
+    el.btnRefreshChatSessions.addEventListener('click', async () => {
+      try {
+        const res = await api('/api/chat-sessions');
+        state.chatSessions = res.sessions || [];
+        renderChatSessions();
+        showToast('Đã làm mới danh sách phiên chat!', 'success');
+      } catch (e) {
+        showToast('Lỗi tải phiên chat: ' + e.message, 'error');
+      }
+    });
+  }
+
+  // Session selector in Tab 2 Luồng Agent
+  if (el.transcriptSessionSelect) {
+    el.transcriptSessionSelect.addEventListener('change', () => {
+      const selectedId = el.transcriptSessionSelect.value;
+      if (selectedId === 'live') {
+        if (el.btnDeleteAgentChat) el.btnDeleteAgentChat.style.display = 'none';
+        el.agentTranscriptFeed.innerHTML = '';
+        if (state.agentRunner.history.length === 0) {
+          el.agentTranscriptFeed.innerHTML = `
+            <div class="empty-state-card" id="agent-transcript-empty">
+              <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Chưa có phiên đàm thoại Agent</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
+                Chuyển sang tab <b>"Agent Ngữ Cảnh"</b> ở bên trái và bấm Khởi chạy để theo dõi toàn bộ luồng hội thoại đa lượt tại đây.
+              </div>
+            </div>
+          `;
+        } else {
+          for (let i = 0; i < state.agentRunner.history.length; i += 2) {
+            const u = state.agentRunner.history[i];
+            const a = state.agentRunner.history[i + 1];
+            const turnNum = Math.floor(i / 2) + 1;
+            if (u) renderTranscriptCustomerTurn(turnNum, u.content, '');
+            if (a) renderTranscriptBotReply(turnNum, a.content, { verdict: 'pass', score: 5 });
+          }
+        }
+      } else {
+        const sess = state.chatSessions.find(s => s.id === selectedId);
+        if (sess) loadSessionIntoTranscriptFeed(sess);
+      }
+    });
+  }
+
+  if (el.btnNewAgentChat) {
+    el.btnNewAgentChat.addEventListener('click', () => {
+      if (el.transcriptSessionSelect) el.transcriptSessionSelect.value = 'live';
+      if (el.btnDeleteAgentChat) el.btnDeleteAgentChat.style.display = 'none';
+      el.agentTranscriptFeed.innerHTML = `
+        <div class="empty-state-card" id="agent-transcript-empty">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Sẵn sàng cho phiên đàm thoại mới</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
+            Bấm <b>"Khởi Chạy Agent Hội Thoại"</b> ở panel bên trái để bắt đầu.
+          </div>
+        </div>
+      `;
+      showToast('Đã làm mới bảng feed. Sẵn sàng cho phiên chat mới!', 'info');
+    });
+  }
+
+  if (el.btnDeleteAgentChat) {
+    el.btnDeleteAgentChat.addEventListener('click', async () => {
+      const selectedId = el.transcriptSessionSelect?.value;
+      if (!selectedId || selectedId === 'live') return;
+      if (!confirm('Bạn có chắc chắn muốn xóa phiên hội thoại này?')) return;
+      try {
+        await api(`/api/chat-sessions/${selectedId}`, 'DELETE');
+        state.chatSessions = state.chatSessions.filter(s => s.id !== selectedId);
+        renderChatSessions();
+        if (el.transcriptSessionSelect) el.transcriptSessionSelect.value = 'live';
+        if (el.btnDeleteAgentChat) el.btnDeleteAgentChat.style.display = 'none';
+        el.agentTranscriptFeed.innerHTML = '';
+        showToast('Đã xóa phiên chat.', 'info');
+      } catch (e) {
+        showToast('Lỗi xóa: ' + e.message, 'error');
+      }
     });
   }
 
@@ -2168,7 +2583,8 @@
       state.productKnowledge = data.productKnowledge;
       state.promptRules = data.promptRules;
       state.autoTestSuite = data.autoTestSuite;
-      state.evaluations = data.evaluations;
+      state.evaluations = data.evaluations || [];
+      state.chatSessions = data.chat_sessions || [];
       state.users = data.users;
 
       el.headerPageIdBadge.textContent = `ID: ${state.config.page_id}`;
@@ -2176,6 +2592,7 @@
       syncRunnerPreferences();
       updateManualQuestionCount();
       renderEvaluations();
+      renderChatSessions();
       updateMetrics();
     } catch (err) {
       console.warn('[APP] Could not load workspace:', err);
