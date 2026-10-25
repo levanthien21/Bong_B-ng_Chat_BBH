@@ -2,7 +2,7 @@
   "config": {
     "page_id": "095817282564177",
     "sdk_url": "https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js",
-    "project_name": "Botbanhang AI Testing Studio",
+    "project_name": "Thiện BBH — AI Testing Studio",
     "deepseek_api_key": "",
     "deepseek_model": "deepseek-chat",
     "deepseek_base_url": "https://api.deepseek.com",
@@ -154,6 +154,21 @@
       "created_at": "2026-10-24T13:01:32.051Z",
       "last_login": "2026-10-24T13:01:32.051Z",
       "tests_submitted": 0
+    },
+    {
+      "id": "usr_1792912303287",
+      "name": "Đồng Nghiệp Test",
+      "email": "dongnghiep1792912303284@gmail.com",
+      "username": "dongnghiep1792912303284",
+      "phone": "",
+      "role": "tester",
+      "deepseek_api_key": "",
+      "status": "active",
+      "avatar_color": "#D97757",
+      "password_hash": "7f04e210010c3628d5b41574a8704d7f68cf810c556ee57fd566bcc341b5ca6464a20db3d401a5b7caf241966e0f906da03cc4294ac4810a03c57c75834fb8a4",
+      "created_at": "2026-10-25T07:11:43.288Z",
+      "last_login": "2026-10-25T07:11:43.294Z",
+      "tests_submitted": 0
     }
   ],
   "sessions": {
@@ -257,9 +272,13 @@
       "user_id": "usr_admin_01",
       "created_at": "2026-10-25T05:26:14.394Z"
     },
-    "7fbf487a8694bc43ac2dfc822776e05703ef7be2c1c191c1dcbafbec476ccafd": {
-      "user_id": "usr_admin_01",
-      "created_at": "2026-10-25T05:47:29.027Z"
+    "f3468178513325f1f17c83ffe9dd73bb57c4db4d3865885cb848e87e3be4c0c1": {
+      "user_id": "usr_1792912303287",
+      "created_at": "2026-10-25T07:11:43.289Z"
+    },
+    "9ef0d5add3996d5d74200d479724ebc3c31e931c0b5fb36b7cc8313bfe9e3c86": {
+      "user_id": "usr_1792912303287",
+      "created_at": "2026-10-25T07:11:43.294Z"
     }
   },
   "evaluations": [

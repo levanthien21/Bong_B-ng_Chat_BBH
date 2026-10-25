@@ -632,6 +632,19 @@
   if (el.btnHeaderResetSession) el.btnHeaderResetSession.addEventListener('click', () => sendResetCommand());
   if (el.btnStageResetAi) el.btnStageResetAi.addEventListener('click', () => sendResetCommand());
   if (el.btnRightResetAi) el.btnRightResetAi.addEventListener('click', () => sendResetCommand());
+  const btnHudReset = document.getElementById('btn-hud-reset');
+  if (btnHudReset) btnHudReset.addEventListener('click', () => sendResetCommand());
+
+  if (el.headerPageIdBadge) {
+    el.headerPageIdBadge.addEventListener('click', () => {
+      const pageId = state.config.page_id || '095817282564177';
+      navigator.clipboard.writeText(pageId).then(() => {
+        showToast(`📋 Đã sao chép Page ID: ${pageId}`, 'success');
+      }).catch(() => {
+        showToast(`Page ID: ${pageId}`, 'info');
+      });
+    });
+  }
 
   function sendPromptToChat(promptText) {
     const iframe = getBbhIframe();
@@ -1068,6 +1081,17 @@
 
     if (timerElem) {
       timerElem.textContent = `${currentSec}s`;
+    }
+
+    const hudTimer = document.getElementById('stage-hud-timer-val');
+    if (hudTimer) {
+      if (isPaused) {
+        hudTimer.textContent = 'Tạm dừng';
+      } else if (isManual) {
+        hudTimer.textContent = 'Chờ xác nhận';
+      } else {
+        hudTimer.textContent = `${currentSec}s`;
+      }
     }
 
     if (barElem) {
