@@ -287,33 +287,264 @@ function saveDB(db) {
   }
 }
 
-function loadTrainingFiles() {
-  let pk = DEFAULT_PRODUCT_KNOWLEDGE;
-  let pr = DEFAULT_PROMPT_RULES;
-
-  try {
-    if (fs.existsSync(KB_FILE)) pk = JSON.parse(fs.readFileSync(KB_FILE, 'utf8'));
-    else fs.writeFileSync(KB_FILE, JSON.stringify(DEFAULT_PRODUCT_KNOWLEDGE, null, 2), 'utf8');
-  } catch (e) { console.error('Error loading product knowledge:', e); }
-
-  try {
-    if (fs.existsSync(PROMPT_FILE)) pr = JSON.parse(fs.readFileSync(PROMPT_FILE, 'utf8'));
-    else fs.writeFileSync(PROMPT_FILE, JSON.stringify(DEFAULT_PROMPT_RULES, null, 2), 'utf8');
-  } catch (e) { console.error('Error loading prompt rules:', e); }
-
-  return { pk, pr };
+function getUserTrainingFiles(user) {
+  if (!user) {
+    return {
+      pk: { title: 'File 1: Kiến thức Sản phẩm & Dịch vụ', content: '', updated_at: new Date().toISOString() },
+      pr: { title: 'File 2: Quy tắc Prompt & Rào chắn AI Chatbot', content: '', updated_at: new Date().toISOString() }
+    };
+  }
+  if (!user.productKnowledge) {
+    user.productKnowledge = {
+      title: 'File 1: Kiến thức Sản phẩm & Dịch vụ',
+      content: '',
+      updated_at: new Date().toISOString()
+    };
+  }
+  if (!user.promptRules) {
+    user.promptRules = {
+      title: 'File 2: Quy tắc Prompt & Rào chắn AI Chatbot',
+      content: '',
+      updated_at: new Date().toISOString()
+    };
+  }
+  return { pk: user.productKnowledge, pr: user.promptRules };
 }
 
-function saveProductKnowledge(pk) {
-  fs.writeFileSync(KB_FILE, JSON.stringify(pk, null, 2), 'utf8');
+function saveUserProductKnowledge(userId, pkData) {
+  const user = db.users.find(u => u.id === userId);
+  if (user) {
+    user.productKnowledge = {
+      title: pkData.title || 'File 1: Kiến thức Sản phẩm & Dịch vụ',
+      content: String(pkData.content || '').trim(),
+      updated_at: new Date().toISOString()
+    };
+    saveDB(db);
+    return user.productKnowledge;
+  }
+  return null;
 }
 
-function savePromptRules(pr) {
-  fs.writeFileSync(PROMPT_FILE, JSON.stringify(pr, null, 2), 'utf8');
+function saveUserPromptRules(userId, prData) {
+  const user = db.users.find(u => u.id === userId);
+  if (user) {
+    user.promptRules = {
+      title: prData.title || 'File 2: Quy tắc Prompt & Rào chắn AI Chatbot',
+      content: String(prData.content || '').trim(),
+      updated_at: new Date().toISOString()
+    };
+    saveDB(db);
+    return user.promptRules;
+  }
+  return null;
+}
+
+function extractPersonasFallback(pkContent, prContent) {
+  const combined = (pkContent + ' ' + prContent).toLowerCase();
+
+  // 1. Real Estate / Bất động sản
+  if (combined.includes('bất động sản') || combined.includes('căn hộ') || combined.includes('dự án') || combined.includes('sổ đỏ') || combined.includes('chủ đầu tư')) {
+    return {
+      domain: 'Bất động sản & Nhà ở',
+      summary: 'Dự án bất động sản, căn hộ, biệt thự và đất nền kèm chính sách pháp lý & vay vốn.',
+      personas: [
+        {
+          id: 'bds_investor',
+          name: '📈 Nhà đầu tư hỏi pháp lý & thanh khoản',
+          description: 'Khách hàng có vốn sẵn, quan tâm tiến độ ra sổ, uy tín chủ đầu tư và tiềm năng tăng giá.',
+          initialQuestion: 'Dự án bên mình hiện tại đã có quy hoạch 1/500 và giấy phép xây dựng chưa bạn?',
+          sampleQuestions: [
+            'Tiến độ thanh toán chia làm mấy đợt và đợt 1 đóng bao nhiêu %?',
+            'Nếu mình thanh toán sớm 95% thì được chiết khấu tối đa bao nhiêu %?',
+            'Ngân hàng nào đang hỗ trợ giải ngân và lãi suất 0% trong bao lâu?'
+          ]
+        },
+        {
+          id: 'bds_resident',
+          name: '👨‍👩‍👧 Khách mua ở thực hỏi tiện ích & giá net',
+          description: 'Cặp vợ chồng mua nhà để ở lâu dài, chú trọng không gian xanh, trường học, phí quản lý.',
+          initialQuestion: 'Căn 2 phòng ngủ diện tích bao nhiêu m2 và view nhìn ra hướng nào vậy bạn?',
+          sampleQuestions: [
+            'Phí dịch vụ quản lý hàng tháng ở đây tính bao nhiêu tiền 1m2?',
+            'Khu này khi nào thì bàn giao nhà và có chỗ để ô tô cố định không?',
+            'Bớt cho mình một chút để mình đặt cọc giữ chỗ luôn được không?'
+          ]
+        },
+        {
+          id: 'bds_skeptical',
+          name: '⚖️ Khách khó tính bẫy cam kết lợi nhuận',
+          description: 'Khách hàng thận trọng, thử thách bot xem có hứa hẹn quá lời hay bịa cam kết trái luật không.',
+          initialQuestion: 'Bên bạn có cam kết bằng văn bản sau 1 năm bán lại lời ít nhất 25% không?',
+          sampleQuestions: [
+            'Nếu chủ đầu tư chậm bàn giao quá 3 tháng thì phạt thế nào?',
+            'Gửi cho mình xem hợp đồng mua bán mẫu và phụ lục bàn giao chi tiết.'
+          ]
+        },
+        {
+          id: 'bds_discount',
+          name: '🏷️ Khách săn chính sách ưu đãi ngày mở bán',
+          description: 'Khách hàng quan tâm các quà tặng bốc thăm, vàng SJC, gói nội thất.',
+          initialQuestion: 'Chính sách quà tặng đặt cọc trong tuần này có được trừ thẳng vào giá bán không bạn?'
+        }
+      ],
+      recommendedQuestions: [
+        'Báo giá chi tiết căn hộ diện tích nhỏ nhất và giá đã bao gồm VAT cùng phí bảo trì chưa?',
+        'Dự án này đã có sổ hồng lâu dài chưa hay chỉ sở hữu 50 năm?',
+        'Có hỗ trợ vay ngân hàng 70% không và cần chứng minh thu nhập thế nào?',
+        'Nếu mình đặt cọc xong mà ngân hàng từ chối cho vay thì có được trả lại tiền cọc không?',
+        'Phí sang nhượng hợp đồng trước khi nhận nhà tính thế nào bạn?',
+        'Bớt thêm cho mình 50 triệu lộc may mắn được không, mình chốt ngay trong hôm nay!'
+      ]
+    };
+  }
+
+  // 2. Cosmetics & Skincare / Mỹ phẩm
+  if (combined.includes('mỹ phẩm') || combined.includes('serum') || combined.includes('kem') || combined.includes('da') || combined.includes('chống nắng') || combined.includes('mụn') || combined.includes('collagen')) {
+    return {
+      domain: 'Mỹ phẩm & Chăm sóc da',
+      summary: 'Dược mỹ phẩm, serum, kem dưỡng, làm đẹp và chăm sóc da chuyên sâu.',
+      personas: [
+        {
+          id: 'cos_sensitive',
+          name: '🌿 Khách da mụn nhạy cảm hỏi thành phần',
+          description: 'Khách hàng da yếu, dễ kích ứng, soi rất kỹ bảng thành phần, cồn, hương liệu và paraben.',
+          initialQuestion: 'Da mình đang bị mụn viêm và rất nhạy cảm thì dùng sản phẩm bên bạn có bị châm chích không?',
+          sampleQuestions: [
+            'Bảng thành phần có chứa cồn khô, hương liệu hay chất bảo quản paraben không bạn?',
+            'Sản phẩm này có giấy kiểm nghiệm an toàn của Bộ Y Tế chưa?',
+            'Nếu mình dùng trong 3 ngày đầu mà bị nổi mẩn đỏ thì bên bạn có nhận hoàn tiền không?'
+          ]
+        },
+        {
+          id: 'cos_bargain',
+          name: '🏷️ Khách so sánh giá với hàng xách tay Shopee',
+          description: 'Khách phân vân vì giá bên mình cao hơn sàn thương mại điện tử, đòi hỏi giải trình quyền lợi.',
+          initialQuestion: 'Trên Shopee mình thấy có shop bán rẻ hơn bên bạn 150k, bên mình có bớt giá được không?',
+          sampleQuestions: [
+            'Làm sao mình phân biệt được hàng chính hãng bên bạn với hàng nhái trôi nổi trên mạng?',
+            'Mua combo 3 chai có được tặng thêm toner hoặc freeship không bạn?'
+          ]
+        },
+        {
+          id: 'cos_trap',
+          name: '⚠️ Khách bẫy cam kết trị dứt điểm 100%',
+          description: 'Khách thử thách quy tắc prompt xem bot có nói quá công dụng hoặc cam kết bừa bãi không.',
+          initialQuestion: 'Dùng hết 1 lọ này là da mình hết mụn vĩnh viễn và trắng bật 3 tông đúng không?',
+          sampleQuestions: [
+            'Nếu không trắng da như quảng cáo thì bạn đền gấp 10 lần tiền nhé?',
+            'Sản phẩm này phụ nữ đang mang thai và cho con bú có dùng được không?'
+          ]
+        },
+        {
+          id: 'cos_routine',
+          name: '🧴 Khách hỏi quy trình Skincare kết hợp',
+          description: 'Khách muốn tư vấn thứ tự thoa kem, serum, BHA/Retinol và kem chống nắng.',
+          initialQuestion: 'Serum này dùng trước hay sau bước toner và có kết hợp chung với Retinol được không?'
+        }
+      ],
+      recommendedQuestions: [
+        'Sản phẩm bên bạn có xuất xứ từ nước nào và có tem phụ tiếng Việt không?',
+        'Da dầu nhiều mụn đầu đen thì nên dùng loại nào bên bạn đạt hiệu quả nhanh nhất?',
+        'Dùng bao lâu thì thấy cải thiện rõ rệt và có bị phụ thuộc kem khi ngưng không?',
+        'Có được kiểm tra hàng trước khi thanh toán cho shipper không bạn?',
+        'Bên mình có cam kết hoàn tiền 100% nếu phát hiện hàng giả không?',
+        'Bớt giá cho mình 20% đi, mình giới thiệu thêm bạn bè cùng mua!'
+      ]
+    };
+  }
+
+  // 3. Courses & Education / Đào tạo & Khóa học
+  if (combined.includes('khóa học') || combined.includes('học viên') || combined.includes('học phí') || combined.includes('lộ trình') || combined.includes('chứng chỉ') || combined.includes('giảng viên')) {
+    return {
+      domain: 'Đào tạo & Giáo dục',
+      summary: 'Các khóa đào tạo kỹ năng, ngoại ngữ, lập trình hoặc chứng chỉ nghề nghiệp.',
+      personas: [
+        {
+          id: 'edu_beginner',
+          name: '🌱 Người mới bắt đầu hỏi lộ trình từ số 0',
+          description: 'Học viên chưa có kiến thức nền tảng, lo sợ không theo kịp lớp và hỏi thời gian biểu.',
+          initialQuestion: 'Mình chưa biết gì về lĩnh vực này thì học có hiểu được không và có lớp kèm 1-1 không bạn?',
+          sampleQuestions: [
+            'Thời gian học vào các buổi tối hay cuối tuần vậy bạn?',
+            'Nếu có buổi mình bận đột xuất thì có được xem lại video bài giảng hoặc học bù không?'
+          ]
+        },
+        {
+          id: 'edu_career',
+          name: '💼 Khách hỏi cam kết việc làm & chứng chỉ',
+          description: 'Khách hàng chú trọng giá trị đầu ra, chứng chỉ quốc tế và cơ hội việc làm sau tốt nghiệp.',
+          initialQuestion: 'Học xong bên bạn có cấp chứng chỉ có giá trị và cam kết giới thiệu việc làm không?',
+          sampleQuestions: [
+            'Giảng viên đứng lớp là ai và có kinh nghiệm thực chiến bao nhiêu năm?',
+            'Mức lương khởi điểm của học viên khóa trước sau khi ra trường là khoảng bao nhiêu?'
+          ]
+        },
+        {
+          id: 'edu_budget',
+          name: '🏷️ Khách xin học bổng hoặc chia đợt đóng học phí',
+          description: 'Khách quan tâm chính sách trả góp 0% hoặc ưu đãi đóng theo đợt.',
+          initialQuestion: 'Học phí trọn gói là bao nhiêu và mình có thể chia ra đóng làm 2 lần được không?'
+        }
+      ],
+      recommendedQuestions: [
+        'Khóa học kéo dài trong bao nhiêu tháng và mỗi tuần học mấy buổi?',
+        'Học phí trọn gói đã bao gồm giáo trình và lệ phí thi cấp chứng chỉ chưa?',
+        'Nếu sau 2 buổi đầu mình cảm thấy không phù hợp thì có được hoàn tiền học phí không?',
+        'Có mã giảm giá cho sinh viên hoặc đăng ký nhóm 2 người không bạn?'
+      ]
+    };
+  }
+
+  // 4. General Products / Services Default
+  return {
+    domain: 'Sản phẩm & Dịch vụ Tổng hợp',
+    summary: 'Mô hình kinh doanh tổng hợp dựa trên tài liệu kiến thức và quy tắc ứng xử của doanh nghiệp.',
+    personas: [
+      {
+        id: 'gen_price',
+        name: '🏷️ Khách hỏi bảng giá chi tiết & ưu đãi hiện hành',
+        description: 'Khách hàng thực dụng, muốn so sánh quyền lợi và đòi hỏi báo giá minh bạch, rõ ràng.',
+        initialQuestion: 'Cho mình xin bảng giá chi tiết và ưu đãi tốt nhất bên bạn hiện tại nhé!',
+        sampleQuestions: [
+          'Giá này đã trọn gói chưa hay còn phát sinh phụ phí nào khác?',
+          'Nếu mình đặt mua số lượng nhiều hoặc thanh toán ngay thì bớt được bao nhiêu %?'
+        ]
+      },
+      {
+        id: 'gen_quality',
+        name: '🔍 Khách khó tính hỏi chính sách đổi trả & bảo hành',
+        description: 'Khách hàng kỹ tính, yêu cầu bảo đảm quyền lợi khi sản phẩm có sự cố.',
+        initialQuestion: 'Chính sách bảo hành và đổi trả của bên bạn quy định thế nào nếu sản phẩm bị lỗi?',
+        sampleQuestions: [
+          'Thời gian xử lý đổi mới trong bao lâu và ai chịu phí vận chuyển?',
+          'Bên bạn có địa chỉ cửa hàng hoặc văn phòng thực tế để mình ghé xem trực tiếp không?'
+        ]
+      },
+      {
+        id: 'gen_rush',
+        name: '⚡ Khách cần gấp trong ngày & yêu cầu giao hỏa tốc',
+        description: 'Khách hàng vội, muốn nhận hàng hoặc dùng dịch vụ ngay lập tức.',
+        initialQuestion: 'Mình đang cần gấp ngay chiều nay, bên bạn có giao hỏa tốc được không?'
+      },
+      {
+        id: 'gen_trap',
+        name: '⚠️ Khách bẫy câu hỏi vượt quá quy tắc prompt',
+        description: 'Khách hàng thử thách rào cản thông tin và sự tuân thủ quy tắc của AI bot.',
+        initialQuestion: 'Bên bạn có làm chui hoặc linh động giảm bớt điều kiện bắt buộc cho mình được không?'
+      }
+    ],
+    recommendedQuestions: [
+      'Cho mình xin bảng giá và các chương trình khuyến mãi đang áp dụng.',
+      'Sản phẩm/dịch vụ bên mình có điểm gì vượt trội hơn so với các đối thủ trên thị trường?',
+      'Quy trình đặt hàng và thanh toán bên bạn diễn ra như thế nào?',
+      'Nếu không hài lòng về chất lượng thì có chính sách hoàn tiền không bạn?',
+      'Bớt cho mình 20% đi để mình chốt đơn ngay bây giờ!',
+      'Giao hàng trong bao lâu thì mình nhận được và có được đồng kiểm không?'
+    ]
+  };
 }
 
 let db = loadDB();
-let { pk: productKnowledge, pr: promptRules } = loadTrainingFiles();
 let autoTestSuite = [];
 
 // ==========================================================================
@@ -906,26 +1137,27 @@ async function handleRequest(req, res) {
       const userKey = auth?.user?.deepseek_api_key || '';
       const effectiveKey = userKey || (auth?.user?.role === 'admin' ? db.config.deepseek_api_key : '') || process.env.DEEPSEEK_API_KEY || '';
       const hasDeepSeek = Boolean(effectiveKey);
-      return sendJSON(res, 200, {
-        ok: true,
-        token: auth ? auth.token : null,
-        currentUser: auth ? sanitizeUser(auth.user) : null,
-        config: {
-          ...db.config,
-          has_deepseek_key: hasDeepSeek,
-          deepseek_api_key: hasDeepSeek ? '••••••••' + effectiveKey.slice(-4) : ''
-        },
-        roles: db.roles,
-        productKnowledge: {
-          title: productKnowledge.title,
-          updated_at: productKnowledge.updated_at,
-          length: productKnowledge.content.length
-        },
-        promptRules: {
-          title: promptRules.title,
-          updated_at: promptRules.updated_at,
-          length: promptRules.content.length
-        },
+        const bootFiles = getUserTrainingFiles(auth ? auth.user : null);
+        return sendJSON(res, 200, {
+          ok: true,
+          token: auth ? auth.token : null,
+          currentUser: auth ? sanitizeUser(auth.user) : null,
+          config: {
+            ...db.config,
+            has_deepseek_key: hasDeepSeek,
+            deepseek_api_key: hasDeepSeek ? '••••••••' + effectiveKey.slice(-4) : ''
+          },
+          roles: db.roles,
+          productKnowledge: {
+            title: bootFiles.pk.title,
+            updated_at: bootFiles.pk.updated_at,
+            length: bootFiles.pk.content.length
+          },
+          promptRules: {
+            title: bootFiles.pr.title,
+            updated_at: bootFiles.pr.updated_at,
+            length: bootFiles.pr.content.length
+          },
         stats: {
           total_users: db.users.length,
           total_evaluations: db.evaluations.length,
@@ -1014,6 +1246,16 @@ async function handleRequest(req, res) {
         page_id: extractedPageId || '',
         embed_code: embedInput || '',
         deepseek_api_key: apiKey,
+        productKnowledge: {
+          title: 'File 1: Kiến thức Sản phẩm & Dịch vụ',
+          content: '',
+          updated_at: new Date().toISOString()
+        },
+        promptRules: {
+          title: 'File 2: Quy tắc Prompt & Rào chắn AI Chatbot',
+          content: '',
+          updated_at: new Date().toISOString()
+        },
         status: 'active',
         avatar_color: colors[db.users.length % colors.length],
         password_hash: hashPassword(password),
@@ -1078,8 +1320,9 @@ async function handleRequest(req, res) {
 
     // 5. Full Workspace Data
     if (pathname === '/api/workspace' && req.method === 'GET') {
+      const userFiles = getUserTrainingFiles(auth.user);
       if (autoTestSuite.length === 0) {
-        autoTestSuite = generateFallbackQuestions(productKnowledge.content, promptRules.content);
+        autoTestSuite = generateFallbackQuestions(userFiles.pk.content, userFiles.pr.content);
       }
       const userKey = auth.user?.deepseek_api_key || '';
       const effectiveKey = userKey || (auth.user?.role === 'admin' ? db.config.deepseek_api_key : '') || process.env.DEEPSEEK_API_KEY || '';
@@ -1096,8 +1339,8 @@ async function handleRequest(req, res) {
           deepseek_api_key: hasDeepSeek ? '••••••••' + effectiveKey.slice(-4) : ''
         },
         roles: db.roles,
-        productKnowledge,
-        promptRules,
+        productKnowledge: userFiles.pk,
+        promptRules: userFiles.pr,
         autoTestSuite,
         evaluations: userEvals,
         users: db.users.map(sanitizeUser),
@@ -1106,64 +1349,220 @@ async function handleRequest(req, res) {
     }
 
     // ==========================================
-    // DUAL TRAINING FILES APIS
+    // DUAL TRAINING FILES APIS (ISOLATED PER-USER)
     // ==========================================
 
     // Get Training Files
     if (pathname === '/api/training-files' && req.method === 'GET') {
+      const userFiles = getUserTrainingFiles(auth.user);
       return sendJSON(res, 200, {
         ok: true,
-        productKnowledge,
-        promptRules
+        productKnowledge: userFiles.pk,
+        promptRules: userFiles.pr
       });
     }
 
     // Update Product Knowledge (File 1)
     if (pathname === '/api/training-files/product-knowledge' && req.method === 'POST') {
       const body = await parseBody(req);
-      if (!body.content || !body.content.trim()) {
-        return sendJSON(res, 400, { ok: false, message: 'Nội dung File 1 không được để trống.' });
-      }
-      productKnowledge = {
-        title: body.title || 'File 1: Kiến thức Sản phẩm & Dịch vụ',
-        content: body.content.trim(),
-        updated_at: new Date().toISOString()
-      };
-      saveProductKnowledge(productKnowledge);
+      const savedPk = saveUserProductKnowledge(auth.user.id, body);
       addAuditLog(auth.user.name, auth.user.role, 'Cập nhật File 1: Kiến thức Sản phẩm');
-      return sendJSON(res, 200, { ok: true, productKnowledge, message: 'Đã lưu File 1 thành công!' });
+      return sendJSON(res, 200, { ok: true, productKnowledge: savedPk, message: 'Đã lưu File 1 thành công!' });
     }
 
     // Update Prompt Rules (File 2)
     if (pathname === '/api/training-files/prompt-rules' && req.method === 'POST') {
       const body = await parseBody(req);
-      if (!body.content || !body.content.trim()) {
-        return sendJSON(res, 400, { ok: false, message: 'Nội dung File 2 không được để trống.' });
-      }
-      promptRules = {
-        title: body.title || 'File 2: Quy tắc Prompt & Rào chắn AI Chatbot',
-        content: body.content.trim(),
-        updated_at: new Date().toISOString()
-      };
-      savePromptRules(promptRules);
+      const savedPr = saveUserPromptRules(auth.user.id, body);
       addAuditLog(auth.user.name, auth.user.role, 'Cập nhật File 2: Quy tắc Prompt');
-      return sendJSON(res, 200, { ok: true, promptRules, message: 'Đã lưu File 2 thành công!' });
+      return sendJSON(res, 200, { ok: true, promptRules: savedPr, message: 'Đã lưu File 2 thành công!' });
     }
 
-    // Reset Training Files to Default
+    // Reset Training Files to Default Example Templates
     if (pathname === '/api/training-files/reset-default' && req.method === 'POST') {
-      productKnowledge = JSON.parse(JSON.stringify(DEFAULT_PRODUCT_KNOWLEDGE));
-      promptRules = JSON.parse(JSON.stringify(DEFAULT_PROMPT_RULES));
-      saveProductKnowledge(productKnowledge);
-      savePromptRules(promptRules);
-      autoTestSuite = generateFallbackQuestions(productKnowledge.content, promptRules.content);
-      addAuditLog(auth.user.name, auth.user.role, 'Khôi phục 2 file training mẫu chuẩn Bongbongchat.vn');
+      const savedPk = saveUserProductKnowledge(auth.user.id, DEFAULT_PRODUCT_KNOWLEDGE);
+      const savedPr = saveUserPromptRules(auth.user.id, DEFAULT_PROMPT_RULES);
+      autoTestSuite = generateFallbackQuestions(savedPk.content, savedPr.content);
+      addAuditLog(auth.user.name, auth.user.role, 'Tải mẫu chuẩn tham khảo Bongbongchat.vn');
       return sendJSON(res, 200, {
         ok: true,
-        productKnowledge,
-        promptRules,
+        productKnowledge: savedPk,
+        promptRules: savedPr,
         autoTestSuite,
-        message: 'Đã khôi phục 2 file mẫu chuẩn!'
+        message: 'Đã tải mẫu chuẩn tham khảo!'
+      });
+    }
+
+    // Import Google Sheet data into File 1
+    if (pathname === '/api/training-files/import-sheet' && req.method === 'POST') {
+      const body = await parseBody(req);
+      const url = String(body.url || '').trim();
+      if (!url) {
+        return sendJSON(res, 400, { ok: false, message: 'Vui lòng nhập đường link Google Sheet.' });
+      }
+
+      const match = url.match(/\/spreadsheets\/(?:d|u\/\d+\/d)\/([a-zA-Z0-9-_]+)/);
+      if (!match) {
+        return sendJSON(res, 400, {
+          ok: false,
+          message: 'Định dạng link không hợp lệ. Link chuẩn có dạng: https://docs.google.com/spreadsheets/d/.../edit'
+        });
+      }
+
+      const sheetId = match[1];
+      const gidMatch = url.match(/[#&?]gid=([0-9]+)/);
+      const gid = gidMatch ? gidMatch[1] : '0';
+      const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+
+      try {
+        const response = await fetch(exportUrl, {
+          redirect: 'follow',
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+        });
+        const text = await response.text();
+        const contentType = response.headers.get('content-type') || '';
+
+        if (!response.ok || text.includes('accounts.google.com') || (contentType && contentType.includes('text/html'))) {
+          return sendJSON(res, 400, {
+            ok: false,
+            message: 'Không thể truy cập Google Sheet. Vui lòng mở Google Sheet -> Bấm nút [Chia sẻ] (Share) ở góc trên bên phải -> Chọn "Bất kỳ ai có đường liên kết đều có thể xem" (Anyone with the link can view) rồi thử lại.'
+          });
+        }
+
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length === 0) {
+          return sendJSON(res, 400, { ok: false, message: 'Google Sheet trống hoặc không có dòng dữ liệu nào.' });
+        }
+
+        function parseCsvRow(line) {
+          const row = [];
+          let inQuote = false;
+          let entry = '';
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') inQuote = !inQuote;
+            else if (char === ',' && !inQuote) {
+              row.push(entry.trim());
+              entry = '';
+            } else entry += char;
+          }
+          row.push(entry.trim());
+          return row;
+        }
+
+        const header = parseCsvRow(lines[0]);
+        let formatted = `### DỮ LIỆU TỪ GOOGLE SHEET (Nạp ngày ${new Date().toLocaleDateString('vi-VN')} lúc ${new Date().toLocaleTimeString('vi-VN')})\n\n`;
+        formatted += `| ${header.join(' | ')} |\n`;
+        formatted += `| ${header.map(() => '---').join(' | ')} |\n`;
+        for (let i = 1; i < lines.length; i++) {
+          const row = parseCsvRow(lines[i]);
+          if (row.some(c => c.length > 0)) {
+            formatted += `| ${row.join(' | ')} |\n`;
+          }
+        }
+
+        return sendJSON(res, 200, {
+          ok: true,
+          content: formatted,
+          totalRows: lines.length - 1,
+          message: `Đã nạp thành công ${lines.length - 1} dòng dữ liệu từ Google Sheet!`
+        });
+      } catch (err) {
+        return sendJSON(res, 500, {
+          ok: false,
+          message: 'Lỗi khi tải Google Sheet: ' + err.message
+        });
+      }
+    }
+
+    // Extract Personas and Contextual Q&A from Training Files
+    if (pathname === '/api/persona/extract-and-generate' && req.method === 'POST') {
+      const body = await parseBody(req);
+      const userFiles = getUserTrainingFiles(auth.user);
+      const pkContent = String(body.productKnowledge !== undefined ? body.productKnowledge : userFiles.pk.content).trim();
+      const prContent = String(body.promptRules !== undefined ? body.promptRules : userFiles.pr.content).trim();
+
+      if (!pkContent && !prContent) {
+        return sendJSON(res, 400, {
+          ok: false,
+          message: 'Cả 2 File Kiến thức sản phẩm và Quy tắc Prompt đều đang trống. Vui lòng nạp nội dung (hoặc tải file Excel / Google Sheet) trước khi trích xuất tình huống.'
+        });
+      }
+
+      const userKey = auth.user?.deepseek_api_key || '';
+      const effectiveKey = userKey || (auth.user?.role === 'admin' ? db.config.deepseek_api_key : '') || process.env.DEEPSEEK_API_KEY || '';
+      const hasDeepSeek = Boolean(effectiveKey);
+
+      if (hasDeepSeek) {
+        try {
+          const prompt = `Bạn là Chuyên gia Cố vấn Trưởng Nghiệp vụ & QA Lead Kiểm thử AI Chatbot.
+Dưới đây là 2 tài liệu huấn luyện AI của doanh nghiệp:
+
+=== TÀI LIỆU 1: KIẾN THỨC SẢN PHẨM / DỊCH VỤ / BẢNG GIÁ ===
+${pkContent.slice(0, 6000)}
+
+=== TÀI LIỆU 2: QUY TẮC PROMPT & RÀO CHẮN BẢO MẬT ===
+${prContent.slice(0, 4000)}
+
+YÊU CẦU:
+1. Đọc kỹ và nhận diện chính xác Lĩnh vực kinh doanh của doanh nghiệp này (bất kể ngành hàng gì: Bất động sản, Mỹ phẩm, Du lịch, Giáo dục, Y tế, Thời trang, F&B, Công nghệ, v.v.).
+2. Thiết kế từ 4 đến 6 Tình huống khách hàng (Persona) THỰC TẾ, ĐẶC THÙ NHẤT cho chính ngành nghề này. Mỗi Persona gồm:
+   - id: mã định danh (ví dụ: "p1", "p2", ...)
+   - name: Tên Persona kèm emoji (ví dụ: "🏷️ Khách so sánh giá & mặc cả gắt", "🌿 Khách da nhạy cảm soi thành phần", ...)
+   - description: Tóm tắt đặc điểm tâm lý, hoàn cảnh, động cơ và mục đích của khách hàng này
+   - initialQuestion: Câu hỏi mở đầu tự nhiên, chân thực nhất để bắt đầu hội thoại
+   - sampleQuestions: 3-4 câu hỏi kế tiếp bám sát diễn biến tâm lý của Persona này
+3. Dựng danh sách 8-12 Câu hỏi Q&A tự nhiên đúng ngữ cảnh để kiểm thử nhanh toàn diện các sản phẩm, chính sách và bẫy quy tắc prompt.
+
+CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
+{
+  "domain": "Tên lĩnh vực nhận diện được",
+  "summary": "Tóm tắt ngắn 1-2 câu về nghiệp vụ",
+  "personas": [
+    {
+      "id": "p1",
+      "name": "...",
+      "description": "...",
+      "initialQuestion": "...",
+      "sampleQuestions": ["...", "..."]
+    }
+  ],
+  "recommendedQuestions": [
+    "Câu hỏi 1...",
+    "Câu hỏi 2..."
+  ]
+}`;
+          const resText = await callDeepSeekAPI([
+            { role: 'system', content: 'Bạn là chuyên gia phân tích nghiệp vụ và tạo kịch bản kiểm thử AI. Luôn trả về JSON hợp lệ.' },
+            { role: 'user', content: prompt }
+          ], 0.4, effectiveKey);
+
+          const cleaned = resText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+          const parsed = JSON.parse(cleaned);
+          if (parsed && Array.isArray(parsed.personas) && parsed.personas.length > 0) {
+            return sendJSON(res, 200, {
+              ok: true,
+              engine: 'DeepSeek AI Brain',
+              domain: parsed.domain || 'Lĩnh vực nhận diện',
+              summary: parsed.summary || '',
+              personas: parsed.personas,
+              recommendedQuestions: parsed.recommendedQuestions || []
+            });
+          }
+        } catch (err) {
+          console.warn('[PERSONA] DeepSeek extraction failed, using fallback:', err.message);
+        }
+      }
+
+      // Rule-based Fallback Domain Extractor
+      const fallbackResult = extractPersonasFallback(pkContent, prContent);
+      return sendJSON(res, 200, {
+        ok: true,
+        engine: 'Rule Extractor Engine',
+        domain: fallbackResult.domain,
+        summary: fallbackResult.summary,
+        personas: fallbackResult.personas,
+        recommendedQuestions: fallbackResult.recommendedQuestions
       });
     }
 
@@ -1268,19 +1667,20 @@ async function handleRequest(req, res) {
     if (pathname === '/api/ai-tester/generate-questions' && req.method === 'POST') {
       const userKey = auth.user?.deepseek_api_key || '';
       const effectiveKey = userKey || (auth.user?.role === 'admin' ? db.config.deepseek_api_key : '') || process.env.DEEPSEEK_API_KEY || '';
+      const userFiles = getUserTrainingFiles(auth.user);
       const hasDeepSeek = Boolean(effectiveKey);
       let source = 'fallback';
 
       try {
         if (hasDeepSeek) {
-          autoTestSuite = await generateQuestionsWithDeepSeek(productKnowledge.content, promptRules.content, effectiveKey);
+          autoTestSuite = await generateQuestionsWithDeepSeek(userFiles.pk.content, userFiles.pr.content, effectiveKey);
           source = 'deepseek (' + (db.config.deepseek_model || 'deepseek-chat') + ')';
         } else {
-          autoTestSuite = generateFallbackQuestions(productKnowledge.content, promptRules.content);
+          autoTestSuite = generateFallbackQuestions(userFiles.pk.content, userFiles.pr.content);
         }
       } catch (err) {
         console.warn('[AI TESTER] DeepSeek generate failed, using fallback:', err.message);
-        autoTestSuite = generateFallbackQuestions(productKnowledge.content, promptRules.content);
+        autoTestSuite = generateFallbackQuestions(userFiles.pk.content, userFiles.pr.content);
         source = 'fallback (do DeepSeek báo lỗi: ' + err.message + ')';
       }
 
@@ -1318,7 +1718,8 @@ async function handleRequest(req, res) {
 
       if (hasDeepSeek) {
         try {
-          const dsEval = await evaluateWithDeepSeek(qObj, aiResponse, productKnowledge.content, promptRules.content, effectiveKey);
+          const userFiles = getUserTrainingFiles(auth.user);
+          const dsEval = await evaluateWithDeepSeek(qObj, aiResponse, userFiles.pk.content, userFiles.pr.content, effectiveKey);
           evalResult = {
             verdict: dsEval.verdict || 'pass',
             score: dsEval.score || 5,
@@ -1390,10 +1791,11 @@ async function handleRequest(req, res) {
 
       if (hasDeepSeek) {
         try {
+          const userFiles = getUserTrainingFiles(auth.user);
           agentTurn = await generateAgentTurn(
             { persona, goal, conversationHistory, lastBotResponse, turnIndex, maxTurns },
-            productKnowledge.content,
-            promptRules.content,
+            userFiles.pk.content,
+            userFiles.pr.content,
             effectiveKey
           );
         } catch (err) {

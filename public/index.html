@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Thiện BBH — AI Testing Studio & QA Workbench</title>
   <link rel="icon" type="image/png" href="/logo.png">
-  <link rel="stylesheet" href="/styles.css?v=3.0">
+  <link rel="stylesheet" href="/styles.css?v=3.1">
+  <!-- SheetJS: Instant client-side Excel (.xlsx, .xls) and CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body class="auth-locked">
 
@@ -35,7 +37,7 @@
         </div>
       </div>
 
-      <!-- Center Viewport & Zoom Controls (Compact & Clean) -->
+      <!-- Center Viewport & Zoom Controls (Only Center & Zen — Corner Mode Removed as Requested) -->
       <div class="header-center" style="display: flex; align-items: center; gap: 8px;">
         <div class="segmented-control" id="view-mode-control">
           <button class="seg-btn active" data-mode="center" title="Khung chat nhúng chính giữa trung tâm màn hình">
@@ -45,10 +47,6 @@
           <button class="seg-btn" data-mode="zen" title="Ẩn 2 thanh bên, tập trung 100% vào khung chat">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
             <span>Zen</span>
-          </button>
-          <button class="seg-btn" data-mode="corner" title="Xem vị trí góc phải thực tế trên website khách hàng">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="18" cy="18" r="2.5"/></svg>
-            <span>Góc phải</span>
           </button>
         </div>
 
@@ -125,7 +123,8 @@
                   <span class="count-pill" id="manual-q-count">8 câu</span>
                 </div>
                 <div class="clean-card-actions" style="display: flex; gap: 3px; align-items: center;">
-                  <button type="button" class="btn btn-secondary btn-xs" id="btn-load-sample-questions" title="Nạp 8 câu hỏi tình huống chuẩn" style="padding: 2px 6px; font-size: 10.5px;">➕ Mẫu</button>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-generate-qa-from-files" title="Phân tích File 1 & 2 để tự động dựng các câu hỏi Q&A tự nhiên" style="padding: 2px 6px; font-size: 10.5px; color: var(--accent); font-weight: 700;">✨ Dựng từ 2 File</button>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-load-sample-questions" title="Nạp 8 câu hỏi tình huống mẫu" style="padding: 2px 6px; font-size: 10.5px;">➕ Mẫu</button>
                   <button type="button" class="btn btn-secondary btn-xs" id="btn-clean-qa-text" title="Tự động lọc bỏ đáp án và số thứ tự nếu lỡ dán kèm đáp án" style="padding: 2px 6px; font-size: 10.5px;">🧹 Lọc</button>
                   <button type="button" class="btn btn-secondary btn-xs" id="btn-clear-manual-text" title="Xóa trắng danh sách" style="padding: 2px 6px; font-size: 10.5px;">🗑️ Xóa</button>
                 </div>
@@ -227,31 +226,38 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
                 <button type="button" class="btn btn-secondary btn-xs" id="btn-agent-open-ds-modal" style="font-size: 10.5px; padding: 2px 7px;">⚙️ Cấu hình</button>
               </div>
 
-              <div class="form-group" style="margin-top: 4px;">
-                <label class="form-label">Tình huống khách hàng (Persona):</label>
+              <!-- Button: Auto-extract Personas from 2 Files -->
+              <button type="button" class="btn btn-secondary btn-xs" id="btn-extract-personas" style="width: 100%; justify-content: center; font-weight: 700; color: var(--accent); border-color: rgba(217, 119, 87, 0.4); background: rgba(217, 119, 87, 0.05); padding: 5px 8px; margin-top: 5px;" title="Tự động đọc File 1 và File 2 để nhận diện lĩnh vực và dựng các Persona thực tế phù hợp">
+                <span>✨ Đọc 2 File Dựng Persona Ngữ Cảnh</span>
+              </button>
+
+              <!-- Recognized Domain Badge (Dynamic) -->
+              <div id="agent-domain-container" style="display: none; font-size: 10.5px; padding: 4px 8px; background: var(--bg-panel); border-radius: 6px; border: 1px dashed var(--border-subtle); color: var(--text-secondary); margin-top: 5px; line-height: 1.4;">
+                <span id="agent-domain-text"></span>
+              </div>
+
+              <div class="form-group" style="margin-top: 5px;">
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                  <span>Tình huống khách hàng (Persona):</span>
+                  <span id="persona-count-badge" style="font-size: 10px; color: var(--accent); font-weight: 600;"></span>
+                </label>
                 <select class="select select-xs" id="agent-persona-select">
-                  <option value="family" selected>👨‍👩‍👦 Gia đình 3 người hỏi phòng & phụ thu</option>
-                  <option value="bargain">🏷️ Khách mặc cả giá & hỏi ưu đãi sâu</option>
-                  <option value="pet_early">🐶 Khách bẫy thú cưng & check-in sớm</option>
-                  <option value="bbq_party">🍖 Khách hỏi tiệc nướng BBQ & lửa trại</option>
-                  <option value="custom">✍️ Tùy chỉnh Persona & Mục tiêu...</option>
+                  <option value="custom" selected>✍️ Nhập hoặc chọn Persona từ File bên dưới...</option>
                 </select>
               </div>
 
               <!-- Custom Persona input -->
-              <div class="form-group" id="custom-persona-group" style="display: none;">
-                <input type="text" class="input input-xs" id="agent-custom-persona-input" placeholder="Mô tả Persona (ví dụ: Khách doanh nhân đi công tác hỏi hóa đơn VAT...)">
+              <div class="form-group" id="custom-persona-group" style="display: block;">
+                <input type="text" class="input input-xs" id="agent-custom-persona-input" placeholder="Mô tả Persona (Ví dụ: Khách hỏi giá chi tiết & ưu đãi hiện hành...)">
               </div>
 
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 2px;">
                 <div class="form-group">
                   <label class="form-label">Số lượt đàm thoại:</label>
-                  <select class="select select-xs" id="agent-max-turns">
-                    <option value="3">3 lượt đàm thoại</option>
-                    <option value="4" selected>4 lượt (Chuẩn)</option>
-                    <option value="5">5 lượt (Sâu)</option>
-                    <option value="6">6 lượt (Dài)</option>
-                  </select>
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <input type="number" id="agent-max-turns" class="input input-xs" value="4" min="1" max="100" style="text-align: center; font-weight: 700;">
+                    <span style="font-size: 11px; color: var(--text-muted);">lượt</span>
+                  </div>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Chờ bot trả lời:</label>
@@ -454,34 +460,56 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
 
         <!-- 1. Tab File 1: Product Knowledge -->
         <div id="tab-file1-content">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-size: 11.5px; color: var(--text-secondary);">Chứa toàn bộ thông tin sản phẩm, bảng giá, ưu đãi, quy định và các câu hỏi Q&A thường gặp.</span>
-            <div style="display: flex; gap: 6px;">
-              <input type="file" id="upload-file1-input" accept=".txt,.md,.json,.csv,.doc,.docx" style="display:none;">
-              <button class="btn btn-secondary btn-sm" id="btn-upload-file1">Tải file lên (.txt, .md)</button>
-              <button class="btn btn-secondary btn-sm" id="btn-reset-default-files">Mẫu Bongbongchat.vn</button>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+            <span style="font-size: 11.5px; color: var(--text-secondary);">Chứa toàn bộ thông tin sản phẩm, bảng giá, ưu đãi, chính sách hoặc dữ liệu Excel/Google Sheet.</span>
+            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+              <input type="file" id="upload-file1-input" accept=".xlsx,.xls,.csv,.txt,.md,.json" style="display:none;">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-upload-file1" title="Tải lên file Excel (.xlsx, .xls), CSV hoặc Text">📁 Tải file Excel / Text</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-gsheet" title="Đọc dữ liệu tự động từ đường link Google Sheet">📊 Nhập từ Google Sheet</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-reset-default-files" title="Nạp mẫu tài liệu mẫu tham khảo">Mẫu ví dụ</button>
             </div>
           </div>
+
+          <!-- Inline Google Sheet Importer -->
+          <div id="gsheet-import-bar" style="display: none; margin-bottom: 10px; padding: 10px 12px; background: var(--bg-panel); border: 1px dashed var(--border-strong); border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 11.5px; font-weight: 700; color: var(--text-primary);">📊 Nhập dữ liệu tự động từ Google Sheet:</span>
+              <span style="font-size: 10.5px; color: var(--text-muted);">(Yêu cầu quyền: "Bất kỳ ai có liên kết đều có thể xem")</span>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <input type="url" class="input input-sm" id="gsheet-url-input" placeholder="Dán link: https://docs.google.com/spreadsheets/d/.../edit" style="flex: 1; font-size: 11.5px;">
+              <button type="button" class="btn btn-primary btn-sm" id="btn-fetch-gsheet-confirm">Tải dữ liệu</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-fetch-gsheet-cancel">Đóng</button>
+            </div>
+            <div id="gsheet-feedback" style="display: none; font-size: 11px; margin-top: 6px; padding: 6px 10px; border-radius: 6px;"></div>
+          </div>
+
           <form id="form-file1-save" style="display: flex; flex-direction: column; gap: 8px;">
-            <input type="text" class="input" id="file1-title-input" required>
-            <textarea class="textarea" id="file1-content-input" style="min-height: 250px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.5;" required></textarea>
-            <button type="submit" class="btn btn-primary btn-sm" style="width: fit-content;">Lưu File 1</button>
+            <input type="text" class="input" id="file1-title-input" placeholder="Tên tài liệu File 1..." required>
+            <textarea class="textarea" id="file1-content-input" placeholder="Nội dung thông tin sản phẩm, bảng giá, chính sách (Bắt đầu trắng tinh cho mỗi tài khoản)..." style="min-height: 250px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.5;"></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <button type="submit" class="btn btn-primary btn-sm" style="width: fit-content;">💾 Lưu File 1</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-file1" style="font-size: 11px;">🗑️ Làm trắng File 1</button>
+            </div>
           </form>
         </div>
 
         <!-- 2. Tab File 2: System Prompt Rules -->
         <div id="tab-file2-content" style="display: none;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-size: 11.5px; color: var(--text-secondary);">Chứa các quy tắc bắt buộc AI phải tuân thủ (cấm bịa đặt, cấm thú cưng, bắt buộc hỏi ngày đi & số người khi báo giá...).</span>
+            <span style="font-size: 11.5px; color: var(--text-secondary);">Chứa các quy tắc bắt buộc AI phải tuân thủ (cấm bịa đặt, cấm cam kết bừa, điều kiện hỏi lại...).</span>
             <div>
               <input type="file" id="upload-file2-input" accept=".txt,.md,.json" style="display:none;">
-              <button class="btn btn-secondary btn-sm" id="btn-upload-file2">Tải file lên (.txt, .md)</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-upload-file2">Tải file lên (.txt, .md)</button>
             </div>
           </div>
           <form id="form-file2-save" style="display: flex; flex-direction: column; gap: 8px;">
-            <input type="text" class="input" id="file2-title-input" required>
-            <textarea class="textarea" id="file2-content-input" style="min-height: 250px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.5;" required></textarea>
-            <button type="submit" class="btn btn-primary btn-sm" style="width: fit-content;">Lưu File 2</button>
+            <input type="text" class="input" id="file2-title-input" placeholder="Tên quy tắc File 2..." required>
+            <textarea class="textarea" id="file2-content-input" placeholder="Nhập các quy tắc prompt, rào chắn bảo mật cho chatbot..." style="min-height: 250px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.5;"></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <button type="submit" class="btn btn-primary btn-sm" style="width: fit-content;">💾 Lưu File 2</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-file2" style="font-size: 11px;">🗑️ Làm trắng File 2</button>
+            </div>
           </form>
         </div>
 
@@ -680,7 +708,11 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
     })();
   </script>
   <script src="https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js"></script>
+  <!-- Custom Luxury Fluid Cursor -->
+  <div id="cursor-follower" class="custom-cursor-follower"></div>
+  <div id="cursor-dot" class="custom-cursor-dot"></div>
+
   <!-- Client Application Logic (Dynamic Per-User Chatbox Initialization) -->
-  <script src="/app.js?v=3.0"></script>
+  <script src="/app.js?v=3.1"></script>
 </body>
 </html>

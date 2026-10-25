@@ -218,6 +218,27 @@
     agentDsStatusLabel: document.getElementById('agent-ds-status-label'),
     btnAgentOpenDsModal: document.getElementById('btn-agent-open-ds-modal'),
 
+    // Persona & Contextual Q&A Generator
+    btnGenerateQaFromFiles: document.getElementById('btn-generate-qa-from-files'),
+    btnExtractPersonas: document.getElementById('btn-extract-personas'),
+    agentDomainContainer: document.getElementById('agent-domain-container'),
+    agentDomainText: document.getElementById('agent-domain-text'),
+    personaCountBadge: document.getElementById('persona-count-badge'),
+
+    // Google Sheets Importer & File Cleaners
+    btnToggleGsheet: document.getElementById('btn-toggle-gsheet'),
+    gsheetImportBar: document.getElementById('gsheet-import-bar'),
+    gsheetUrlInput: document.getElementById('gsheet-url-input'),
+    btnFetchGsheetConfirm: document.getElementById('btn-fetch-gsheet-confirm'),
+    btnFetchGsheetCancel: document.getElementById('btn-fetch-gsheet-cancel'),
+    gsheetFeedback: document.getElementById('gsheet-feedback'),
+    btnClearFile1: document.getElementById('btn-clear-file1'),
+    btnClearFile2: document.getElementById('btn-clear-file2'),
+
+    // Custom Luxury Fluid Cursor
+    cursorFollower: document.getElementById('cursor-follower'),
+    cursorDot: document.getElementById('cursor-dot'),
+
     toastHost: document.getElementById('toast-host')
   };
 
@@ -822,19 +843,136 @@
     });
   });
 
-  // File 1 Upload & Save
+  // File 1 Upload (Supports .xlsx, .xls, .csv, .txt, .md)
   el.btnUploadFile1.addEventListener('click', () => el.uploadFile1Input.click());
   el.uploadFile1Input.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      el.file1ContentInput.value = evt.target.result;
-      el.file1TitleInput.value = file.name.replace(/\.[^/.]+$/, '');
-      showToast(`Đã đọc nội dung File 1: "${file.name}". Bấm "Lưu File 1" để cập nhật.`, 'success');
-    };
-    reader.readAsText(file);
+
+    const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+    if (isExcel) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          if (!window.XLSX) throw new Error('Thư viện SheetJS chưa sẵn sàng.');
+          const data = new Uint8Array(evt.target.result);
+          const workbook = window.XLSX.read(data, { type: 'array' });
+          let formattedText = `### DỮ LIỆU TỪ FILE EXCEL: ${file.name}\n\n`;
+          workbook.SheetNames.forEach(sheetName => {
+            const sheet = workbook.Sheets[sheetName];
+            const csv = window.XLSX.utils.sheet_to_csv(sheet);
+            if (csv && csv.trim()) {
+              formattedText += `#### BẢNG: ${sheetName}\n\n`;
+              const lines = csv.split('\n').map(l => l.trim()).filter(Boolean);
+              if (lines.length > 0) {
+                const headers = lines[0].split(',').map(s => s.replace(/^"|"$/g, '').trim());
+                formattedText += `| ${headers.join(' | ')} |\n`;
+                formattedText += `| ${headers.map(() => '---').join(' | ')} |\n`;
+                for (let i = 1; i < lines.length; i++) {
+                  const row = lines[i].split(',').map(s => s.replace(/^"|"$/g, '').trim());
+                  formattedText += `| ${row.join(' | ')} |\n`;
+                }
+                formattedText += '\n';
+              }
+            }
+          });
+          el.file1ContentInput.value = formattedText.trim();
+          el.file1TitleInput.value = file.name.replace(/\.[^/.]+$/, '');
+          showToast(`✅ Đã đọc thành công ${workbook.SheetNames.length} sheet từ file Excel "${file.name}"!`, 'success');
+        } catch (err) {
+          showToast('Lỗi khi đọc file Excel: ' + err.message, 'error');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        el.file1ContentInput.value = evt.target.result;
+        el.file1TitleInput.value = file.name.replace(/\.[^/.]+$/, '');
+        showToast(`Đã đọc nội dung File 1: "${file.name}". Bấm "Lưu File 1" để cập nhật.`, 'success');
+      };
+      reader.readAsText(file);
+    }
   });
+
+  // Google Sheet Importer Handlers
+  if (el.btnToggleGsheet && el.gsheetImportBar) {
+    el.btnToggleGsheet.addEventListener('click', () => {
+      const isVisible = el.gsheetImportBar.style.display !== 'none';
+      el.gsheetImportBar.style.display = isVisible ? 'none' : 'block';
+      if (!isVisible && el.gsheetUrlInput) el.gsheetUrlInput.focus();
+    });
+  }
+
+  if (el.btnFetchGsheetCancel && el.gsheetImportBar) {
+    el.btnFetchGsheetCancel.addEventListener('click', () => {
+      el.gsheetImportBar.style.display = 'none';
+    });
+  }
+
+  if (el.btnFetchGsheetConfirm) {
+    el.btnFetchGsheetConfirm.addEventListener('click', async () => {
+      const url = el.gsheetUrlInput ? el.gsheetUrlInput.value.trim() : '';
+      if (!url) {
+        showToast('Vui lòng dán link Google Sheet.', 'error');
+        return;
+      }
+      el.btnFetchGsheetConfirm.disabled = true;
+      el.btnFetchGsheetConfirm.textContent = 'Đang tải...';
+      if (el.gsheetFeedback) {
+        el.gsheetFeedback.style.display = 'block';
+        el.gsheetFeedback.style.background = 'var(--accent-soft)';
+        el.gsheetFeedback.style.color = 'var(--accent)';
+        el.gsheetFeedback.textContent = '⏳ Đang kết nối tới Google Sheet...';
+      }
+
+      try {
+        const res = await api('/api/training-files/import-sheet', 'POST', { url });
+        const existing = el.file1ContentInput.value.trim();
+        el.file1ContentInput.value = existing ? `${existing}\n\n${res.content}` : res.content;
+        el.file1TitleInput.value = `Dữ liệu Google Sheet (${new Date().toLocaleDateString('vi-VN')})`;
+        showToast(res.message, 'success');
+        if (el.gsheetFeedback) {
+          el.gsheetFeedback.style.background = 'rgba(13, 148, 136, 0.15)';
+          el.gsheetFeedback.style.color = 'var(--teal)';
+          el.gsheetFeedback.textContent = `✅ ${res.message}`;
+        }
+        setTimeout(() => {
+          if (el.gsheetImportBar) el.gsheetImportBar.style.display = 'none';
+        }, 1500);
+      } catch (err) {
+        showToast('Lỗi nhập Google Sheet: ' + err.message, 'error');
+        if (el.gsheetFeedback) {
+          el.gsheetFeedback.style.background = 'var(--danger-soft)';
+          el.gsheetFeedback.style.color = 'var(--danger)';
+          el.gsheetFeedback.textContent = `⚠️ ${err.message}`;
+        }
+      } finally {
+        el.btnFetchGsheetConfirm.disabled = false;
+        el.btnFetchGsheetConfirm.textContent = 'Tải dữ liệu';
+      }
+    });
+  }
+
+  if (el.btnClearFile1) {
+    el.btnClearFile1.addEventListener('click', () => {
+      if (confirm('Làm trắng toàn bộ nội dung File 1?')) {
+        el.file1ContentInput.value = '';
+        el.file1TitleInput.value = 'File 1: Kiến thức Sản phẩm & Dịch vụ';
+        showToast('Đã làm trắng File 1. Bấm "Lưu File 1" để xác nhận lưu.', 'info');
+      }
+    });
+  }
+
+  if (el.btnClearFile2) {
+    el.btnClearFile2.addEventListener('click', () => {
+      if (confirm('Làm trắng toàn bộ nội dung File 2?')) {
+        el.file2ContentInput.value = '';
+        el.file2TitleInput.value = 'File 2: Quy tắc Prompt & Rào chắn AI Chatbot';
+        showToast('Đã làm trắng File 2. Bấm "Lưu File 2" để xác nhận lưu.', 'info');
+      }
+    });
+  }
 
   el.formFile1Save.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -1009,10 +1147,100 @@
   if (el.rtabTranscript) el.rtabTranscript.addEventListener('click', () => switchRightTab('transcript'));
   if (el.rtabHistory) el.rtabHistory.addEventListener('click', () => switchRightTab('history'));
 
-  // Custom Persona Toggle
-  if (el.agentPersonaSelect && el.customPersonaGroup) {
+  // ==========================================================================
+  // PERSONA & CONTEXTUAL Q&A GENERATOR (TỰ ĐỘNG ĐỌC 2 FILE)
+  // ==========================================================================
+
+  let cachedExtractedPersonas = [];
+
+  async function handleExtractPersonas(autoPopulateQuestions = false) {
+    const pk = (state.productKnowledge && state.productKnowledge.content) || (el.file1ContentInput ? el.file1ContentInput.value : '');
+    const pr = (state.promptRules && state.promptRules.content) || (el.file2ContentInput ? el.file2ContentInput.value : '');
+
+    if (!pk.trim() && !pr.trim()) {
+      showToast('File 1 & File 2 hiện đang trống. Hãy nhập thông tin sản phẩm hoặc tải file Excel trước!', 'error');
+      openTrainingModal('tab-file1');
+      return null;
+    }
+
+    if (el.btnExtractPersonas) {
+      el.btnExtractPersonas.disabled = true;
+      el.btnExtractPersonas.innerHTML = '<span>⏳ Đang đọc 2 File & dựng Persona...</span>';
+    }
+
+    try {
+      const res = await api('/api/persona/extract-and-generate', 'POST', {
+        productKnowledge: pk,
+        promptRules: pr
+      });
+
+      cachedExtractedPersonas = res.personas || [];
+      if (el.agentDomainContainer && el.agentDomainText) {
+        el.agentDomainContainer.style.display = 'block';
+        el.agentDomainText.innerHTML = `🏢 <b>Lĩnh vực:</b> ${escapeHtml(res.domain)} <span style="color:var(--text-muted); font-size:10px;">(${escapeHtml(res.engine)})</span>`;
+      }
+
+      if (el.agentPersonaSelect && cachedExtractedPersonas.length > 0) {
+        let opts = `<option value="custom">✍️ Tùy chỉnh Persona theo ý muốn...</option>`;
+        cachedExtractedPersonas.forEach(p => {
+          opts += `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`;
+        });
+        el.agentPersonaSelect.innerHTML = opts;
+        // Auto select first persona
+        el.agentPersonaSelect.value = cachedExtractedPersonas[0].id;
+        if (el.agentCustomPersonaInput) {
+          const first = cachedExtractedPersonas[0];
+          el.agentCustomPersonaInput.value = `${first.description} (Mở đầu: "${first.initialQuestion}")`;
+        }
+        if (el.personaCountBadge) {
+          el.personaCountBadge.textContent = `${cachedExtractedPersonas.length} Persona`;
+        }
+      }
+
+      if (autoPopulateQuestions && res.recommendedQuestions && res.recommendedQuestions.length > 0) {
+        if (el.manualQuestionsInput) {
+          el.manualQuestionsInput.value = res.recommendedQuestions.join('\n');
+          updateManualQuestionCount();
+        }
+      }
+
+      showToast(`✨ Đã nhận diện lĩnh vực "${res.domain}" & tạo ${cachedExtractedPersonas.length} Persona thành công!`, 'success');
+      return res;
+    } catch (err) {
+      showToast('Lỗi trích xuất: ' + err.message, 'error');
+      return null;
+    } finally {
+      if (el.btnExtractPersonas) {
+        el.btnExtractPersonas.disabled = false;
+        el.btnExtractPersonas.innerHTML = '<span>✨ Đọc 2 File Dựng Persona Ngữ Cảnh</span>';
+      }
+    }
+  }
+
+  if (el.btnExtractPersonas) {
+    el.btnExtractPersonas.addEventListener('click', () => handleExtractPersonas(false));
+  }
+
+  if (el.btnGenerateQaFromFiles) {
+    el.btnGenerateQaFromFiles.addEventListener('click', async () => {
+      showToast('Đang phân tích 2 File để dựng câu hỏi...', 'info');
+      await handleExtractPersonas(true);
+    });
+  }
+
+  if (el.agentPersonaSelect) {
     el.agentPersonaSelect.addEventListener('change', (e) => {
-      el.customPersonaGroup.style.display = e.target.value === 'custom' ? 'block' : 'none';
+      const selectedId = e.target.value;
+      if (selectedId === 'custom') {
+        if (el.agentCustomPersonaInput && !el.agentCustomPersonaInput.value) {
+          el.agentCustomPersonaInput.value = 'Khách hỏi thông tin sản phẩm và chính sách';
+        }
+      } else {
+        const found = cachedExtractedPersonas.find(p => p.id === selectedId);
+        if (found && el.agentCustomPersonaInput) {
+          el.agentCustomPersonaInput.value = `${found.description} (Mở đầu: "${found.initialQuestion}")`;
+        }
+      }
     });
   }
 
@@ -1495,15 +1723,17 @@
   }
 
   function startAgentRunner() {
-    let persona = el.agentPersonaSelect.value;
-    if (persona === 'family') persona = 'Khách gia đình 3 người lớn và 1 trẻ nhỏ hỏi phòng & phụ thu';
-    else if (persona === 'bargain') persona = 'Khách mặc cả giá 30% và hỏi ưu đãi tối đa';
-    else if (persona === 'pet_early') persona = 'Khách mang cún cưng Poodle và hỏi check-in sớm lúc 8h sáng';
-    else if (persona === 'bbq_party') persona = 'Khách hỏi tiệc nướng BBQ ngoài trời và đốt lửa trại';
-    else if (persona === 'custom') persona = (el.agentCustomPersonaInput && el.agentCustomPersonaInput.value.trim()) || 'Khách hỏi dịch vụ';
+    let persona = '';
+    const selectedId = el.agentPersonaSelect ? el.agentPersonaSelect.value : 'custom';
+    const found = cachedExtractedPersonas.find(p => p.id === selectedId);
+    if (found) {
+      persona = `${found.name}: ${found.description}`;
+    } else {
+      persona = (el.agentCustomPersonaInput && el.agentCustomPersonaInput.value.trim()) || 'Khách hỏi dịch vụ chi tiết';
+    }
 
-    const maxTurns = parseInt(el.agentMaxTurns.value, 10) || 4;
-    const turnWait = parseInt(el.agentTurnWait.value, 10) || 30;
+    const maxTurns = parseInt(el.agentMaxTurns ? el.agentMaxTurns.value : '4', 10) || 4;
+    const turnWait = parseInt(el.agentTurnWait ? el.agentTurnWait.value : '30', 10) || 30;
 
     state.agentRunner.isRunning = true;
     state.agentRunner.isPaused = false;
@@ -1954,8 +2184,71 @@
     }
   }
 
+  // ==========================================================================
+  // CUSTOM LUXURY FLUID CURSOR (SMOOTH SPRING INTERPOLATION)
+  // ==========================================================================
+
+  function initCustomCursor() {
+    const dot = el.cursorDot;
+    const follower = el.cursorFollower;
+    if (!dot || !follower) return;
+
+    let mouseX = -100, mouseY = -100;
+    let followerX = -100, followerY = -100;
+    let isVisible = false;
+
+    window.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      if (!isVisible) {
+        isVisible = true;
+        dot.style.opacity = '1';
+        follower.style.opacity = '1';
+      }
+      dot.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
+    });
+
+    document.addEventListener('mouseleave', () => {
+      isVisible = false;
+      dot.style.opacity = '0';
+      follower.style.opacity = '0';
+    });
+
+    window.addEventListener('mousedown', () => {
+      follower.classList.add('clicking');
+    });
+
+    window.addEventListener('mouseup', () => {
+      follower.classList.remove('clicking');
+    });
+
+    const interactiveSelector = 'button, a, input, select, textarea, .tab-pill, .seg-btn, .qa-nav-btn, .clean-card, .user-pill, .chip-xs, .demo-chip';
+    document.addEventListener('mouseover', (e) => {
+      if (e.target.closest(interactiveSelector)) {
+        follower.classList.add('hovering');
+      }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+      if (e.target.closest(interactiveSelector)) {
+        follower.classList.remove('hovering');
+      }
+    });
+
+    function renderLoop() {
+      if (isVisible) {
+        followerX += (mouseX - followerX) * 0.22;
+        followerY += (mouseY - followerY) * 0.22;
+        follower.style.transform = `translate(${followerX}px, ${followerY}px) translate(-50%, -50%)`;
+      }
+      requestAnimationFrame(renderLoop);
+    }
+    requestAnimationFrame(renderLoop);
+  }
+
   async function bootstrap() {
     initTheme();
+    initCustomCursor();
 
     try {
       const boot = await api('/api/bootstrap');
