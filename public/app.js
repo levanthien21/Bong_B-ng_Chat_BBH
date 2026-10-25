@@ -48,7 +48,7 @@
       isRunning: false,
       isPaused: false,
       turnIndex: 1,
-      maxTurns: 4,
+      maxTurns: 10,
       persona: 'family',
       goal: '',
       history: [],
@@ -65,11 +65,11 @@
       name: 'Google Gemini 1.5 Flash (Miễn phí 100%)',
       badge: '🌟 Gemini 1.5 Flash (Free)',
       isFree: true,
-      needsKey: true,
-      keyLabel: 'Google Gemini API Key:',
-      keyPlaceholder: 'AIzaSy... (Dán Google Gemini API Key)',
-      helpText: 'Google AI Studio cung cấp 1,500 lượt gọi/ngày hoàn toàn <b>MIỄN PHÍ</b>. Tạo API Key miễn phí trong 10 giây tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent); font-weight:700;">aistudio.google.com</a>.',
-      rateLimitHint: 'Miễn phí 1.500 req/ngày'
+      needsKey: false,
+      keyLabel: 'Google Gemini API Key (Tùy chọn):',
+      keyPlaceholder: 'Đã tích hợp sẵn Key Free của hệ thống (hoặc dán Key riêng nếu có)',
+      helpText: 'Google AI Studio cung cấp 1,500 lượt gọi/ngày <b>MIỄN PHÍ</b>. Hệ thống đã tích hợp sẵn Key chạy ngay 0đ, bạn có thể tự nhập thêm Key riêng bất kỳ lúc nào tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent); font-weight:700;">aistudio.google.com</a>.',
+      rateLimitHint: 'Miễn phí 1.500 req/ngày (Có sẵn Key)'
     },
     'local-free': {
       provider: 'local',
@@ -1988,7 +1988,7 @@
       persona = (el.agentCustomPersonaInput && el.agentCustomPersonaInput.value.trim()) || 'Khách hỏi dịch vụ chi tiết';
     }
 
-    const maxTurns = parseInt(el.agentMaxTurns ? el.agentMaxTurns.value : '4', 10) || 4;
+    const maxTurns = parseInt(el.agentMaxTurns ? el.agentMaxTurns.value : '10', 10) || 10;
     const turnWait = parseInt(el.agentTurnWait ? el.agentTurnWait.value : '30', 10) || 30;
 
     // Ensure chatbox is open
@@ -2039,7 +2039,7 @@
         lastBotResponse: state.agentRunner.lastBotResponse,
         turnIndex: state.agentRunner.turnIndex,
         maxTurns: state.agentRunner.maxTurns,
-        model: state.config.ai_model || (el.agentQuickModelSelect ? el.agentQuickModelSelect.value : undefined)
+        model: (el.agentQuickModelSelect ? el.agentQuickModelSelect.value : state.config.ai_model) || 'gemini-1.5-flash'
       });
 
       const turnData = res.agentTurn;
@@ -2080,8 +2080,8 @@
       console.warn('[AGENT] Execute turn error, applying Smart Local fallback:', err);
       showToast('⚠️ AI từ xa bận, đang dùng Smart Local AI tự động để tiếp tục.', 'warning');
       const fallbackMsg = state.agentRunner.turnIndex === 1
-        ? 'Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn giúp mình nhé!'
-        : 'Bạn giải thích rõ hơn về bảng giá và chính sách ưu đãi giúp mình nhé!';
+        ? 'Chào bạn, mình đang muốn tìm hiểu chi tiết về sản phẩm/dịch vụ bên mình. Bạn tư vấn cụ thể giúp mình nhé!'
+        : `Bạn giải thích rõ hơn về bảng giá, quyền lợi và chính sách ưu đãi giúp mình nhé (Lượt ${state.agentRunner.turnIndex})!`;
       renderTranscriptCustomerTurn(state.agentRunner.turnIndex, fallbackMsg, 'Smart Local Agent (Tự động chuyển tiếp)');
       sendPromptToChat(fallbackMsg);
       state.agentRunner.history.push({ role: 'user', content: fallbackMsg });
@@ -2153,8 +2153,8 @@
     let evalObj = previousTurnData?.evaluation || { verdict: 'pass', score: 5, reason: 'AI phản hồi theo kịch bản.' };
     renderTranscriptBotReply(state.agentRunner.turnIndex, botReply, evalObj);
 
-    // Check completion
-    const isFinalTurn = state.agentRunner.turnIndex >= state.agentRunner.maxTurns || previousTurnData?.isCompleted;
+    // Check completion strictly against maxTurns
+    const isFinalTurn = state.agentRunner.turnIndex >= state.agentRunner.maxTurns;
 
     if (isFinalTurn) {
       renderTranscriptCompletion();
