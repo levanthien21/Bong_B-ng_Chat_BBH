@@ -112,8 +112,8 @@
         "updated_at": "2026-10-25T17:04:18.837Z"
       },
       "created_at": "2026-10-25T08:20:08.743Z",
-      "last_login": "2026-10-25T17:04:27.830Z",
-      "tests_submitted": 7
+      "last_login": "2026-10-25T17:24:06.657Z",
+      "tests_submitted": 12
     }
   ],
   "sessions": {
@@ -176,9 +176,92 @@
     "f986dbef1657d011422d1465f61d4e0ae847672e753bb15d7a3f223bfc2f86ce": {
       "user_id": "usr_thien_admin",
       "created_at": "2026-10-25T17:04:27.830Z"
+    },
+    "b684a7f247596ea71e2f42bdb7733e4579e36c65094d2e9c3a568ce83bbc2e49": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-25T17:17:27.996Z"
+    },
+    "29d39c7a7edb094de497daa09378002d2d076eca001c8134228263e38d9c0e82": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-25T17:24:06.657Z"
     }
   },
   "evaluations": [
+    {
+      "id": "eval_agent_1792949051178",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hỏi khóa học lập trình",
+      "prompt_used": "(AI đã phản hồi trong bong bóng chat lúc 00:22:00)",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 00:22:00)",
+      "result": "pass",
+      "score": 5,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "agent_runner",
+      "analysis": "Bot đã phản hồi đầy đủ và chính xác theo thông tin tài liệu. Khách hàng chuyển sang lượt 4 để hỏi về ưu đãi, giảm giá khi đăng ký số lượng nhiều và thanh toán sớm.",
+      "created_at": "2026-10-25T17:24:11.178Z"
+    },
+    {
+      "id": "eval_agent_1792949049774",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hỏi khóa học lập trình",
+      "prompt_used": "(AI đã phản hồi trong bong bóng chat lúc 00:21:00)",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 00:21:00)",
+      "result": "pass",
+      "score": 5,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "agent_runner",
+      "analysis": "Bot đã phản hồi đầy đủ lộ trình cho người mới, tiếp tục chuyển sang bước yêu cầu bảng giá chi tiết và chi phí phát sinh.",
+      "created_at": "2026-10-25T17:24:09.774Z"
+    },
+    {
+      "id": "eval_agent_1792949048467",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hỏi khóa học lập trình",
+      "prompt_used": "Chào bạn, mình muốn tìm hiểu khóa học lập trình bên bạn.",
+      "ai_response_summary": "Dạ chào bạn! Khóa học bên mình có nhiều cấp độ. Bạn là người mới bắt đầu hoàn toàn từ số 0 hay đã từng học qua ngôn ngữ nào rồi ạ?",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "agent_runner",
+      "analysis": "Bot tư vấn nhầm sang khóa học lập trình thay vì dịch vụ homestay/resort trong tài liệu hướng dẫn (Lỗi hallucination và lệch lĩnh vực).",
+      "created_at": "2026-10-25T17:24:08.467Z"
+    },
+    {
+      "id": "eval_agent_1792948653497",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hỏi dịch vụ",
+      "prompt_used": "(AI đã phản hồi trong bong bóng chat lúc 00:16:00)",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 00:16:00)",
+      "result": "pass",
+      "score": 5,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "agent_runner",
+      "analysis": "Bot đã phản hồi đầy đủ các chính sách ưu đãi theo tài liệu và đang trong tiến trình tư vấn đúng chuẩn.",
+      "created_at": "2026-10-25T17:17:33.497Z"
+    },
+    {
+      "id": "eval_agent_1792948651246",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hỏi dịch vụ",
+      "prompt_used": "(AI đã phản hồi trong bong bóng chat lúc 00:15:30)",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 00:15:30)",
+      "result": "pass",
+      "score": 5,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "agent_runner",
+      "analysis": "Bot phản hồi chào hỏi và hướng dẫn khách đúng trọng tâm dịch vụ của resort.",
+      "created_at": "2026-10-25T17:17:31.246Z"
+    },
     {
       "id": "eval_agent_1792947858833",
       "tester_id": "usr_thien_admin",
@@ -275,6 +358,20 @@
   ],
   "chat_sessions": [],
   "logs": [
+    {
+      "id": "log_1792949046657_39t8",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-25T17:24:06.657Z"
+    },
+    {
+      "id": "log_1792948647996_df37",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-25T17:17:27.996Z"
+    },
     {
       "id": "log_1792947867830_rhc3",
       "actor": "Thiện BBH",

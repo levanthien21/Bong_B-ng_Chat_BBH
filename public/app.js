@@ -329,6 +329,16 @@
     btnClearFile1: document.getElementById('btn-clear-file1'),
     btnClearFile2: document.getElementById('btn-clear-file2'),
 
+    // Conversation Log Copy & Inline Bot Reply
+    btnCopyTranscriptLog: document.getElementById('btn-copy-transcript-log'),
+    btnAgentCopyLogMini: document.getElementById('btn-agent-copy-log-mini'),
+    agentInlineBotReply: document.getElementById('agent-inline-bot-reply'),
+    btnAgentPasteReply: document.getElementById('btn-agent-paste-reply'),
+    transcriptQuickReplyBar: document.getElementById('transcript-quick-reply-bar'),
+    transcriptInlineBotReply: document.getElementById('transcript-inline-bot-reply'),
+    btnTranscriptPasteClip: document.getElementById('btn-transcript-paste-clip'),
+    btnTranscriptSendReply: document.getElementById('btn-transcript-send-reply'),
+
     // Custom Luxury Fluid Cursor
     cursorFollower: document.getElementById('cursor-follower'),
     cursorDot: document.getElementById('cursor-dot'),
@@ -2009,6 +2019,7 @@
     el.agentRunningBox.style.display = 'flex';
 
     if (el.agentTranscriptFeed) el.agentTranscriptFeed.innerHTML = '';
+    if (el.transcriptQuickReplyBar) el.transcriptQuickReplyBar.style.display = 'block';
     switchRightTab('transcript');
     showToast(`🚀 Khởi chạy Agent đàm thoại đa lượt (${maxTurns} lượt)!`, 'info');
 
@@ -2019,6 +2030,7 @@
     state.agentRunner.isRunning = false;
     if (state.agentRunner.timerId) clearTimeout(state.agentRunner.timerId);
     el.agentRunningBox.style.display = 'none';
+    if (el.transcriptQuickReplyBar) el.transcriptQuickReplyBar.style.display = 'none';
     el.btnStartAgentRun.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>🚀 Khởi Chạy Agent Hội Thoại</span>`;
     el.btnStartAgentRun.className = 'btn btn-primary btn-sm';
     showToast('Đã dừng Agent đàm thoại.');
@@ -2141,7 +2153,22 @@
     if (!state.agentRunner.isRunning) return;
     if (state.agentRunner.timerId) clearTimeout(state.agentRunner.timerId);
 
-    let botReply = el.evalResponseInput.value.trim();
+    // Read bot reply from inline inputs first, then evalResponseInput, then placeholder
+    let botReply = '';
+    const inlineInput = document.getElementById('agent-inline-bot-reply');
+    const transcriptInput = document.getElementById('transcript-inline-bot-reply');
+
+    if (inlineInput && inlineInput.value.trim()) {
+      botReply = inlineInput.value.trim();
+      inlineInput.value = '';
+    } else if (transcriptInput && transcriptInput.value.trim()) {
+      botReply = transcriptInput.value.trim();
+      transcriptInput.value = '';
+    } else if (el.evalResponseInput && el.evalResponseInput.value.trim()) {
+      botReply = el.evalResponseInput.value.trim();
+      el.evalResponseInput.value = '';
+    }
+
     if (!botReply) {
       botReply = `(AI đã phản hồi trong bong bóng chat lúc ${new Date().toLocaleTimeString('vi-VN')})`;
     }
@@ -2188,6 +2215,167 @@
     el.btnAgentForceNext.addEventListener('click', () => {
       if (state.agentRunner.isRunning) onAgentTurnResponseReceived();
     });
+  }
+
+  // Quick Inline Bot Reply Listeners (Running Box & Transcript Pane)
+  if (el.btnAgentPasteReply) {
+    el.btnAgentPasteReply.addEventListener('click', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        const input = document.getElementById('agent-inline-bot-reply');
+        if (input && text) {
+          input.value = text.trim();
+          showToast('📋 Đã dán phản hồi của Bot từ clipboard!', 'info');
+        }
+      } catch (e) {
+        showToast('Vui lòng bấm Ctrl+V để dán trực tiếp vào ô nhập.', 'warning');
+      }
+    });
+  }
+
+  if (el.btnTranscriptPasteClip) {
+    el.btnTranscriptPasteClip.addEventListener('click', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        const input = document.getElementById('transcript-inline-bot-reply');
+        if (input && text) {
+          input.value = text.trim();
+          showToast('📋 Đã dán phản hồi của Bot từ clipboard!', 'info');
+        }
+      } catch (e) {
+        showToast('Vui lòng bấm Ctrl+V để dán trực tiếp vào ô nhập.', 'warning');
+      }
+    });
+  }
+
+  if (el.btnTranscriptSendReply) {
+    el.btnTranscriptSendReply.addEventListener('click', () => {
+      if (state.agentRunner.isRunning) onAgentTurnResponseReceived();
+    });
+  }
+
+  const inlineInputEl = document.getElementById('agent-inline-bot-reply');
+  if (inlineInputEl) {
+    inlineInputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && state.agentRunner.isRunning) {
+        e.preventDefault();
+        onAgentTurnResponseReceived();
+      }
+    });
+  }
+
+  const transcriptInputEl = document.getElementById('transcript-inline-bot-reply');
+  if (transcriptInputEl) {
+    transcriptInputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && state.agentRunner.isRunning) {
+        e.preventDefault();
+        onAgentTurnResponseReceived();
+      }
+    });
+  }
+
+  // 1-Click Copy Conversation Log Feature (User Request)
+  function copyConversationLog() {
+    let logText = '';
+    const now = new Date().toLocaleString('vi-VN');
+
+    // Case 1: Active Agent Runner session
+    if (state.agentRunner && state.agentRunner.history && state.agentRunner.history.length > 0) {
+      const persona = el.agentPersonaSelect?.selectedOptions?.[0]?.text || state.agentRunner.persona || 'Khách hàng';
+      const totalTurns = Math.ceil(state.agentRunner.history.length / 2);
+      const modelName = (el.agentQuickModelSelect ? el.agentQuickModelSelect.options[el.agentQuickModelSelect.selectedIndex]?.text : state.config.ai_model) || 'AI Tester Studio';
+
+      logText += `============================================================\n`;
+      logText += `📋 LOG HỘI THOẠI KIỂM THỬ AI — THIỆN BBH STUDIO\n`;
+      logText += `Thời gian xuất: ${now}\n`;
+      logText += `Tình huống (Persona): ${persona}\n`;
+      logText += `Tiến trình: ${totalTurns} lượt (Kế hoạch: ${state.agentRunner.maxTurns || 10} lượt)\n`;
+      logText += `Mô hình AI: ${modelName}\n`;
+      logText += `============================================================\n\n`;
+
+      for (let i = 0; i < state.agentRunner.history.length; i += 2) {
+        const turnNum = Math.floor(i / 2) + 1;
+        const userMsg = state.agentRunner.history[i]?.content || '';
+        const botMsg = state.agentRunner.history[i + 1]?.content || '';
+
+        logText += `[LƯỢT #${turnNum}]\n`;
+        logText += `Khách hàng (Tester): "${userMsg}"\n`;
+        logText += `AI Chatbot phản hồi: "${botMsg}"\n`;
+        logText += `------------------------------------------------------------\n\n`;
+      }
+      logText += `============================================================\n`;
+      logText += `Tổng kết: Hoàn thành đối chiếu ngữ cảnh File 1 & File 2.\n`;
+    } else if (state.chatSessions && state.chatSessions.length > 0) {
+      // Case 2: Latest saved chat session
+      const s = state.chatSessions[0];
+      logText += `============================================================\n`;
+      logText += `📋 LOG PHIÊN ĐÀM THOẠI ĐÃ LƯU: ${s.title || 'Phiên gần nhất'}\n`;
+      logText += `Thời gian: ${new Date(s.created_at || Date.now()).toLocaleString('vi-VN')}\n`;
+      logText += `Nhân cách: ${s.persona || 'Khách hàng'}\n`;
+      logText += `============================================================\n\n`;
+
+      (s.turns || []).forEach(t => {
+        logText += `[LƯỢT #${t.turn}]\n`;
+        logText += `Khách hàng (Tester): "${t.user}"\n`;
+        logText += `AI Chatbot phản hồi: "${t.assistant}"\n`;
+        logText += `------------------------------------------------------------\n\n`;
+      });
+    } else {
+      // Case 3: Read from DOM turn cards
+      const cards = document.querySelectorAll('.transcript-turn');
+      if (cards && cards.length > 0) {
+        logText += `============================================================\n`;
+        logText += `📋 LOG HỘI THOẠI TRÊN GIAO DIỆN (${now})\n`;
+        logText += `============================================================\n\n`;
+        cards.forEach((c, idx) => {
+          const userEl = c.querySelector('.turn-user');
+          const botEl = c.querySelector('.turn-bot-text');
+          logText += `[LƯỢT #${idx + 1}]\n`;
+          if (userEl) logText += `Khách hàng: "${userEl.innerText.trim()}"\n`;
+          if (botEl) logText += `AI Chatbot: "${botEl.innerText.trim()}"\n`;
+          logText += `------------------------------------------------------------\n\n`;
+        });
+      }
+    }
+
+    if (!logText.trim()) {
+      showToast('Chưa có nội dung cuộc hội thoại nào để sao chép.', 'warning');
+      return;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(logText).then(() => {
+        showToast('📋 Đã sao chép toàn bộ log hội thoại vào Clipboard!', 'success');
+      }).catch(() => {
+        fallbackCopyText(logText);
+      });
+    } else {
+      fallbackCopyText(logText);
+    }
+  }
+
+  function fallbackCopyText(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      showToast('📋 Đã sao chép toàn bộ log hội thoại vào Clipboard!', 'success');
+    } catch (e) {
+      showToast('Không thể tự động copy. Vui lòng thử lại.', 'error');
+    }
+    document.body.removeChild(ta);
+  }
+
+  if (el.btnCopyTranscriptLog) {
+    el.btnCopyTranscriptLog.addEventListener('click', copyConversationLog);
+  }
+
+  if (el.btnAgentCopyLogMini) {
+    el.btnAgentCopyLogMini.addEventListener('click', copyConversationLog);
   }
 
   if (el.btnAgentStopReset) {
