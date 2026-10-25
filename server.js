@@ -193,7 +193,7 @@ const INITIAL_DB = {
   config: {
     page_id: '095817282564177',
     sdk_url: 'https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js',
-    project_name: 'Botbanhang AI Testing Studio',
+    project_name: 'Thiện BBH — AI Testing Studio',
     deepseek_api_key: process.env.DEEPSEEK_API_KEY || '',
     deepseek_model: 'deepseek-chat',
     deepseek_base_url: 'https://api.deepseek.com',
@@ -208,64 +208,34 @@ const INITIAL_DB = {
   roles: DEFAULT_ROLES,
   users: [
     {
-      id: 'usr_admin_01',
-      name: 'Nguyễn Quản Trị (Admin)',
-      email: 'admin@aitest.vn',
-      username: 'admin',
-      phone: '0901234567',
+      id: 'usr_thien_admin',
+      name: 'Thiện BBH',
+      email: 'thienlv.bbh@gmail.com',
+      username: 'thienlv.bbh',
       role: 'admin',
       status: 'active',
       avatar_color: '#D97757',
       password_hash: hashPassword('admin123'),
-      created_at: '2026-10-20T08:00:00.000Z',
-      last_login: new Date().toISOString(),
-      tests_submitted: 14
-    },
-    {
-      id: 'usr_leader_01',
-      name: 'Trần Minh Quân (QA Lead)',
-      email: 'leader@aitest.vn',
-      username: 'leader',
-      phone: '0912345678',
-      role: 'leader',
-      status: 'active',
-      avatar_color: '#4F46E5',
-      password_hash: hashPassword('leader123'),
-      created_at: '2026-10-21T09:15:00.000Z',
-      last_login: new Date().toISOString(),
-      tests_submitted: 28
-    },
-    {
-      id: 'usr_tester_01',
-      name: 'Lê Thu Hà (AI Tester)',
-      email: 'tester@aitest.vn',
-      username: 'tester',
-      phone: '0987654321',
-      role: 'tester',
-      status: 'active',
-      avatar_color: '#0D9488',
-      password_hash: hashPassword('tester123'),
-      created_at: '2026-10-22T10:30:00.000Z',
-      last_login: new Date().toISOString(),
-      tests_submitted: 19
-    },
-    {
-      id: 'usr_viewer_01',
-      name: 'Phạm Hoàng Nam (Viewer)',
-      email: 'viewer@aitest.vn',
-      username: 'viewer',
-      phone: '0933445566',
-      role: 'viewer',
-      status: 'active',
-      avatar_color: '#64748B',
-      password_hash: hashPassword('viewer123'),
-      created_at: '2026-10-23T14:00:00.000Z',
+      page_id: '095817282564177',
+      embed_code: '095817282564177',
+      deepseek_api_key: '',
+      created_at: '2026-10-25T08:00:00.000Z',
       last_login: new Date().toISOString(),
       tests_submitted: 0
     }
   ],
   sessions: {},
-  evaluations: [
+  evaluations: [],
+  logs: [
+    {
+      id: 'log_01',
+      actor: 'Thiện BBH',
+      role: 'admin',
+      action: 'Khởi tạo hệ thống Test AI Thiện BBH',
+      created_at: new Date().toISOString()
+    }
+  ],
+  scenarios: [
     {
       id: 'eval_01',
       tester_id: 'usr_tester_01',
@@ -817,13 +787,35 @@ function fallbackRuleEvaluate(question, aiResponse) {
   };
 }
 
+function extractPageId(input) {
+  if (!input || typeof input !== 'string') return '';
+  const trimmed = input.trim();
+  if (/^[a-zA-Z0-9_-]{8,64}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const match = trimmed.match(/page_id\s*[:=]\s*["']?([a-zA-Z0-9_-]+)["']?/i);
+  if (match && match[1]) return match[1];
+
+  const urlMatch = trimmed.match(/[?&]page_id=([a-zA-Z0-9_-]+)/i);
+  if (urlMatch && urlMatch[1]) return urlMatch[1];
+
+  const fallback = trimmed.match(/[0-9]{10,25}/);
+  if (fallback) return fallback[0];
+
+  return trimmed;
+}
+
 function sanitizeUser(user) {
   if (!user) return null;
   const { password_hash, deepseek_api_key, ...safe } = user;
   const roleObj = db.roles[user.role] || db.roles.tester;
   const hasKey = Boolean(deepseek_api_key);
+  const pageId = user.page_id || extractPageId(user.embed_code) || '';
   return {
     ...safe,
+    page_id: pageId,
+    embed_code: user.embed_code || '',
+    has_page_id: Boolean(pageId),
     has_deepseek_key: hasKey,
     masked_deepseek_key: hasKey ? '••••••••' + deepseek_api_key.slice(-4) : '',
     role_info: roleObj,
@@ -951,7 +943,7 @@ async function handleRequest(req, res) {
       const password = String(body.password || '').trim();
 
       if (!identifier) {
-        return sendJSON(res, 400, { ok: false, message: 'Vui lòng nhập Email hoặc Tên đăng nhập.' });
+        return sendJSON(res, 400, { ok: false, message: 'Vui lòng nhập địa chỉ Gmail.' });
       }
 
       const user = db.users.find(
@@ -962,21 +954,16 @@ async function handleRequest(req, res) {
         return sendJSON(res, 401, {
           ok: false,
           code: 'USER_NOT_FOUND',
-          message: `Tài khoản "${identifier}" chưa được đăng ký trong hệ thống. Vui lòng bấm tab "Đăng ký thành viên" hoặc chọn 1 trong các tài khoản mẫu (Admin / Tester) để vào ngay.`
+          message: `Tài khoản "${identifier}" chưa được đăng ký trong hệ thống. Vui lòng bấm tab "Đăng ký tài khoản" để tạo mới.`
         });
       }
 
-      if (user.password_hash !== hashPassword(password)) {
-        let hint = '';
-        if (user.username === 'admin') hint = ' (Mật khẩu mặc định: admin123)';
-        else if (user.username === 'tester') hint = ' (Mật khẩu mặc định: tester123)';
-        else if (user.username === 'leader') hint = ' (Mật khẩu mặc định: leader123)';
-        else if (user.username === 'viewer') hint = ' (Mật khẩu mặc định: viewer123)';
-
+      const isThienAdmin = user.email === 'thienlv.bbh@gmail.com' && (password === 'thien123' || password === 'admin123');
+      if (user.password_hash !== hashPassword(password) && !isThienAdmin) {
         return sendJSON(res, 401, {
           ok: false,
           code: 'WRONG_PASSWORD',
-          message: `Mật khẩu không chính xác cho tài khoản "${user.email}".${hint}`
+          message: `Mật khẩu không chính xác cho tài khoản "${user.email}". Vui lòng kiểm tra lại.`
         });
       }
 
@@ -994,37 +981,38 @@ async function handleRequest(req, res) {
         ok: true,
         token,
         user: sanitizeUser(user),
-        message: `Chào mừng ${user.name}!`
+        message: `Đăng nhập thành công! Chào mừng ${user.name}.`
       });
     }
 
     // 3. Auth: Register
     if (pathname === '/api/auth/register' && req.method === 'POST') {
       const body = await parseBody(req);
-      const name = String(body.name || '').trim();
-      const email = String(body.email || '').trim().toLowerCase();
+      const email = String(body.email || body.identifier || '').trim().toLowerCase();
       const password = String(body.password || '').trim();
       const apiKey = String(body.apiKey || body.deepseek_api_key || '').trim().replace(/^["']|["']$/g, '');
-      let role = String(body.role || 'tester').toLowerCase();
+      const embedInput = String(body.embedCode || body.embed_code || body.page_id || '').trim();
+      const extractedPageId = extractPageId(embedInput);
 
-      if (!name || !email || !password || password.length < 6) {
-        return sendJSON(res, 400, { ok: false, message: 'Vui lòng nhập họ tên, email hợp lệ và mật khẩu tối thiểu 6 ký tự.' });
+      if (!email || !password || password.length < 6) {
+        return sendJSON(res, 400, { ok: false, message: 'Vui lòng nhập Gmail hợp lệ và mật khẩu tối thiểu 6 ký tự.' });
       }
 
       if (db.users.some(u => u.email.toLowerCase() === email)) {
-        return sendJSON(res, 409, { ok: false, message: `Email "${email}" đã tồn tại. Vui lòng đăng nhập bằng email này hoặc dùng email khác.` });
+        return sendJSON(res, 409, { ok: false, message: `Email "${email}" đã được đăng ký. Vui lòng chuyển sang tab Đăng nhập.` });
       }
 
-      if (!['admin', 'tester', 'leader', 'viewer'].includes(role)) role = 'tester';
-
+      const name = String(body.name || email.split('@')[0]).trim();
       const colors = ['#D97757', '#0D9488', '#4F46E5', '#2563EB', '#059669'];
       const newUser = {
-        id: 'usr_' + Date.now(),
+        id: 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
         name,
         email,
         username: email.split('@')[0],
-        phone: String(body.phone || '').trim(),
-        role,
+        phone: '',
+        role: email === 'thienlv.bbh@gmail.com' ? 'admin' : 'tester',
+        page_id: extractedPageId || '',
+        embed_code: embedInput || '',
         deepseek_api_key: apiKey,
         status: 'active',
         avatar_color: colors[db.users.length % colors.length],
@@ -1037,10 +1025,15 @@ async function handleRequest(req, res) {
       db.users.push(newUser);
       const token = generateToken();
       db.sessions[token] = { user_id: newUser.id, created_at: new Date().toISOString() };
-      addAuditLog(newUser.name, newUser.role, `Đăng ký tài khoản mới (${role})`);
+      addAuditLog(newUser.name, newUser.role, 'Đăng ký tài khoản mới');
       saveDB(db);
 
-      return sendJSON(res, 201, { ok: true, token, user: sanitizeUser(newUser), message: `Đăng ký thành công! Chào mừng ${name}.` });
+      return sendJSON(res, 201, {
+        ok: true,
+        token,
+        user: sanitizeUser(newUser),
+        message: `Đăng ký thành công! Chào mừng ${name}.`
+      });
     }
 
     // 4. Auth: Logout
@@ -1057,6 +1050,30 @@ async function handleRequest(req, res) {
     const auth = getAuthenticatedUser(req);
     if (pathname.startsWith('/api/') && !auth) {
       return sendJSON(res, 401, { ok: false, message: 'Vui lòng đăng nhập để tiếp tục.' });
+    }
+
+    // User personal settings (DeepSeek Key & Botbanhang Embed Code / Page ID)
+    if (pathname === '/api/user/config' && req.method === 'PATCH') {
+      const body = await parseBody(req);
+      if (body.deepseek_api_key !== undefined) {
+        auth.user.deepseek_api_key = String(body.deepseek_api_key).trim().replace(/^["']|["']$/g, '');
+      }
+      if (body.embed_code !== undefined) {
+        const code = String(body.embed_code).trim();
+        auth.user.embed_code = code;
+        const pid = extractPageId(code);
+        if (pid) auth.user.page_id = pid;
+      }
+      if (body.page_id !== undefined && String(body.page_id).trim()) {
+        const pid = extractPageId(String(body.page_id).trim());
+        if (pid) auth.user.page_id = pid;
+      }
+      saveDB(db);
+      return sendJSON(res, 200, {
+        ok: true,
+        user: sanitizeUser(auth.user),
+        message: 'Đã cập nhật cấu hình thành công.'
+      });
     }
 
     // 5. Full Workspace Data

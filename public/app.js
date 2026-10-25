@@ -77,6 +77,7 @@
     regRole: document.getElementById('reg-role'),
     regPassword: document.getElementById('reg-password'),
     regApiKey: document.getElementById('reg-api-key'),
+    regEmbedCode: document.getElementById('reg-embed-code'),
 
     // Header
     headerPageIdBadge: document.getElementById('header-page-id-badge'),
@@ -183,6 +184,13 @@
     tabFile1Content: document.getElementById('tab-file1-content'),
     tabFile2Content: document.getElementById('tab-file2-content'),
     tabDeepseekContent: document.getElementById('tab-deepseek-content'),
+    tabEmbedContent: document.getElementById('tab-embed-content'),
+    formEmbedConfigSave: document.getElementById('form-embed-config-save'),
+    settingsEmbedCode: document.getElementById('settings-embed-code-input'),
+    embedSaveFeedback: document.getElementById('embed-save-feedback'),
+    embedSetupCard: document.getElementById('embed-setup-card'),
+    setupEmbedInput: document.getElementById('setup-embed-input'),
+    btnSaveSetupEmbed: document.getElementById('btn-save-setup-embed'),
 
     uploadFile1Input: document.getElementById('upload-file1-input'),
     btnUploadFile1: document.getElementById('btn-upload-file1'),
@@ -349,32 +357,6 @@
     });
   }
 
-  // 1-Click quick fill buttons on form
-  if (el.btnQuickFillAdmin) {
-    el.btnQuickFillAdmin.addEventListener('click', () => {
-      el.loginIdentifier.value = 'admin@aitest.vn';
-      el.loginPassword.value = 'admin123';
-      el.formLogin.dispatchEvent(new Event('submit'));
-    });
-  }
-
-  if (el.btnQuickFillTester) {
-    el.btnQuickFillTester.addEventListener('click', () => {
-      el.loginIdentifier.value = 'tester@aitest.vn';
-      el.loginPassword.value = 'tester123';
-      el.formLogin.dispatchEvent(new Event('submit'));
-    });
-  }
-
-  document.querySelectorAll('.demo-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      el.loginIdentifier.value = chip.dataset.email;
-      el.loginPassword.value = chip.dataset.pass;
-      switchAuthTab('login');
-      el.formLogin.dispatchEvent(new Event('submit'));
-    });
-  });
-
   el.formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
     const identifier = el.loginIdentifier.value.trim();
@@ -405,19 +387,17 @@
 
   el.formRegister.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = el.regName.value.trim();
     const email = el.regEmail.value.trim();
-    const phone = el.regPhone.value.trim();
-    const role = el.regRole.value;
     const password = el.regPassword.value;
     const apiKey = el.regApiKey ? el.regApiKey.value.trim() : '';
+    const embedCode = el.regEmbedCode ? el.regEmbedCode.value.trim() : '';
 
     if (el.registerFeedback) {
       el.registerFeedback.style.display = 'none';
     }
 
     try {
-      const data = await api('/api/auth/register', 'POST', { name, email, phone, role, password, apiKey });
+      const data = await api('/api/auth/register', 'POST', { email, password, apiKey, embedCode });
       state.token = data.token;
       state.user = data.user;
       localStorage.setItem('bbh_auth_token', data.token);
@@ -454,6 +434,8 @@
       el.body.classList.add('auth-locked');
       el.authOverlay.classList.remove('hidden');
       el.btnAdminManage.style.display = 'none';
+      if (el.headerUserRole) el.headerUserRole.style.display = 'none';
+      mountUserChatbox('');
       return;
     }
 
@@ -472,16 +454,14 @@
     localStorage.setItem('bbh_last_client_id', userClientId);
     if (el.clientIdDisplay) el.clientIdDisplay.textContent = userClientId;
 
-    el.headerUserName.textContent = state.user.name;
-    el.headerUserAvatar.textContent = (state.user.name || 'U').charAt(0).toUpperCase();
+    const displayName = state.user.name || (state.user.email ? state.user.email.split('@')[0] : 'User');
+    el.headerUserName.textContent = displayName;
+    el.headerUserAvatar.textContent = displayName.charAt(0).toUpperCase();
     if (state.user.avatar_color) el.headerUserAvatar.style.backgroundColor = state.user.avatar_color;
 
-    const roleInfo = state.roles[state.user.role] || { name: state.user.role, badgeColor: 'terracotta' };
-    el.headerUserRole.textContent = roleInfo.name;
-    el.headerUserRole.className = `role-tag ${roleInfo.badgeColor || 'terracotta'}`;
-
-    const perms = state.user.permissions || {};
-    el.btnAdminManage.style.display = perms.canManageUsers ? 'inline-flex' : 'none';
+    // Do not show any role tags (Admin/Tester) as requested
+    if (el.headerUserRole) el.headerUserRole.style.display = 'none';
+    if (el.btnAdminManage) el.btnAdminManage.style.display = 'none';
 
     // DeepSeek status indicator: personal key or global
     const hasKey = Boolean(state.user.has_deepseek_key || state.config.has_deepseek_key);
@@ -505,17 +485,114 @@
       }
     }
 
+    const perms = state.user.permissions || {};
     if (perms.canChat === false) {
       el.body.classList.add('chat-permission-denied');
       el.headerSdkStatus.textContent = 'Quan sát viên (Chỉ xem)';
     } else {
       el.body.classList.remove('chat-permission-denied');
     }
+
+    // Dynamic Chatbox loading per user
+    const pageId = state.user.page_id || state.config.page_id || '';
+    mountUserChatbox(pageId);
+
+    if (el.settingsEmbedCode) {
+      el.settingsEmbedCode.value = state.user.embed_code || state.user.page_id || '';
+    }
   }
 
   // ==========================================================================
   // BOTBANHANG CHAT SDK CONTROLLER (#BBH-EMBED-IFRAME)
+  // Dynamic per-user mount & iframe controller
   // ==========================================================================
+
+  let currentMountedPageId = null;
+
+  function mountUserChatbox(pageId) {
+    const container = document.getElementById('BBH-EMBED-CONTAINER');
+    const setupCard = document.getElementById('embed-setup-card');
+
+    if (!pageId) {
+      if (container) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+      }
+      if (setupCard) setupCard.style.display = 'flex';
+      if (el.headerPageIdBadge) el.headerPageIdBadge.textContent = 'Chưa nạp';
+      currentMountedPageId = null;
+      return;
+    }
+
+    if (setupCard) setupCard.style.display = 'none';
+    if (container) container.style.display = 'flex';
+    if (el.headerPageIdBadge) el.headerPageIdBadge.textContent = `ID: ${pageId}`;
+
+    if (currentMountedPageId === pageId && container && container.querySelector('iframe')) {
+      return;
+    }
+
+    currentMountedPageId = pageId;
+    state.config.page_id = pageId;
+
+    try {
+      if (window.BBH) {
+        if (typeof window.BBH.destroy === 'function') {
+          try { window.BBH.destroy(); } catch (e) {}
+        }
+        if (container) {
+          container.innerHTML = '';
+          Object.defineProperty(container, 'clientWidth', { get: () => Math.max(window.innerWidth || 1200, 1200), configurable: true });
+          Object.defineProperty(container, 'clientHeight', { get: () => Math.max(window.innerHeight || 800, 800), configurable: true });
+        }
+        window.BBH.init({ page_id: pageId });
+      } else {
+        setTimeout(() => mountUserChatbox(pageId), 400);
+      }
+    } catch (err) {
+      console.warn('[BBH] Error mounting chatbox:', err);
+    }
+  }
+
+  async function saveUserEmbedCode(rawInput) {
+    if (!rawInput || !rawInput.trim()) {
+      showToast('Vui lòng dán mã nhúng script hoặc Page ID.', 'error');
+      return;
+    }
+    try {
+      const data = await api('/api/user/config', 'PATCH', { embedCode: rawInput.trim() });
+      if (data.user) {
+        state.user.embed_code = data.user.embed_code;
+        state.user.page_id = data.user.page_id;
+        state.user.has_page_id = data.user.has_page_id;
+      }
+      mountUserChatbox(state.user.page_id);
+      showToast('✅ Đã lưu mã nhúng và tải lại Bong bóng chat thành công!', 'success');
+      if (el.settingsEmbedCode) el.settingsEmbedCode.value = state.user.embed_code || state.user.page_id;
+      if (el.setupEmbedInput) el.setupEmbedInput.value = '';
+      if (el.modalTraining) {
+        el.modalTraining.classList.remove('open');
+        el.body.classList.remove('modal-open');
+      }
+    } catch (err) {
+      showToast('Lỗi lưu mã nhúng: ' + err.message, 'error');
+    }
+  }
+
+  if (el.btnSaveSetupEmbed) {
+    el.btnSaveSetupEmbed.addEventListener('click', () => {
+      const val = el.setupEmbedInput ? el.setupEmbedInput.value : '';
+      saveUserEmbedCode(val);
+    });
+  }
+
+  if (el.formEmbedConfigSave) {
+    el.formEmbedConfigSave.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = el.settingsEmbedCode ? el.settingsEmbedCode.value : '';
+      saveUserEmbedCode(val);
+    });
+  }
 
   function getBbhIframe() {
     return document.getElementById('BBH-EMBED-IFRAME');
@@ -691,6 +768,10 @@
     el.tabFile1Content.style.display = tab === 'tab-file1' ? 'block' : 'none';
     el.tabFile2Content.style.display = tab === 'tab-file2' ? 'block' : 'none';
     el.tabDeepseekContent.style.display = tab === 'tab-deepseek' ? 'block' : 'none';
+    if (el.tabEmbedContent) el.tabEmbedContent.style.display = tab === 'tab-embed' ? 'block' : 'none';
+    if (tab === 'tab-embed' && el.settingsEmbedCode && state.user) {
+      el.settingsEmbedCode.value = state.user.embed_code || state.user.page_id || '';
+    }
 
     updateDeepSeekModalStatus();
   }
@@ -733,7 +814,11 @@
       el.tabFile1Content.style.display = tab === 'tab-file1' ? 'block' : 'none';
       el.tabFile2Content.style.display = tab === 'tab-file2' ? 'block' : 'none';
       el.tabDeepseekContent.style.display = tab === 'tab-deepseek' ? 'block' : 'none';
+      if (el.tabEmbedContent) el.tabEmbedContent.style.display = tab === 'tab-embed' ? 'block' : 'none';
       if (tab === 'tab-deepseek') updateDeepSeekModalStatus();
+      if (tab === 'tab-embed' && el.settingsEmbedCode && state.user) {
+        el.settingsEmbedCode.value = state.user.embed_code || state.user.page_id || '';
+      }
     });
   });
 

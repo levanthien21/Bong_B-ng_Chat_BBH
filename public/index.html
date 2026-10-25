@@ -61,6 +61,12 @@
 
       <!-- Right Header Actions -->
       <div class="header-right" style="display: flex; align-items: center; gap: 8px;">
+        <!-- Reset Chat Session Button -->
+        <button class="btn btn-secondary btn-sm" id="btn-header-reset-session" title="Gửi lệnh /reset vào bong bóng chat để làm mới cuộc trò chuyện" style="font-weight: 600; padding: 4px 10px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          <span>Làm mới /reset</span>
+        </button>
+
         <!-- 2 Training Files & DeepSeek Hub Button -->
         <button class="btn btn-secondary btn-sm" id="btn-open-training-hub" title="Quản lý File Kiến thức, File Prompt & Cấu hình DeepSeek API" style="font-weight: 600; padding: 4px 10px;">
           <span>🧠 Training & DeepSeek</span>
@@ -82,7 +88,7 @@
           <div class="user-avatar" id="header-user-avatar">U</div>
           <div class="user-meta">
             <span class="user-name" id="header-user-name">Người dùng</span>
-            <span class="role-tag terracotta" id="header-user-role">Tester</span>
+            <span class="role-tag" id="header-user-role" style="display: none;">Thành viên</span>
           </div>
           <button class="btn btn-icon btn-sm" id="btn-logout" title="Đăng xuất" style="width:20px;height:20px;margin-left:2px;border:none;background:transparent;">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -292,21 +298,19 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
           <!-- BONG BÓNG CHAT NHÚNG TẠI TRUNG TÂM — 100% SẠCH SẼ, KHÔNG VĂN BẢN GÂY NHIỄU -->
           <div id="BBH-EMBED-CONTAINER"></div>
 
-          <!-- Floating Studio Dock at the Bottom of Canvas -->
-          <div class="stage-floating-hud" id="stage-floating-hud">
-            <button type="button" class="hud-action-btn" id="btn-hud-reset" title="Gửi lệnh /reset vào bong bóng chat để làm mới cuộc trò chuyện">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-              <span>Làm mới hội thoại (/reset)</span>
+          <!-- SETUP EMBED CARD (Chỉ hiện khi tài khoản chưa có mã nhúng / Page ID) -->
+          <div class="embed-setup-card" id="embed-setup-card" style="display: none;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+              💬
+            </div>
+            <h3 style="font-size: 14.5px; font-weight: 700; color: var(--text-primary); margin: 0;">Chưa cấu hình mã nhúng Chatbot</h3>
+            <p style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
+              Mỗi thành viên sử dụng một chatbot AI riêng biệt. Vui lòng dán mã nhúng script hoặc Page ID của bạn để tải bong bóng chat.
+            </p>
+            <textarea class="textarea" id="setup-embed-input" placeholder="Dán mã nhúng script hoặc Page ID (Ví dụ: 095817282564177)..." style="width: 100%; min-height: 70px; font-size: 11.5px; font-family: var(--font-mono);"></textarea>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-save-setup-embed" style="width: 100%; justify-content: center;">
+              <span>💾 Lưu & Khởi tạo Khung Chat</span>
             </button>
-            <div class="hud-divider"></div>
-            <div class="hud-status-item">
-              <span class="pulse-dot" id="stage-sdk-dot"></span>
-              <span id="stage-sdk-status-text">Sandbox Sẵn Sàng</span>
-            </div>
-            <div class="hud-divider"></div>
-            <div class="hud-status-item">
-              <span style="font-family: var(--font-mono); font-size: 11px; color: var(--accent); font-weight: 700;">⏱️ <span id="stage-hud-timer-val">Chờ lệnh</span></span>
-            </div>
           </div>
 
           <!-- Viewer Read-Only Card (Chỉ hiện khi tài khoản là viewer) -->
@@ -445,6 +449,7 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
           <button class="seg-btn active" data-tab="tab-file1">📁 File 1: Kiến thức Sản phẩm & Q&A</button>
           <button class="seg-btn" data-tab="tab-file2">📋 File 2: Quy tắc Prompt & Rào chắn</button>
           <button class="seg-btn" data-tab="tab-deepseek">⚡ Liên kết DeepSeek API</button>
+          <button class="seg-btn" data-tab="tab-embed">💬 Mã nhúng Bong bóng Chat</button>
         </div>
 
         <!-- 1. Tab File 1: Product Knowledge -->
@@ -527,6 +532,26 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
           </form>
         </div>
 
+        <!-- 4. Tab Embed Chat Settings -->
+        <div id="tab-embed-content" style="display: none;">
+          <form id="form-embed-config-save" style="display: flex; flex-direction: column; gap: 12px; max-width: 580px;">
+            <div style="background: var(--bg-panel); padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border-subtle); font-size: 11.5px; color: var(--text-secondary); line-height: 1.5;">
+              <b>💬 Mã nhúng Bong bóng Chat cá nhân:</b> Mỗi thành viên hoặc đồng nghiệp kiểm thử một AI tư vấn khác nhau. Dán đoạn script nhúng Botbanhang hoặc nhập trực tiếp <code>Page ID</code> của bạn tại đây để hệ thống hiển thị đúng chatbot của bạn.
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Mã nhúng script hoặc Page ID:</label>
+              <textarea class="textarea" id="settings-embed-code-input" rows="4" placeholder="Dán thẻ <script> từ Botbanhang hoặc nhập Page ID (ví dụ: 095817282564177)..." style="font-family: var(--font-mono); font-size: 11.5px;"></textarea>
+              <span style="font-size: 10.5px; color: var(--text-muted);">Hệ thống tự động trích xuất Page ID từ mã nhúng của bạn và nạp lại khung chat ngay lập tức.</span>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <button type="submit" class="btn btn-primary btn-sm">Lưu & Tải lại Bong bóng chat</button>
+            </div>
+            <div id="embed-save-feedback" style="display:none; font-size:11px; padding:8px 12px; border-radius:7px; line-height: 1.4;"></div>
+          </form>
+        </div>
+
       </div>
     </div>
   </div>
@@ -563,34 +588,10 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
             </div>
             <div style="display: flex; gap: 8px; align-items: flex-start;">
               <span style="color: var(--accent); font-size: 13px;">✦</span>
-              <div><b>2 File Training + Đồng hồ đếm ngược:</b> Tự động kiểm tra tuân thủ Kiến thức sản phẩm & Quy tắc Prompt chặt chẽ theo tiêu chuẩn Botbanhang.</div>
+              <div><b>Mã nhúng chatbot linh hoạt:</b> Tự nạp mã nhúng hoặc Page ID của riêng bạn để kiểm thử đúng chatbot AI được phân công.</div>
             </div>
           </div>
         </div>
-
-        <details class="demo-accounts-box" style="margin-top: 16px;">
-          <summary style="font-size: 11px; font-weight: 700; color: var(--accent); cursor: pointer; user-select: none;">
-            👉 Tài khoản mẫu thử nghiệm nhanh (Click để mở danh sách)
-          </summary>
-          <div class="demo-grid" style="margin-top: 8px;">
-            <button type="button" class="demo-chip" data-email="admin@aitest.vn" data-pass="admin123">
-              <div class="demo-chip-role">👑 Admin</div>
-              <div class="demo-chip-cred">admin@aitest.vn</div>
-            </button>
-            <button type="button" class="demo-chip" data-email="leader@aitest.vn" data-pass="leader123">
-              <div class="demo-chip-role">🎯 QA Lead</div>
-              <div class="demo-chip-cred">leader@aitest.vn</div>
-            </button>
-            <button type="button" class="demo-chip" data-email="tester@aitest.vn" data-pass="tester123">
-              <div class="demo-chip-role">⚡ Tester</div>
-              <div class="demo-chip-cred">tester@aitest.vn</div>
-            </button>
-            <button type="button" class="demo-chip" data-email="viewer@aitest.vn" data-pass="viewer123">
-              <div class="demo-chip-role">👁️ Viewer</div>
-              <div class="demo-chip-cred">viewer@aitest.vn</div>
-            </button>
-          </div>
-        </details>
       </div>
 
       <div class="auth-form-pane">
@@ -605,22 +606,12 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
           <div id="login-feedback" style="display: none; font-size: 11.5px; padding: 8px 12px; border-radius: 7px; line-height: 1.45;"></div>
 
           <div class="form-group">
-            <label class="form-label">Gmail hoặc Email của bạn:</label>
-            <input type="text" class="input" id="login-identifier" placeholder="vidu@gmail.com" required autocomplete="username">
+            <label class="form-label">Gmail:</label>
+            <input type="email" class="input" id="login-identifier" placeholder="thienlv.bbh@gmail.com" required autocomplete="username">
           </div>
           <div class="form-group">
             <label class="form-label">Mật khẩu:</label>
             <input type="password" class="input" id="login-password" placeholder="••••••••" required autocomplete="current-password">
-          </div>
-
-          <!-- Quick 1-Click Login Bar -->
-          <div style="display: flex; gap: 6px; margin-top: 2px;">
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-quick-fill-admin" style="flex: 1; font-size: 11px; padding: 5px 8px;">
-              👑 1-Click Admin
-            </button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-quick-fill-tester" style="flex: 1; font-size: 11px; padding: 5px 8px;">
-              ⚡ 1-Click Tester
-            </button>
           </div>
 
           <button type="submit" class="btn btn-primary" style="margin-top: 4px; padding: 9px; font-weight: 600;">
@@ -637,37 +628,25 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
           <div id="register-feedback" style="display: none; font-size: 11.5px; padding: 8px 12px; border-radius: 7px; line-height: 1.45;"></div>
 
           <div class="form-group">
-            <label class="form-label">Họ và tên của bạn:</label>
-            <input type="text" class="input" id="reg-name" placeholder="Nguyễn Văn A" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Gmail hoặc Email cá nhân:</label>
+            <label class="form-label">Gmail của bạn:</label>
             <input type="email" class="input" id="reg-email" placeholder="dongnghiep@gmail.com" required autocomplete="email">
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div class="form-group">
-              <label class="form-label">Số điện thoại:</label>
-              <input type="text" class="input" id="reg-phone" placeholder="0901234567">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Vai trò kiểm thử:</label>
-              <select class="select" id="reg-role">
-                <option value="tester" selected>⚡ Chuyên viên Test (Tester)</option>
-                <option value="leader">🎯 QA Lead</option>
-                <option value="admin">👑 Quản trị viên (Admin)</option>
-                <option value="viewer">👁️ Quan sát viên (Viewer)</option>
-              </select>
-            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Mật khẩu (tối thiểu 6 ký tự):</label>
             <input type="password" class="input" id="reg-password" placeholder="••••••••" required minlength="6" autocomplete="new-password">
           </div>
           <div class="form-group">
-            <label class="form-label">DeepSeek API Key cá nhân (Tùy chọn):</label>
+            <label class="form-label">DeepSeek API Key (Tùy chọn):</label>
             <input type="password" class="input" id="reg-api-key" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (Để trống nếu chưa có)" autocomplete="off">
-            <div style="font-size: 10.5px; color: var(--text-muted); line-height: 1.4; margin-top: 3px;">
-              🔑 Nhập key cá nhân để kích hoạt AI Đánh giá tự động & AI Agent đa lượt. Key chỉ lưu riêng cho tài khoản của bạn, không chia sẻ cho bất kỳ ai.
+            <div style="font-size: 10.5px; color: var(--text-muted); line-height: 1.35; margin-top: 2px;">
+              🔑 Nhập key để dùng tính năng AI Đánh giá tự động. Key chỉ lưu riêng cho tài khoản của bạn.
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mã nhúng bong bóng chat (Botbanhang):</label>
+            <textarea class="textarea" id="reg-embed-code" rows="3" placeholder="Dán mã nhúng script hoặc Page ID của chatbot bạn (Ví dụ: 095817282564177)..." style="font-family: var(--font-mono); font-size: 11px;"></textarea>
+            <div style="font-size: 10.5px; color: var(--text-muted); line-height: 1.35; margin-top: 2px;">
+              💬 Mỗi người dùng nạp mã nhúng riêng để hiển thị đúng AI tư vấn cần kiểm thử.
             </div>
           </div>
 
@@ -701,11 +680,7 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
     })();
   </script>
   <script src="https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js"></script>
-  <script>
-    BBH.init({ page_id: '095817282564177' });
-  </script>
-
-  <!-- Client Application Logic -->
-  <script src="/app.js?v=2.7"></script>
+  <!-- Client Application Logic (Dynamic Per-User Chatbox Initialization) -->
+  <script src="/app.js?v=3.0"></script>
 </body>
 </html>

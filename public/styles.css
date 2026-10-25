@@ -1,55 +1,55 @@
 /* ==========================================================================
-   THIỆN BBH — AI AUTO-TESTING STUDIO (BOTBANHANG QA WORKBENCH)
-   UI-UX-PRO-MAX DESIGN SYSTEM | ELECTRIC ORANGE & MIDNIGHT SLATE
+   THIỆN BBH — BOTBANHANG AI CHAT TESTING STUDIO
+   Tasteful Warm Claude Design Aesthetic | Unobstructed Center Stage Architecture
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root {
-  /* High-Taste Warm Light Mode */
-  --bg-canvas: #F8FAFC;
+  /* Warm Alabaster & Cream Palette (Refined & Tasteful) */
+  --bg-canvas: #FAF9F5;
   --bg-surface: #FFFFFF;
-  --bg-panel: #F1F5F9;
+  --bg-panel: #F4F2EC;
   --bg-card: #FFFFFF;
-  --bg-subtle: #E2E8F0;
-  --bg-hover: #EBEFF5;
-  --bg-elevated: rgba(255, 255, 255, 0.92);
+  --bg-subtle: #EBE8DF;
+  --bg-hover: #E5E1D6;
+  --bg-elevated: rgba(255, 255, 255, 0.95);
 
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-muted: #94A3B8;
+  --text-primary: #141413;
+  --text-secondary: #575652;
+  --text-muted: #87857E;
   --text-on-accent: #FFFFFF;
 
-  /* Signature Brand Orange (Derived from Thiện BBH Logo) */
-  --accent: #FF6A00;
-  --accent-hover: #E65F00;
-  --accent-soft: rgba(255, 106, 0, 0.12);
-  --accent-border: rgba(255, 106, 0, 0.35);
-  --accent-gradient: linear-gradient(135deg, #FF6A00 0%, #FF8A38 100%);
-  --accent-glow: 0 0 16px rgba(255, 106, 0, 0.35);
+  /* Signature Refined Terracotta/Coral Accent */
+  --accent: #D97757;
+  --accent-hover: #C26142;
+  --accent-soft: rgba(217, 119, 87, 0.12);
+  --accent-border: rgba(217, 119, 87, 0.35);
+  --accent-gradient: linear-gradient(135deg, #D97757 0%, #E88F73 100%);
+  --accent-glow: 0 0 16px rgba(217, 119, 87, 0.28);
 
   /* Status Colors */
-  --success: #10B981;
-  --success-soft: rgba(16, 185, 129, 0.12);
-  --warning: #F59E0B;
-  --warning-soft: rgba(245, 158, 11, 0.12);
-  --danger: #EF4444;
-  --danger-soft: rgba(239, 68, 68, 0.12);
-  --indigo: #6366F1;
-  --indigo-soft: rgba(99, 102, 241, 0.12);
+  --success: #0D9488;
+  --success-soft: rgba(13, 148, 136, 0.12);
+  --warning: #D97706;
+  --warning-soft: rgba(217, 119, 6, 0.12);
+  --danger: #DC2626;
+  --danger-soft: rgba(220, 38, 38, 0.12);
+  --indigo: #4F46E5;
+  --indigo-soft: rgba(79, 70, 229, 0.12);
   --teal: #0D9488;
   --teal-soft: rgba(13, 148, 136, 0.12);
 
   /* Borders & Shadows */
-  --border-subtle: #E2E8F0;
-  --border-strong: #CBD5E1;
-  --dot-color: #CBD5E1;
-  --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 20px 45px -10px rgba(15, 23, 42, 0.14), 0 4px 12px rgba(15, 23, 42, 0.06);
+  --border-subtle: #E5E2D9;
+  --border-strong: #D1CEC3;
+  --dot-color: #D6D3C7;
+  --shadow-sm: 0 2px 6px rgba(20, 20, 19, 0.04);
+  --shadow-md: 0 10px 28px -6px rgba(20, 20, 19, 0.08), 0 2px 6px rgba(20, 20, 19, 0.04);
+  --shadow-lg: 0 24px 56px -12px rgba(20, 20, 19, 0.16), 0 4px 12px rgba(20, 20, 19, 0.06);
 
   /* Layout Metrics */
-  --header-height: 56px;
+  --header-height: 54px;
   --left-sidebar-width: 370px;
   --right-sidebar-width: 390px;
 
@@ -59,33 +59,33 @@
 }
 
 html.dark {
-  /* Midnight OLED Developer Theme */
-  --bg-canvas: #090D16;
-  --bg-surface: #101726;
-  --bg-panel: #131C2E;
-  --bg-card: #18233A;
-  --bg-subtle: #1C273E;
-  --bg-hover: #23314E;
-  --bg-elevated: rgba(16, 23, 38, 0.92);
+  /* Obsidian Ink Theme */
+  --bg-canvas: #141413;
+  --bg-surface: #1E1E1C;
+  --bg-panel: #191917;
+  --bg-card: #222220;
+  --bg-subtle: #262523;
+  --bg-hover: #302F2C;
+  --bg-elevated: rgba(30, 30, 28, 0.95);
 
-  --text-primary: #F8FAFC;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
+  --text-primary: #F4F3EE;
+  --text-secondary: #A8A69E;
+  --text-muted: #706E68;
   --text-on-accent: #FFFFFF;
 
-  --accent: #FF6A00;
-  --accent-hover: #FF7D20;
-  --accent-soft: rgba(255, 106, 0, 0.18);
-  --accent-border: rgba(255, 106, 0, 0.45);
-  --accent-gradient: linear-gradient(135deg, #FF6A00 0%, #FF8A38 100%);
-  --accent-glow: 0 0 20px rgba(255, 106, 0, 0.45);
+  --accent: #D97757;
+  --accent-hover: #E38769;
+  --accent-soft: rgba(217, 119, 87, 0.16);
+  --accent-border: rgba(217, 119, 87, 0.42);
+  --accent-gradient: linear-gradient(135deg, #D97757 0%, #E88F73 100%);
+  --accent-glow: 0 0 20px rgba(217, 119, 87, 0.42);
 
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --dot-color: rgba(255, 255, 255, 0.06);
-  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 12px 30px -6px rgba(0, 0, 0, 0.55);
-  --shadow-lg: 0 28px 64px -12px rgba(0, 0, 0, 0.75);
+  --border-subtle: #2C2B28;
+  --border-strong: #3D3B37;
+  --dot-color: #2E2D2A;
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 12px 30px -6px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 28px 64px -12px rgba(0, 0, 0, 0.65);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -129,6 +129,7 @@ html, body {
   justify-content: center;
   overflow: hidden;
   padding: 8px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #BBH-EMBED-CONTAINER {
@@ -138,7 +139,7 @@ html, body {
   min-height: 600px;
   margin: auto;
   border-radius: 20px;
-  box-shadow: 0 20px 50px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px var(--border-strong);
+  box-shadow: 0 20px 50px -12px rgba(20, 20, 19, 0.18), 0 0 0 1px var(--border-strong);
   overflow: hidden;
   background: var(--bg-surface);
   z-index: 40;
@@ -146,13 +147,13 @@ html, body {
   /* Auto-scale proportionally if viewport height is compact so input is NEVER cropped */
   transform: scale(min(1, calc((100vh - 75px) / 605)));
   transform-origin: center center;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.25s ease;
 }
 
 /* Center Stage Iframe: Full 674px native SDK height inside 600px container:
-   - Full 400x600 desktop chatbox (Header, Messages, Input field [📎 Gửi tin nhắn đến Bongbongchat.vn (↑)]) is 100% visible
-   - Bottom launcher area with downward arrow [v] is cleanly hidden by container overflow: hidden */
+   - Full 400x600 desktop chatbox (Header, Messages, Input field) is 100% visible
+   - Bottom launcher area is cleanly hidden by container overflow: hidden */
 body:not(.mode-corner) #BBH-EMBED-IFRAME {
   position: absolute !important;
   top: 0 !important;
@@ -197,18 +198,48 @@ body.scale-80:not(.mode-corner) #BBH-EMBED-CONTAINER {
   transform: scale(0.8) !important;
 }
 
-/* Live Corner Mode */
+/* Live Corner Mode: Positioned at bottom-right corner of the Center Canvas, NEVER covered by right panel! */
+body.mode-corner .stage-canvas-area {
+  align-items: flex-end !important;
+  justify-content: flex-end !important;
+  padding: 16px 20px !important;
+}
+
 body.mode-corner #BBH-EMBED-CONTAINER {
-  position: fixed;
-  inset: 0;
-  display: block;
+  position: relative !important;
+  margin: 0 0 0 auto !important;
+  transform-origin: bottom right !important;
+  z-index: 60 !important;
+  box-shadow: 0 20px 50px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px var(--border-strong) !important;
 }
 
 body.mode-corner #BBH-EMBED-IFRAME {
-  position: fixed !important;
-  pointer-events: auto !important;
-  right: 18px !important;
-  bottom: 18px !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+body.mode-corner:not(.chat-is-open) #BBH-EMBED-CONTAINER {
+  margin: 0 0 0 auto !important;
+  width: 76px !important;
+  height: 76px !important;
+}
+
+/* Setup Placeholder Card (shown when user hasn't configured embed code or page_id yet) */
+.embed-setup-card {
+  background: var(--bg-surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: 16px;
+  padding: 30px 24px;
+  max-width: 440px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+  z-index: 45;
 }
 
 /* Lock Embed when unauthenticated or viewer-only */
@@ -223,65 +254,6 @@ body.modal-open #BBH-EMBED-CONTAINER {
   pointer-events: none !important;
   opacity: 0.18;
   filter: blur(3px);
-}
-
-/* Minimalist Floating Stage HUD Badge (Bottom of the Center Stage) */
-.stage-floating-hud {
-  position: absolute;
-  bottom: 14px;
-  background: var(--bg-elevated);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-subtle);
-  border-radius: 999px;
-  padding: 5px 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: var(--shadow-md), 0 0 16px rgba(0, 0, 0, 0.08);
-  z-index: 45;
-  font-size: 11.5px;
-  pointer-events: auto;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.stage-floating-hud:hover {
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-lg), 0 0 20px rgba(255, 106, 0, 0.12);
-  transform: translateY(-1px);
-}
-
-.hud-action-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  padding: 3px 8px;
-  border-radius: 6px;
-  transition: all 0.15s ease;
-}
-.hud-action-btn:hover {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-
-.hud-divider {
-  width: 1px;
-  height: 12px;
-  background: var(--border-subtle);
-}
-
-.hud-status-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: var(--text-secondary);
 }
 
 /* ==========================================================================
