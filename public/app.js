@@ -1519,7 +1519,7 @@
       showToast('🔄 Đã gửi /reset. Đợi AI phản hồi "Đã đặt lại lịch sử trò chuyện"...', 'info');
 
       // Show waiting indicator in running status box
-      if (el.manualRunningTitle) el.manualRunningTitle.textContent = '🔄 Đang làm mới... Tự động gửi câu #1 sau (3s)';
+      if (el.manualRunningTitle) el.manualRunningTitle.textContent = '🔄 Đang làm mới lịch sử...';
       if (el.manualRunningBadge) el.manualRunningBadge.textContent = 'Reset';
       if (el.manualRunningPrompt) el.manualRunningPrompt.textContent = 'Đã gửi lệnh /reset vào chat để làm mới phiên';
       updateManualCountdownDisplay(3, 3, false);
@@ -1531,7 +1531,7 @@
         resetWait -= 1;
         updateManualCountdownDisplay(resetWait, 3, false);
         if (resetWait > 0) {
-          if (el.manualRunningTitle) el.manualRunningTitle.textContent = `🔄 Đợi AI báo "Đã đặt lại lịch sử trò chuyện"... Tự động gửi câu #1 sau (${resetWait}s)`;
+          if (el.manualRunningTitle) el.manualRunningTitle.textContent = `🔄 Chờ AI báo đặt lại lịch sử...`;
           state.manualRunner.timerId = setTimeout(resetTick, 1000);
         } else {
           showToast('✅ AI đã hoàn tất làm mới lịch sử. Bắt đầu câu #1!', 'success');
@@ -1578,7 +1578,6 @@
 
     const nextQNum = currentIndex + 2;
     const isLastQ = (currentIndex + 1) >= questions.length;
-    const nextQMsg = isLastQ ? 'Hoàn tất sau' : `Tự động gửi câu #${nextQNum} sau`;
 
     if (el.manualRunningBadge) el.manualRunningBadge.textContent = `${currentIndex + 1} / ${questions.length}`;
     if (el.manualRunningPrompt) el.manualRunningPrompt.textContent = `"${qText}"`;
@@ -1597,9 +1596,9 @@
     updateManualCountdownDisplay(waitSec, waitSec, false);
 
     if (state.runner && state.runner.mode === 'manual') {
-      if (el.manualRunningTitle) el.manualRunningTitle.textContent = `⏳ Đợi AI trả lời xong (Bấm "Xong ngay" hoặc Space để tiếp tục)...`;
+      if (el.manualRunningTitle) el.manualRunningTitle.textContent = `⏳ Đợi bot trả lời (Xong bấm "Xong ngay")...`;
     } else {
-      if (el.manualRunningTitle) el.manualRunningTitle.textContent = `⏳ Câu #${currentIndex + 1}: ${nextQMsg} (${waitSec}s)`;
+      if (el.manualRunningTitle) el.manualRunningTitle.textContent = isLastQ ? 'Đang đợi bot phản hồi...' : `Đang đợi phản hồi câu #${currentIndex + 1}...`;
       const tick = () => {
         if (!state.manualRunner.isRunning) return;
         if (state.manualRunner.isPaused) {
@@ -1616,7 +1615,7 @@
 
         if (rem > 0) {
           if (el.manualRunningTitle) {
-            el.manualRunningTitle.textContent = `⏳ Câu #${currentIndex + 1}: ${nextQMsg} (${rem}s)`;
+            el.manualRunningTitle.textContent = isLastQ ? 'Đang đợi bot phản hồi...' : `Đang đợi phản hồi câu #${currentIndex + 1}...`;
           }
           state.manualRunner.timerId = setTimeout(tick, 1000);
         } else {
@@ -1662,7 +1661,7 @@
     if (state.manualRunner.isRunning) {
       const nextQNum = nextIdx + 1;
       if (el.manualRunningBadge) el.manualRunningBadge.textContent = `${nextQNum} / ${totalQ}`;
-      if (el.manualRunningTitle) el.manualRunningTitle.textContent = `☕ Nghỉ 3s trước khi gửi câu #${nextQNum}...`;
+      if (el.manualRunningTitle) el.manualRunningTitle.textContent = `☕ Nghỉ chuẩn bị câu #${nextQNum}...`;
       updateManualCountdownDisplay(3, 3, false);
       let breakSec = 3;
       const breakTick = () => {
@@ -1670,7 +1669,7 @@
         breakSec -= 1;
         updateManualCountdownDisplay(breakSec, 3, false);
         if (breakSec > 0) {
-          if (el.manualRunningTitle) el.manualRunningTitle.textContent = `☕ Nghỉ ${breakSec}s trước khi gửi câu #${nextQNum}...`;
+          if (el.manualRunningTitle) el.manualRunningTitle.textContent = `☕ Nghỉ chuẩn bị câu #${nextQNum}...`;
           state.manualRunner.timerId = setTimeout(breakTick, 1000);
         } else {
           executeManualQuestion();
