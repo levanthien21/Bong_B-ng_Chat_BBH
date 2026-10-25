@@ -1,0 +1,19 @@
+{
+  "name": "claude-ai-chat-test-workbench",
+  "version": "1.0.0",
+  "description": "Hệ thống Test AI Chat Botbanhang chuyên nghiệp (Claude Design) với phân quyền Đăng ký / Đăng nhập đa người dùng",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "botbanhang",
+    "ai-testing",
+    "chatbox-embed",
+    "claude-design",
+    "rbac"
+  ],
+  "author": "AI Testing Lab",
+  "license": "MIT"
+}
