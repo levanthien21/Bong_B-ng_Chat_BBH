@@ -65,10 +65,10 @@
           <span>Làm mới /reset</span>
         </button>
 
-        <!-- 2 Training Files & DeepSeek Hub Button -->
-        <button class="btn btn-secondary btn-sm" id="btn-open-training-hub" title="Quản lý File Kiến thức, File Prompt & Cấu hình DeepSeek API" style="font-weight: 600; padding: 4px 10px;">
-          <span>🧠 Training & DeepSeek</span>
-          <span class="mono-badge" id="deepseek-badge-status" style="font-size: 9.5px; background: rgba(13, 148, 136, 0.2); color: var(--teal); border: none; margin-left: 2px;">🟢 DeepSeek V3</span>
+        <!-- 2 Training Files & AI Model Hub Button -->
+        <button class="btn btn-secondary btn-sm" id="btn-open-training-hub" title="Quản lý File Kiến thức, File Prompt & Cấu hình Model AI" style="font-weight: 600; padding: 4px 10px;">
+          <span>🧠 Huấn luyện & Model AI</span>
+          <span class="mono-badge" id="deepseek-badge-status" style="font-size: 9.5px; background: rgba(13, 148, 136, 0.2); color: var(--teal); border: none; margin-left: 2px;">🟢 Gemini Free</span>
         </button>
 
         <!-- Admin Management Button -->
@@ -223,16 +223,36 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
             <div class="clean-card">
               <div class="clean-card-title">
                 <span>Agent Đàm Thoại Đa Lượt</span>
-                <span class="badge-accent">DeepSeek Brain</span>
+                <span class="badge-accent" id="agent-active-model-tag">Gemini Free</span>
               </div>
               <p style="font-size: 11px; color: var(--text-secondary); margin: 0; line-height: 1.4;">
                 Agent tự đọc phản hồi của AI Sandbox để đặt câu hỏi tiếp theo <b>đúng trọng tâm, liền mạch</b> như khách thật.
               </p>
 
-              <!-- DeepSeek Connection Status for Agent QA -->
-              <div id="agent-ds-status-banner" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(13, 148, 136, 0.08); border: 1px solid rgba(13, 148, 136, 0.2); border-radius: 7px; font-size: 11px; margin: 6px 0 2px 0;">
-                <span id="agent-ds-status-label">🟢 DeepSeek Brain: Sẵn sàng</span>
-                <button type="button" class="btn btn-secondary btn-xs" id="btn-agent-open-ds-modal" style="font-size: 10.5px; padding: 2px 7px;">⚙️ Cấu hình</button>
+              <!-- Quick Model Selector for Agent QA & Judge -->
+              <div style="margin: 6px 0 2px 0; background: var(--bg-panel); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-size: 10.5px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 4px;">
+                    <span>🤖 Bộ Não AI (Free / DeepSeek):</span>
+                  </span>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-agent-open-ds-modal" style="font-size: 10px; padding: 2px 7px;">⚙️ Cấu hình</button>
+                </div>
+                <select class="select select-xs" id="agent-quick-model-select" style="font-weight: 600; width: 100%;">
+                  <optgroup label="🌟 Miễn Phí (Tiết kiệm 100% chi phí)">
+                    <option value="gemini-1.5-flash" selected>🌟 Google Gemini 1.5 Flash (Free 100%)</option>
+                    <option value="local-free">🛡️ Smart Local AI (0đ - Không cần Key)</option>
+                    <option value="gemini-2.0-flash">⚡ Google Gemini 2.0 Flash (Free Siêu Tốc)</option>
+                    <option value="llama-3.3-70b-versatile">🚀 Groq Llama 3.3 70B (Free)</option>
+                  </optgroup>
+                  <optgroup label="🧠 DeepSeek (Trả phí)">
+                    <option value="deepseek-chat">🧠 DeepSeek-V3 (deepseek-chat)</option>
+                    <option value="deepseek-reasoner">🧩 DeepSeek-R1 (deepseek-reasoner)</option>
+                  </optgroup>
+                </select>
+                <div id="agent-model-status-hint" style="font-size: 10px; color: var(--teal); margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
+                  <span id="agent-model-badge">🟢 Gemini 1.5 Flash (Free)</span>
+                  <span id="agent-key-status-indicator" style="color: var(--text-muted); font-size: 9.5px;">Sẵn sàng</span>
+                </div>
               </div>
 
               <!-- Button: Auto-extract Personas from 2 Files -->
@@ -489,8 +509,8 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
         <div style="display: flex; align-items: center; gap: 9px;">
           <div class="brand-logo" style="width: 26px; height: 26px; font-size: 15px;">🧠</div>
           <div>
-            <h2 style="font-size: 14.5px; font-weight: 700;">Hệ thống Huấn luyện 2 File & Liên kết DeepSeek API</h2>
-            <p style="font-size: 11px; color: var(--text-muted);">Cung cấp File Kiến thức Sản phẩm + File Prompt Quy tắc và cấu hình DeepSeek để AI Tester hoạt động</p>
+            <h2 style="font-size: 14.5px; font-weight: 700;">Hệ thống Huấn luyện 2 File & Cấu hình Model AI</h2>
+            <p style="font-size: 11px; color: var(--text-muted);">Cung cấp File Kiến thức + File Prompt và chọn Model AI (Google Gemini Free, Smart Local AI 0đ, hoặc DeepSeek)</p>
           </div>
         </div>
         <button class="btn btn-secondary btn-icon btn-sm" id="btn-close-training-modal">✕</button>
@@ -502,7 +522,7 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
         <div class="segmented-control" id="training-tabs" style="width: fit-content;">
           <button class="seg-btn active" data-tab="tab-file1">📁 File 1: Kiến thức Sản phẩm & Q&A</button>
           <button class="seg-btn" data-tab="tab-file2">📋 File 2: Quy tắc Prompt & Rào chắn</button>
-          <button class="seg-btn" data-tab="tab-deepseek">⚡ Liên kết DeepSeek API</button>
+          <button class="seg-btn" data-tab="tab-deepseek">🤖 Cấu hình Model AI (Free / DeepSeek)</button>
           <button class="seg-btn" data-tab="tab-embed">💬 Mã nhúng Bong bóng Chat</button>
         </div>
 
@@ -561,48 +581,63 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
           </form>
         </div>
 
-        <!-- 3. Tab DeepSeek API Settings -->
+        <!-- 3. Tab AI Model Settings (Gemini Free, Local Free, DeepSeek) -->
         <div id="tab-deepseek-content" style="display: none;">
           <form id="form-deepseek-save" style="display: flex; flex-direction: column; gap: 12px; max-width: 580px;">
             <div style="background: var(--bg-panel); padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border-subtle); font-size: 11.5px; color: var(--text-secondary); line-height: 1.5;">
-              <b>⚡ Liên kết DeepSeek API:</b> DeepSeek sẽ đóng vai trò là <b>AI Tester</b> (khách hàng ảo đa nhân cách đặt câu hỏi thử thách) và <b>AI Judge</b> (giám khảo tự động chấm điểm phản hồi của Botbanhang đối chiếu chặt chẽ với cả 2 file).
+              <b>🤖 Bộ Não AI Cho Hệ Thống:</b> Đóng vai trò là <b>AI Tester</b> (khách hàng ảo đa nhân cách đặt câu hỏi thử thách) và <b>AI Judge</b> (giám khảo tự động chấm điểm phản hồi của Botbanhang đối chiếu chặt chẽ với cả 2 file).
+              <div style="margin-top: 4px; color: var(--teal); font-weight: 600;">
+                💡 <b>Mẹo tiết kiệm chi phí:</b> Bạn có thể chọn <b>Google Gemini 1.5 Flash (Free 100%)</b> hoặc <b>Smart Local AI (0đ vĩnh viễn, không cần key)</b> để chạy ổn định mà không lo tốn phí!
+              </div>
+            </div>
+
+            <!-- Model Selection dropdown -->
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700;">Chọn Mô hình AI vận hành:</label>
+              <select class="select" id="ds-model-select" style="font-weight: 600;">
+                <optgroup label="🌟 Mô hình Miễn Phí (Khuyên dùng để tránh tốn phí)">
+                  <option value="gemini-1.5-flash" selected>🌟 Google Gemini 1.5 Flash (Miễn phí 100% - Google AI Studio)</option>
+                  <option value="local-free">🛡️ Smart Local AI (0đ Vĩnh Viễn - Không cần API Key)</option>
+                  <option value="gemini-2.0-flash">⚡ Google Gemini 2.0 Flash (Free Siêu Tốc - Google AI Studio)</option>
+                  <option value="llama-3.3-70b-versatile">🚀 Groq Llama 3.3 70B (Free Tốc độ cao - Groq Cloud)</option>
+                </optgroup>
+                <optgroup label="🧠 DeepSeek Trả Phí (Dành cho tài khoản có sẵn key DeepSeek)">
+                  <option value="deepseek-chat">🧠 DeepSeek-V3 (deepseek-chat)</option>
+                  <option value="deepseek-reasoner">🧩 DeepSeek-R1 (deepseek-reasoner - Suy luận nâng cao)</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <!-- Dynamic Model Help Card -->
+            <div id="model-help-card" style="padding: 9px 12px; background: rgba(13, 148, 136, 0.08); border: 1px solid rgba(13, 148, 136, 0.25); border-radius: 8px; font-size: 11px; line-height: 1.5;">
+              <span id="model-help-text">Google AI Studio cung cấp 1,500 lượt gọi/ngày hoàn toàn <b>MIỄN PHÍ</b>. Tạo API Key miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent); font-weight:700;">aistudio.google.com</a></span>
             </div>
 
             <!-- Current Key Status banner -->
             <div id="ds-current-status-banner" style="display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: 8px; font-size: 11.5px;">
-              <span id="ds-status-text">Đang kiểm tra trạng thái DeepSeek API...</span>
+              <span id="ds-status-text">Đang kiểm tra trạng thái AI Model...</span>
               <button type="button" class="btn btn-secondary btn-sm" id="btn-test-saved-key" style="font-size: 11px; padding: 4px 10px;">
-                🟢 Test Key đã lưu
+                🟢 Test Model này
               </button>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="group-api-key">
               <label class="form-label" style="display: flex; justify-content: space-between;">
-                <span>DeepSeek API Key:</span>
+                <span id="lbl-api-key">Google Gemini API Key:</span>
                 <span id="ds-key-hint" style="font-weight: normal; color: var(--text-muted); font-size: 11px;"></span>
               </label>
-              <input type="password" class="input" id="ds-api-key-input" placeholder="sk-... (Nhập key mới nếu muốn thay đổi)">
-              <span style="font-size: 10.5px; color: var(--text-muted);">Lấy API Key tại <a href="https://platform.deepseek.com" target="_blank" style="color:var(--accent);">platform.deepseek.com</a>. (Nếu đã lưu key, bạn có thể để trống ô này khi đổi mô hình hoặc thời gian chờ).</span>
+              <input type="password" class="input" id="ds-api-key-input" placeholder="AIzaSy... (Dán Google Gemini API Key)">
+              <span id="ds-key-guide" style="font-size: 10.5px; color: var(--text-muted);">Nếu đã lưu key, bạn có thể để trống ô này khi đổi mô hình hoặc thời gian chờ.</span>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-              <div class="form-group">
-                <label class="form-label">Mô hình DeepSeek:</label>
-                <select class="select" id="ds-model-select">
-                  <option value="deepseek-chat" selected>deepseek-chat (DeepSeek-V3 - Nhanh & Tối ưu)</option>
-                  <option value="deepseek-reasoner">deepseek-reasoner (DeepSeek-R1 - Tư duy suy luận)</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Thời gian chờ phản hồi (giây):</label>
-                <input type="number" class="input" id="ds-wait-seconds-input" value="30" min="5" max="300">
-              </div>
+            <div class="form-group">
+              <label class="form-label">Thời gian chờ phản hồi tối đa (giây):</label>
+              <input type="number" class="input" id="ds-wait-seconds-input" value="30" min="5" max="300">
             </div>
 
             <div style="display: flex; gap: 8px; margin-top: 4px;">
               <button type="button" class="btn btn-secondary btn-sm" id="btn-test-deepseek-conn">Kiểm tra kết nối với Key đang nhập</button>
-              <button type="submit" class="btn btn-primary btn-sm">Lưu cấu hình DeepSeek</button>
+              <button type="submit" class="btn btn-primary btn-sm">Lưu cấu hình Model AI</button>
             </div>
             <div id="deepseek-test-feedback" style="display:none; font-size:11px; padding:9px 12px; border-radius:7px; line-height: 1.5;"></div>
           </form>
@@ -660,7 +695,7 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
             </div>
             <div style="display: flex; gap: 8px; align-items: flex-start;">
               <span style="color: var(--teal); font-size: 13px;">✦</span>
-              <div><b>DeepSeek API Key cá nhân:</b> Tự do gắn API key của bạn để dùng tính năng AI Đánh giá & AI Agent đa lượt. Hệ thống cam kết không chia sẻ key giữa các người dùng.</div>
+              <div><b>Hỗ trợ Model Free 100% & DeepSeek:</b> Bạn có thể dùng <b>Google Gemini 1.5 Flash Free</b> hoặc <b>Smart Local AI (0đ - Không cần Key)</b> để chạy ổn định, không lo tốn phí token.</div>
             </div>
             <div style="display: flex; gap: 8px; align-items: flex-start;">
               <span style="color: var(--accent); font-size: 13px;">✦</span>
@@ -712,10 +747,13 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
             <input type="password" class="input" id="reg-password" placeholder="••••••••" required minlength="6" autocomplete="new-password">
           </div>
           <div class="form-group">
-            <label class="form-label">DeepSeek API Key (Tùy chọn):</label>
-            <input type="password" class="input" id="reg-api-key" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (Để trống nếu chưa có)" autocomplete="off">
+            <label class="form-label" style="display: flex; justify-content: space-between;">
+              <span>AI API Key (Tùy chọn):</span>
+              <span style="font-size: 10.5px; color: var(--teal); font-weight: 600;">Hỗ trợ Gemini Free 100%</span>
+            </label>
+            <input type="password" class="input" id="reg-api-key" placeholder="Dán Gemini Key (AIzaSy...) hoặc DeepSeek (sk-...). Để trống = Dùng Smart Local AI 0đ" autocomplete="off">
             <div style="font-size: 10.5px; color: var(--text-muted); line-height: 1.35; margin-top: 2px;">
-              🔑 Nhập key để dùng tính năng AI Đánh giá tự động. Key chỉ lưu riêng cho tài khoản của bạn.
+              💡 <b>Khuyên dùng:</b> Lấy key <b>Google Gemini miễn phí</b> tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent);">aistudio.google.com</a> (0đ, 1.500 req/ngày). Hoặc <b>để trống</b> để chạy Smart Local AI miễn phí không cần bất kỳ key nào!
             </div>
           </div>
           <div class="form-group">

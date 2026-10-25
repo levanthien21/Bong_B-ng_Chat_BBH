@@ -3,6 +3,10 @@
     "page_id": "095817282564177",
     "sdk_url": "https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js",
     "project_name": "Thiện BBH — AI Testing Studio",
+    "ai_model": "gemini-1.5-flash",
+    "ai_provider": "gemini",
+    "gemini_api_key": "",
+    "groq_api_key": "",
     "deepseek_api_key": "",
     "deepseek_model": "deepseek-chat",
     "deepseek_base_url": "https://api.deepseek.com",
@@ -108,8 +112,8 @@
         "updated_at": "2026-10-25T10:39:25.426Z"
       },
       "created_at": "2026-10-25T08:20:08.743Z",
-      "last_login": "2026-10-25T11:56:29.020Z",
-      "tests_submitted": 1
+      "last_login": "2026-10-25T15:37:13.793Z",
+      "tests_submitted": 2
     }
   ],
   "sessions": {
@@ -128,11 +132,57 @@
     "cb80de0211dd67d30b9a868d04c25a757cb0bb48d64d0a68ada348237e538339": {
       "user_id": "usr_thien_admin",
       "created_at": "2026-10-25T11:56:29.020Z"
+    },
+    "28df3606835d8b0892cf639a5bc05ca0af1b91e523321161c4557a2c16f622f1": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-25T15:37:00.059Z"
+    },
+    "e56d2d400108b9afa988a1915ef762919cf0fa74d47f739de4c023546cc887f8": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-25T15:37:13.793Z"
     }
   },
-  "evaluations": [],
+  "evaluations": [
+    {
+      "id": "eval_1792942620655",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Giá gói cơ bản bên mình bao nhiêu tiền 1 tháng?",
+      "ai_response_summary": "Dạ gói cơ bản bên em có giá là 300k/tháng anh nhé!",
+      "result": "pass",
+      "score": 4,
+      "judge_engine": "Smart Local AI (Miễn phí 0đ)",
+      "client_id": "auto_tester",
+      "analysis": "AI có phản hồi lịch sự, đúng trọng tâm câu hỏi của khách hàng.",
+      "recommendation": "Có thể kích hoạt DeepSeek API để phân tích chuyên sâu hơn.",
+      "created_at": "2026-10-25T15:37:00.655Z"
+    }
+  ],
   "chat_sessions": [],
   "logs": [
+    {
+      "id": "log_1792942633793_5mih",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-25T15:37:13.793Z"
+    },
+    {
+      "id": "log_1792942620652_olhe",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "AI Tester sinh 8 câu hỏi (Gemini 1.5 Flash (Free))",
+      "created_at": "2026-10-25T15:37:00.652Z"
+    },
+    {
+      "id": "log_1792942620059_g1k8",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-25T15:37:00.059Z"
+    },
     {
       "id": "log_1792929389020_kspy",
       "actor": "Thiện BBH",

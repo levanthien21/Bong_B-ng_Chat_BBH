@@ -58,6 +58,76 @@
     }
   };
 
+  // Supported AI Models & Metadata (Google Gemini Free 100%, Smart Local AI 0đ, Groq, DeepSeek)
+  const MODEL_META = {
+    'gemini-1.5-flash': {
+      provider: 'gemini',
+      name: 'Google Gemini 1.5 Flash (Miễn phí 100%)',
+      badge: '🌟 Gemini 1.5 Flash (Free)',
+      isFree: true,
+      needsKey: true,
+      keyLabel: 'Google Gemini API Key:',
+      keyPlaceholder: 'AIzaSy... (Dán Google Gemini API Key)',
+      helpText: 'Google AI Studio cung cấp 1,500 lượt gọi/ngày hoàn toàn <b>MIỄN PHÍ</b>. Tạo API Key miễn phí trong 10 giây tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent); font-weight:700;">aistudio.google.com</a>.',
+      rateLimitHint: 'Miễn phí 1.500 req/ngày'
+    },
+    'local-free': {
+      provider: 'local',
+      name: 'Smart Local AI (Miễn phí 0đ - Không cần Key)',
+      badge: '🛡️ Local AI (0đ)',
+      isFree: true,
+      needsKey: false,
+      keyLabel: 'Không cần API Key',
+      keyPlaceholder: 'Chế độ Local AI không cần bất kỳ API Key nào',
+      helpText: '<b>🛡️ Chế độ AI Cục Bộ (0đ Vĩnh Viễn):</b> Tự động đọc dữ liệu 2 File để dựng câu hỏi & chấm điểm, không tốn chi phí, không cần key, không sợ nghẽn mạng hay hết quota!',
+      rateLimitHint: '0đ - Không cần Key'
+    },
+    'gemini-2.0-flash': {
+      provider: 'gemini',
+      name: 'Google Gemini 2.0 Flash (Free Siêu Tốc)',
+      badge: '⚡ Gemini 2.0 Flash (Free)',
+      isFree: true,
+      needsKey: true,
+      keyLabel: 'Google Gemini API Key:',
+      keyPlaceholder: 'AIzaSy... (Dán Google Gemini API Key)',
+      helpText: 'Thế hệ mô hình AI mới nhất của Google với tốc độ cực nhanh, miễn phí trên Google AI Studio. Lấy key tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent); font-weight:700;">aistudio.google.com</a>.',
+      rateLimitHint: 'Free Google AI Studio'
+    },
+    'llama-3.3-70b-versatile': {
+      provider: 'groq',
+      name: 'Groq Llama 3.3 70B (Free Tốc độ cao)',
+      badge: '🚀 Groq Llama 3.3 70B (Free)',
+      isFree: true,
+      needsKey: true,
+      keyLabel: 'Groq API Key:',
+      keyPlaceholder: 'gsk_... (Dán Groq API Key)',
+      helpText: 'Groq Cloud cung cấp API miễn phí tốc độ siêu cao với model mã nguồn mở Llama 3.3 70B. Lấy key miễn phí tại <a href="https://console.groq.com/keys" target="_blank" style="color:var(--accent); font-weight:700;">console.groq.com/keys</a>.',
+      rateLimitHint: 'Free Groq Cloud'
+    },
+    'deepseek-chat': {
+      provider: 'deepseek',
+      name: 'DeepSeek-V3 (deepseek-chat)',
+      badge: '🧠 DeepSeek-V3',
+      isFree: false,
+      needsKey: true,
+      keyLabel: 'DeepSeek API Key:',
+      keyPlaceholder: 'sk-... (Dán DeepSeek API Key)',
+      helpText: 'DeepSeek-V3 xử lý thông minh, chất lượng cao. Lấy key tại <a href="https://platform.deepseek.com" target="_blank" style="color:var(--accent); font-weight:700;">platform.deepseek.com</a>.',
+      rateLimitHint: 'DeepSeek Trả Phí'
+    },
+    'deepseek-reasoner': {
+      provider: 'deepseek',
+      name: 'DeepSeek-R1 (deepseek-reasoner)',
+      badge: '🧩 DeepSeek-R1',
+      isFree: false,
+      needsKey: true,
+      keyLabel: 'DeepSeek API Key:',
+      keyPlaceholder: 'sk-... (Dán DeepSeek API Key)',
+      helpText: 'DeepSeek-R1 với chuỗi suy luận sâu trước khi đưa ra câu hỏi và đánh giá. Lấy key tại <a href="https://platform.deepseek.com" target="_blank" style="color:var(--accent); font-weight:700;">platform.deepseek.com</a>.',
+      rateLimitHint: 'DeepSeek Trả Phí'
+    }
+  };
+
   // DOM Elements Cache
   const el = {
     body: document.body,
@@ -228,9 +298,18 @@
     btnTestSavedKey: document.getElementById('btn-test-saved-key'),
     dsStatusText: document.getElementById('ds-status-text'),
     dsKeyHint: document.getElementById('ds-key-hint'),
+    dsKeyGuide: document.getElementById('ds-key-guide'),
+    groupApiKey: document.getElementById('group-api-key'),
+    lblApiKey: document.getElementById('lbl-api-key'),
+    modelHelpCard: document.getElementById('model-help-card'),
+    modelHelpText: document.getElementById('model-help-text'),
     deepseekTestFeedback: document.getElementById('deepseek-test-feedback'),
     agentDsStatusBanner: document.getElementById('agent-ds-status-banner'),
     agentDsStatusLabel: document.getElementById('agent-ds-status-label'),
+    agentActiveModelTag: document.getElementById('agent-active-model-tag'),
+    agentQuickModelSelect: document.getElementById('agent-quick-model-select'),
+    agentModelBadge: document.getElementById('agent-model-badge'),
+    agentKeyStatusIndicator: document.getElementById('agent-key-status-indicator'),
     btnAgentOpenDsModal: document.getElementById('btn-agent-open-ds-modal'),
 
     // Persona & Contextual Q&A Generator
@@ -499,26 +578,47 @@
     if (el.headerUserRole) el.headerUserRole.style.display = 'none';
     if (el.btnAdminManage) el.btnAdminManage.style.display = 'none';
 
-    // DeepSeek status indicator: personal key or global
-    const hasKey = Boolean(state.user.has_deepseek_key || state.config.has_deepseek_key);
-    if (hasKey) {
-      el.deepseekBadgeStatus.textContent = '🟢 DeepSeek V3 (Sẵn sàng)';
-      el.deepseekBadgeStatus.style.background = 'rgba(13, 148, 136, 0.4)';
-      el.deepseekBadgeStatus.title = 'DeepSeek API đã kết nối. Bấm để xem hoặc đổi cấu hình';
-      if (el.agentDsStatusLabel) el.agentDsStatusLabel.textContent = '🟢 DeepSeek Brain: Sẵn sàng';
-      if (el.agentDsStatusBanner) {
-        el.agentDsStatusBanner.style.background = 'rgba(13, 148, 136, 0.08)';
-        el.agentDsStatusBanner.style.borderColor = 'rgba(13, 148, 136, 0.2)';
+    // AI Model resolution & status indicator (Free Gemini, Local Free, DeepSeek)
+    const currentModel = (state.user && state.user.ai_model) || (state.config && state.config.ai_model) || 'gemini-1.5-flash';
+    const meta = MODEL_META[currentModel] || MODEL_META['gemini-1.5-flash'];
+    const hasKey = (meta.needsKey === false) || Boolean(
+      (state.user && (state.user.has_ai_key || state.user.has_deepseek_key)) ||
+      (state.config && (state.config.has_ai_key || state.config.has_deepseek_key))
+    );
+
+    if (el.deepseekBadgeStatus) {
+      if (hasKey) {
+        el.deepseekBadgeStatus.textContent = `🟢 ${meta.badge}`;
+        el.deepseekBadgeStatus.style.background = meta.isFree ? 'rgba(13, 148, 136, 0.35)' : 'rgba(217, 119, 87, 0.35)';
+        el.deepseekBadgeStatus.style.color = meta.isFree ? 'var(--teal)' : 'var(--accent)';
+        el.deepseekBadgeStatus.title = `Model đang dùng: ${meta.name}. Bấm để xem hoặc đổi cấu hình`;
+      } else {
+        el.deepseekBadgeStatus.textContent = '⚪ Cần gắn Key AI';
+        el.deepseekBadgeStatus.style.background = 'rgba(255, 255, 255, 0.2)';
+        el.deepseekBadgeStatus.style.color = 'var(--text-secondary)';
+        el.deepseekBadgeStatus.title = `Bấm để cấu hình ${meta.name} hoặc chuyển sang Smart Local AI 0đ`;
       }
-    } else {
-      el.deepseekBadgeStatus.textContent = '⚪ Cần gắn Key DeepSeek';
-      el.deepseekBadgeStatus.style.background = 'rgba(255, 255, 255, 0.2)';
-      el.deepseekBadgeStatus.title = 'Bấm để nhập DeepSeek API Key cá nhân của bạn';
-      if (el.agentDsStatusLabel) el.agentDsStatusLabel.textContent = '⚠️ Cần gắn Key DeepSeek';
-      if (el.agentDsStatusBanner) {
-        el.agentDsStatusBanner.style.background = 'rgba(217, 119, 87, 0.08)';
-        el.agentDsStatusBanner.style.borderColor = 'rgba(217, 119, 87, 0.2)';
-      }
+    }
+
+    if (el.agentActiveModelTag) {
+      el.agentActiveModelTag.textContent = meta.badge;
+    }
+
+    if (el.agentQuickModelSelect) {
+      el.agentQuickModelSelect.value = currentModel;
+    }
+
+    if (el.agentModelBadge) {
+      el.agentModelBadge.textContent = `${meta.badge}: ${meta.rateLimitHint}`;
+    }
+
+    if (el.agentKeyStatusIndicator) {
+      el.agentKeyStatusIndicator.textContent = hasKey ? '🟢 Sẵn sàng' : '⚠️ Chưa có Key';
+      el.agentKeyStatusIndicator.style.color = hasKey ? 'var(--teal)' : 'var(--accent)';
+    }
+
+    if (el.agentDsStatusLabel) {
+      el.agentDsStatusLabel.textContent = hasKey ? `🟢 ${meta.badge}: Sẵn sàng` : `⚠️ ${meta.badge}: Cần gắn Key`;
     }
 
     const perms = state.user.permissions || {};
@@ -794,8 +894,9 @@
     el.file1ContentInput.value = state.productKnowledge.content || '';
     el.file2TitleInput.value = state.promptRules.title || '';
     el.file2ContentInput.value = state.promptRules.content || '';
-    el.dsModelSelect.value = state.config.deepseek_model || 'deepseek-chat';
-    el.dsWaitSecondsInput.value = state.config.auto_wait_seconds || 30;
+    const activeModel = (state.user && state.user.ai_model) || (state.config && state.config.ai_model) || 'gemini-1.5-flash';
+    if (el.dsModelSelect) el.dsModelSelect.value = activeModel;
+    if (el.dsWaitSecondsInput) el.dsWaitSecondsInput.value = state.config.auto_wait_seconds || 30;
 
     // Switch tab
     el.trainingTabs.querySelectorAll('.seg-btn').forEach(b => {
@@ -814,18 +915,47 @@
 
   function updateDeepSeekModalStatus() {
     if (!el.dsStatusText) return;
-    if (state.config.has_deepseek_key) {
-      el.dsStatusText.innerHTML = `🟢 <b>Đã có Key:</b> <code>${state.config.deepseek_api_key || '••••••••'}</code> (Mô hình: <b>${state.config.deepseek_model || 'deepseek-chat'}</b>)`;
-      if (el.dsKeyHint) el.dsKeyHint.textContent = `(Đã lưu key ${state.config.deepseek_api_key || ''} - để trống nếu không đổi)`;
-      if (el.btnTestSavedKey) el.btnTestSavedKey.style.display = 'inline-flex';
+    const selectedModel = (el.dsModelSelect && el.dsModelSelect.value) || (state.config && state.config.ai_model) || 'gemini-1.5-flash';
+    const meta = MODEL_META[selectedModel] || MODEL_META['gemini-1.5-flash'];
+
+    // Update help card and key label dynamically
+    if (el.modelHelpText) el.modelHelpText.innerHTML = meta.helpText;
+    if (el.lblApiKey) el.lblApiKey.textContent = meta.keyLabel;
+
+    if (meta.needsKey === false) {
+      // Smart Local AI - 100% Free 0đ, no key needed!
+      if (el.groupApiKey) el.groupApiKey.style.display = 'none';
+      el.dsStatusText.innerHTML = `🛡️ <b>Smart Local AI (0đ):</b> Sẵn sàng 100% không cần API Key, không giới hạn request!`;
+      if (el.dsKeyHint) el.dsKeyHint.textContent = '(Miễn phí 100%)';
+      if (el.btnTestSavedKey) {
+        el.btnTestSavedKey.style.display = 'inline-flex';
+        el.btnTestSavedKey.textContent = '🟢 Test chạy thử Local AI';
+      }
       el.dsApiKeyInput.removeAttribute('required');
-      el.dsApiKeyInput.placeholder = 'Để trống để giữ nguyên key đã lưu, hoặc nhập key mới...';
     } else {
-      el.dsStatusText.innerHTML = `⚪ <b>Chưa có Key:</b> Vui lòng nhập API Key để kích hoạt AI Tester & Judge`;
-      if (el.dsKeyHint) el.dsKeyHint.textContent = '(Bắt buộc nhập)';
-      if (el.btnTestSavedKey) el.btnTestSavedKey.style.display = 'none';
-      el.dsApiKeyInput.setAttribute('required', 'required');
-      el.dsApiKeyInput.placeholder = 'sk-... (Nhập key DeepSeek của bạn)';
+      if (el.groupApiKey) el.groupApiKey.style.display = 'block';
+      el.dsApiKeyInput.placeholder = meta.keyPlaceholder;
+
+      const hasKey = Boolean(
+        (state.user && (state.user.has_ai_key || state.user.has_deepseek_key)) ||
+        (state.config && (state.config.has_ai_key || state.config.has_deepseek_key))
+      );
+
+      if (hasKey) {
+        const masked = (state.config && state.config.masked_ai_key) || (state.config && state.config.deepseek_api_key) || '••••••••';
+        el.dsStatusText.innerHTML = `🟢 <b>Đã có Key:</b> <code>${masked}</code> (${meta.badge})`;
+        if (el.dsKeyHint) el.dsKeyHint.textContent = `(Đã lưu key ${masked} - để trống nếu không đổi)`;
+        if (el.btnTestSavedKey) {
+          el.btnTestSavedKey.style.display = 'inline-flex';
+          el.btnTestSavedKey.textContent = '🟢 Test Model này';
+        }
+        el.dsApiKeyInput.removeAttribute('required');
+      } else {
+        el.dsStatusText.innerHTML = `⚪ <b>Chưa có Key:</b> Vui lòng nhập ${meta.keyLabel} để kích hoạt`;
+        if (el.dsKeyHint) el.dsKeyHint.textContent = '(Bắt buộc nhập)';
+        if (el.btnTestSavedKey) el.btnTestSavedKey.style.display = 'none';
+        el.dsApiKeyInput.setAttribute('required', 'required');
+      }
     }
   }
 
@@ -1050,21 +1180,27 @@
     }
   });
 
-  // Test Saved Key Connection
+  // Test Saved Key / Model Connection
   if (el.btnTestSavedKey) {
     el.btnTestSavedKey.addEventListener('click', async () => {
+      const selectedModel = el.dsModelSelect.value;
+      const meta = MODEL_META[selectedModel] || MODEL_META['gemini-1.5-flash'];
+
       el.deepseekTestFeedback.style.display = 'block';
       el.deepseekTestFeedback.style.background = 'var(--bg-panel)';
       el.deepseekTestFeedback.style.color = 'var(--text-primary)';
-      el.deepseekTestFeedback.innerHTML = '⏳ Đang kiểm tra kết nối với Key DeepSeek đã lưu trong hệ thống...';
+      el.deepseekTestFeedback.innerHTML = `⏳ Đang kiểm tra kết nối với mô hình <b>${meta.name}</b>...`;
 
       try {
-        const res = await api('/api/deepseek/test', 'POST', { apiKey: '', save: false });
+        const res = await api('/api/deepseek/test', 'POST', { apiKey: '', model: selectedModel, save: false });
         el.deepseekTestFeedback.style.background = 'var(--success-soft)';
         el.deepseekTestFeedback.style.color = 'var(--success)';
         el.deepseekTestFeedback.innerHTML = `✅ <b>Thành công!</b> ${res.message} (Mô hình: ${res.model})`;
-        showToast('Kết nối DeepSeek API thành công!', 'success');
-        state.config.has_deepseek_key = true;
+        showToast('Kết nối AI Model thành công!', 'success');
+        state.config.has_ai_key = res.has_ai_key;
+        state.config.has_deepseek_key = res.has_ai_key;
+        state.config.ai_model = selectedModel;
+        state.config.deepseek_model = selectedModel;
         applyAuthState();
         updateDeepSeekModalStatus();
       } catch (err) {
@@ -1075,26 +1211,32 @@
     });
   }
 
-  // Test DeepSeek Connection (with current input)
+  // Test AI Connection (with current input)
   el.btnTestDeepseekConn.addEventListener('click', async () => {
     let apiKey = el.dsApiKeyInput.value.trim().replace(/^["']|["']$/g, '');
-    if (!apiKey && !state.config.has_deepseek_key) {
-      showToast('Vui lòng nhập API Key để kiểm tra.', 'error');
+    const model = el.dsModelSelect.value;
+    const meta = MODEL_META[model] || MODEL_META['gemini-1.5-flash'];
+
+    if (meta.needsKey !== false && !apiKey && !state.config.has_ai_key && !state.config.has_deepseek_key) {
+      showToast(`Vui lòng nhập ${meta.keyLabel} để kiểm tra.`, 'error');
       return;
     }
+
     el.deepseekTestFeedback.style.display = 'block';
     el.deepseekTestFeedback.style.background = 'var(--bg-panel)';
     el.deepseekTestFeedback.style.color = 'var(--text-primary)';
-    el.deepseekTestFeedback.innerHTML = '⏳ Đang gửi yêu cầu kiểm tra kết nối tới DeepSeek API...';
+    el.deepseekTestFeedback.innerHTML = `⏳ Đang gửi yêu cầu kiểm tra kết nối tới mô hình <b>${meta.name}</b>...`;
 
     try {
-      const model = el.dsModelSelect.value;
       const res = await api('/api/deepseek/test', 'POST', { apiKey, model, save: false });
       el.deepseekTestFeedback.style.background = 'var(--success-soft)';
       el.deepseekTestFeedback.style.color = 'var(--success)';
       el.deepseekTestFeedback.innerHTML = `✅ <b>Thành công!</b> ${res.message} (Mô hình: ${res.model})`;
-      showToast('Kết nối DeepSeek API thành công!', 'success');
-      state.config.has_deepseek_key = true;
+      showToast('Kết nối AI Model thành công!', 'success');
+      state.config.has_ai_key = res.has_ai_key;
+      state.config.has_deepseek_key = res.has_ai_key;
+      state.config.ai_model = model;
+      state.config.deepseek_model = model;
       applyAuthState();
       updateDeepSeekModalStatus();
     } catch (err) {
@@ -1104,18 +1246,29 @@
     }
   });
 
-  // Save DeepSeek Config
+  // Save AI Config (Model & Key)
   el.formDeepseekSave.addEventListener('submit', async (e) => {
     e.preventDefault();
     let apiKey = el.dsApiKeyInput.value.trim().replace(/^["']|["']$/g, '');
     const model = el.dsModelSelect.value;
     const auto_wait_seconds = Number(el.dsWaitSecondsInput.value) || 30;
+    const meta = MODEL_META[model] || MODEL_META['gemini-1.5-flash'];
 
     try {
       const res = await api('/api/deepseek/config', 'POST', { apiKey, model, auto_wait_seconds });
+      state.config.has_ai_key = res.has_ai_key;
       state.config.has_deepseek_key = res.has_deepseek_key;
-      state.config.deepseek_model = model;
-      if (res.masked_key) state.config.deepseek_api_key = res.masked_key;
+      state.config.ai_model = res.model || model;
+      state.config.deepseek_model = res.model || model;
+      if (state.user) {
+        state.user.ai_model = res.model || model;
+        state.user.has_ai_key = res.has_ai_key;
+        state.user.has_deepseek_key = res.has_deepseek_key;
+      }
+      if (res.masked_key) {
+        state.config.masked_ai_key = res.masked_key;
+        state.config.deepseek_api_key = res.masked_key;
+      }
       setRunnerDelaySeconds(auto_wait_seconds);
       applyAuthState();
       updateDeepSeekModalStatus();
@@ -1126,6 +1279,46 @@
       showToast(err.message, 'error');
     }
   });
+
+  // Dynamic Model Select Handler in Modal
+  if (el.dsModelSelect) {
+    el.dsModelSelect.addEventListener('change', () => {
+      updateDeepSeekModalStatus();
+    });
+  }
+
+  // Quick Model Selector in Left Panel (Agent QA View)
+  if (el.agentQuickModelSelect) {
+    el.agentQuickModelSelect.addEventListener('change', async () => {
+      const selectedModel = el.agentQuickModelSelect.value;
+      const meta = MODEL_META[selectedModel] || MODEL_META['gemini-1.5-flash'];
+      try {
+        const res = await api('/api/deepseek/config', 'POST', {
+          model: selectedModel,
+          auto_wait_seconds: Number(state.config.auto_wait_seconds) || 30
+        });
+        state.config.ai_model = selectedModel;
+        state.config.deepseek_model = selectedModel;
+        state.config.has_ai_key = res.has_ai_key;
+        state.config.has_deepseek_key = res.has_deepseek_key;
+        if (state.user) {
+          state.user.ai_model = selectedModel;
+          state.user.has_ai_key = res.has_ai_key;
+          state.user.has_deepseek_key = res.has_deepseek_key;
+        }
+        if (res.masked_key) {
+          state.config.masked_ai_key = res.masked_key;
+          state.config.deepseek_api_key = res.masked_key;
+        }
+        if (el.dsModelSelect) el.dsModelSelect.value = selectedModel;
+        applyAuthState();
+        updateDeepSeekModalStatus();
+        showToast(`Đã chuyển sang mô hình: ${meta.name}`, 'success');
+      } catch (err) {
+        showToast('Lỗi khi đổi mô hình: ' + err.message, 'error');
+      }
+    });
+  }
 
   // ==========================================================================
   // MODE NAVIGATION & CLEAN TABS
@@ -1186,7 +1379,8 @@
     try {
       const res = await api('/api/persona/extract-and-generate', 'POST', {
         productKnowledge: pk,
-        promptRules: pr
+        promptRules: pr,
+        model: state.config.ai_model || (el.agentQuickModelSelect ? el.agentQuickModelSelect.value : undefined)
       });
 
       cachedExtractedPersonas = res.personas || [];
@@ -1823,7 +2017,8 @@
         conversationHistory: state.agentRunner.history,
         lastBotResponse: state.agentRunner.lastBotResponse,
         turnIndex: state.agentRunner.turnIndex,
-        maxTurns: state.agentRunner.maxTurns
+        maxTurns: state.agentRunner.maxTurns,
+        model: state.config.ai_model || (el.agentQuickModelSelect ? el.agentQuickModelSelect.value : undefined)
       });
 
       const turnData = res.agentTurn;
@@ -2058,7 +2253,8 @@
       const res = await api('/api/ai-tester/evaluate', 'POST', {
         questionText: qText,
         aiResponse: aiResponse,
-        clientId: state.clientId
+        clientId: state.clientId,
+        model: state.config.ai_model || (el.agentQuickModelSelect ? el.agentQuickModelSelect.value : undefined)
       });
 
       const evalData = res.evaluation;

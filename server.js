@@ -194,6 +194,10 @@ const INITIAL_DB = {
     page_id: '095817282564177',
     sdk_url: 'https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js',
     project_name: 'Thiện BBH — AI Testing Studio',
+    ai_model: 'gemini-1.5-flash',
+    ai_provider: 'gemini',
+    gemini_api_key: process.env.GEMINI_API_KEY || '',
+    groq_api_key: process.env.GROQ_API_KEY || '',
     deepseek_api_key: process.env.DEEPSEEK_API_KEY || '',
     deepseek_model: 'deepseek-chat',
     deepseek_base_url: 'https://api.deepseek.com',
@@ -275,6 +279,8 @@ function loadDB() {
     if (db.roles?.leader?.permissions) db.roles.leader.permissions.canManageConfig = true;
     db.evaluations = Array.isArray(db.evaluations) ? db.evaluations : [];
     db.chat_sessions = Array.isArray(db.chat_sessions) ? db.chat_sessions : [];
+    db.config.ai_model = db.config.ai_model || 'gemini-1.5-flash';
+    db.config.ai_provider = db.config.ai_provider || 'gemini';
     return db;
   } catch (err) {
     console.error('[DB] Error loading DB:', err);
@@ -637,8 +643,243 @@ async function callDeepSeekAPI(messages, temperature = 0.5, overrideKey = null, 
   });
 }
 
-// Generate Questions with DeepSeek
-async function generateQuestionsWithDeepSeek(pkText, prText, userApiKey = null) {
+// ==========================================================================
+// GOOGLE GEMINI API CALLER (100% FREE TIER VIA GOOGLE AI STUDIO)
+// ==========================================================================
+
+async function callGeminiAPI(messages, temperature = 0.4, overrideKey = null, overrideModel = 'gemini-1.5-flash') {
+  const rawKey = overrideKey || db.config.gemini_api_key || process.env.GEMINI_API_KEY || '';
+  const apiKey = String(rawKey).trim().replace(/^["']|["']$/g, '');
+  if (!apiKey || apiKey.startsWith('••••') || apiKey.includes('•')) {
+    throw new Error('Chưa có Google Gemini API Key. Bạn có thể lấy Key hoàn toàn miễn phí tại aistudio.google.com hoặc chọn mô hình "Smart Local AI (0đ, không cần Key)".');
+  }
+
+  let systemText = '';
+  const contents = [];
+  messages.forEach(m => {
+    if (m.role === 'system') {
+      systemText += (systemText ? '\n\n' : '') + m.content;
+    } else {
+      contents.push({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      });
+    }
+  });
+
+  if (contents.length === 0) {
+    contents.push({ role: 'user', parts: [{ text: systemText || 'ping' }] });
+  }
+
+  const modelName = (overrideModel || 'gemini-1.5-flash').replace(/^models\//, '');
+  const reqBody = {
+    contents,
+    generationConfig: {
+      temperature: Math.min(Math.max(temperature, 0), 1),
+      responseMimeType: 'application/json'
+    }
+  };
+  if (systemText) {
+    reqBody.systemInstruction = {
+      parts: [{ text: systemText }]
+    };
+  }
+
+  const payload = JSON.stringify(reqBody);
+  const targetUrl = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`);
+
+  return new Promise((resolve, reject) => {
+    const isHttps = targetUrl.protocol === 'https:';
+    const client = isHttps ? https : http;
+
+    const req = client.request(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      },
+      timeout: 30000
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (res.statusCode >= 400 || parsed.error) {
+            return reject(new Error(parsed.error?.message || `Lỗi Gemini API (${res.statusCode})`));
+          }
+          const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+          try {
+            resolve(JSON.parse(text));
+          } catch (e) {
+            const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            if (jsonMatch) {
+              try { return resolve(JSON.parse(jsonMatch[1])); } catch (e2) {}
+            }
+            const firstBrace = text.indexOf('{');
+            const lastBrace = text.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+              try { return resolve(JSON.parse(text.substring(firstBrace, lastBrace + 1))); } catch (e3) {}
+            }
+            resolve(text);
+          }
+        } catch (err) {
+          reject(new Error('Phản hồi từ Gemini không phải JSON hợp lệ: ' + err.message));
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Hết thời gian chờ Gemini API (Timeout 30s)'));
+    });
+    req.write(payload);
+    req.end();
+  });
+}
+
+// ==========================================================================
+// GROQ API CALLER (FAST & FREE VIA CONSOLE.GROQ.COM)
+// ==========================================================================
+
+async function callGroqAPI(messages, temperature = 0.4, overrideKey = null, overrideModel = 'llama-3.3-70b-versatile') {
+  const rawKey = overrideKey || db.config.groq_api_key || process.env.GROQ_API_KEY || '';
+  const apiKey = String(rawKey).trim().replace(/^["']|["']$/g, '');
+  if (!apiKey || apiKey.startsWith('••••') || apiKey.includes('•')) {
+    throw new Error('Chưa có Groq API Key. Lấy Key miễn phí tại console.groq.com/keys.');
+  }
+
+  const reqBody = {
+    model: overrideModel || 'llama-3.3-70b-versatile',
+    messages,
+    temperature,
+    response_format: { type: 'json_object' }
+  };
+  const payload = JSON.stringify(reqBody);
+  const targetUrl = new URL('https://api.groq.com/openai/v1/chat/completions');
+
+  return new Promise((resolve, reject) => {
+    const isHttps = targetUrl.protocol === 'https:';
+    const client = isHttps ? https : http;
+
+    const req = client.request(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Length': Buffer.byteLength(payload)
+      },
+      timeout: 30000
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (res.statusCode >= 400 || parsed.error) {
+            return reject(new Error(parsed.error?.message || `Lỗi Groq API (${res.statusCode})`));
+          }
+          const content = parsed.choices?.[0]?.message?.content || '{}';
+          try {
+            resolve(JSON.parse(content));
+          } catch (e) {
+            const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            if (jsonMatch) {
+              try { return resolve(JSON.parse(jsonMatch[1])); } catch (e2) {}
+            }
+            resolve(content);
+          }
+        } catch (err) {
+          reject(new Error('Lỗi phản hồi từ Groq: ' + err.message));
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Hết thời gian chờ Groq API (Timeout 30s)'));
+    });
+    req.write(payload);
+    req.end();
+  });
+}
+
+// ==========================================================================
+// UNIFIED AI DISPATCHER & CONFIG RESOLVER
+// ==========================================================================
+
+function getEffectiveAIConfig(user, requestedModel = null) {
+  const model = requestedModel || user?.ai_model || db.config.ai_model || 'gemini-1.5-flash';
+
+  let provider = 'gemini';
+  if (model === 'local-free') {
+    provider = 'local';
+  } else if (model.startsWith('gemini')) {
+    provider = 'gemini';
+  } else if (model.startsWith('llama')) {
+    provider = 'groq';
+  } else if (model.startsWith('deepseek')) {
+    provider = 'deepseek';
+  }
+
+  let apiKey = '';
+  if (provider === 'gemini') {
+    apiKey = user?.gemini_api_key || user?.ai_api_key || '';
+    if (!apiKey && user?.deepseek_api_key?.startsWith('AIzaSy')) apiKey = user.deepseek_api_key;
+    if (!apiKey && user?.role === 'admin') apiKey = db.config.gemini_api_key || '';
+    if (!apiKey) apiKey = process.env.GEMINI_API_KEY || '';
+  } else if (provider === 'groq') {
+    apiKey = user?.groq_api_key || user?.ai_api_key || '';
+    if (!apiKey && user?.deepseek_api_key?.startsWith('gsk_')) apiKey = user.deepseek_api_key;
+    if (!apiKey && user?.role === 'admin') apiKey = db.config.groq_api_key || '';
+    if (!apiKey) apiKey = process.env.GROQ_API_KEY || '';
+  } else if (provider === 'deepseek') {
+    apiKey = user?.deepseek_api_key || user?.ai_api_key || '';
+    if (!apiKey && user?.role === 'admin') apiKey = db.config.deepseek_api_key || '';
+    if (!apiKey) apiKey = process.env.DEEPSEEK_API_KEY || '';
+  }
+
+  const hasKey = provider === 'local' || Boolean(apiKey);
+  let displayName = 'Smart Local AI (Miễn phí 0đ)';
+  if (model === 'gemini-1.5-flash') displayName = 'Gemini 1.5 Flash (Free)';
+  else if (model === 'gemini-2.0-flash') displayName = 'Gemini 2.0 Flash (Free)';
+  else if (model === 'llama-3.3-70b-versatile') displayName = 'Groq Llama 3.3 (Free)';
+  else if (model === 'deepseek-chat') displayName = 'DeepSeek-V3';
+  else if (model === 'deepseek-reasoner') displayName = 'DeepSeek-R1';
+
+  return {
+    provider,
+    model,
+    apiKey,
+    hasKey,
+    displayName
+  };
+}
+
+async function callUnifiedAI(messages, temperature = 0.4, aiConfig = {}) {
+  const { provider, model, apiKey } = aiConfig;
+
+  // Local Free Engine requires no remote network calls
+  if (provider === 'local' || model === 'local-free') {
+    return null;
+  }
+  if (!apiKey) {
+    return null;
+  }
+
+  if (provider === 'gemini') {
+    return await callGeminiAPI(messages, temperature, apiKey, model);
+  }
+  if (provider === 'groq') {
+    return await callGroqAPI(messages, temperature, apiKey, model);
+  }
+  return await callDeepSeekAPI(messages, temperature, apiKey, model);
+}
+
+// Generate Questions with Multi-Model AI (Gemini Free / Groq Free / DeepSeek / Local)
+async function generateQuestionsWithAI(pkText, prText, aiConfig) {
   const systemPrompt = `Bạn là một Senior AI Tester & Red-teaming Specialist hàng đầu.
 Nhiệm vụ của bạn là đóng vai nhiều khách hàng thực tế với các nhân cách khác nhau (Persona) để kiểm thử một AI Chatbot bán hàng/chăm sóc khách hàng.
 Bạn được cung cấp 2 tài liệu huấn luyện:
@@ -668,19 +909,26 @@ HÃY SINH RA 8 ĐẾN 10 CÂU HỎI KIỂM THỬ THỰC TẾ, ĐA DẠNG theo đ
     { role: 'user', content: 'Hãy tạo bộ câu hỏi kiểm thử đa chiều, tự nhiên và bám sát 2 tài liệu trên.' }
   ];
 
-  const result = await callDeepSeekAPI(messages, 0.7, userApiKey);
-  if (result.questions && Array.isArray(result.questions)) {
-    return result.questions.map((q, idx) => ({
-      ...q,
-      id: 'dsq_' + Date.now() + '_' + idx,
-      status: 'pending'
-    }));
+  if (aiConfig.hasKey && aiConfig.provider !== 'local') {
+    try {
+      const result = await callUnifiedAI(messages, 0.7, aiConfig);
+      if (result && result.questions && Array.isArray(result.questions)) {
+        return result.questions.map((q, idx) => ({
+          ...q,
+          id: 'aiq_' + Date.now() + '_' + idx,
+          status: 'pending'
+        }));
+      }
+    } catch (e) {
+      console.warn(`[AI TESTER] ${aiConfig.displayName} failed to generate questions, using local generator:`, e.message);
+    }
   }
-  throw new Error('DeepSeek không trả về mảng questions đúng định dạng.');
+
+  return generateFallbackQuestions(pkText, prText);
 }
 
-// Evaluate with DeepSeek
-async function evaluateWithDeepSeek(question, aiResponse, pkText, prText, userApiKey = null) {
+// Evaluate Response with Multi-Model AI (Gemini Free / Groq Free / DeepSeek / Local)
+async function evaluateResponseWithAI(question, aiResponse, pkText, prText, aiConfig) {
   const systemPrompt = `Bạn là Giám khảo AI (AI Evaluation Judge) nghiêm ngặt, chuyên đánh giá chất lượng phản hồi của AI Chatbot đối chiếu với 2 tài liệu:
 --- TÀI LIỆU 1: KIẾN THỨC SẢN PHẨM ---
 ${pkText}
@@ -718,11 +966,35 @@ KỲ VỌNG CHUẨN:
     { role: 'user', content: userContent }
   ];
 
-  return await callDeepSeekAPI(messages, 0.2, userApiKey);
+  if (aiConfig.hasKey && aiConfig.provider !== 'local') {
+    try {
+      const res = await callUnifiedAI(messages, 0.2, aiConfig);
+      if (res && res.verdict) {
+        return {
+          verdict: res.verdict || 'pass',
+          score: res.score || 5,
+          reason: res.reason || 'Đạt tiêu chuẩn.',
+          recommendation: res.recommendation || '',
+          knowledge_compliance: res.knowledge_compliance || 'pass',
+          prompt_compliance: res.prompt_compliance || 'pass',
+          judgeEngine: aiConfig.displayName
+        };
+      }
+    } catch (err) {
+      console.warn(`[EVAL] ${aiConfig.displayName} eval failed, fallback to Smart Local Evaluator:`, err.message);
+    }
+  }
+
+  // Fallback to Smart Local Evaluator
+  const localRes = fallbackRuleEvaluate(question, aiResponse);
+  return {
+    ...localRes,
+    judgeEngine: aiConfig.displayName || 'Smart Local AI Evaluator'
+  };
 }
 
-// Autonomous Multi-Turn Conversational Agent with Context-Aware Reasoning
-async function generateAgentTurn(params, pkText, prText, userApiKey = null) {
+// Autonomous Multi-Turn Conversational Agent with Multi-Model Support
+async function generateAgentTurnWithAI(params, pkText, prText, aiConfig) {
   const { persona, goal, conversationHistory = [], lastBotResponse = '', turnIndex = 1, maxTurns = 4 } = params;
 
   const systemPrompt = `Bạn là một AI Tester độc lập, đóng vai khách hàng thực tế (Customer Persona) để trò chuyện và kiểm thử hệ thống AI Chatbot bán hàng/khách sạn.
@@ -731,7 +1003,7 @@ Mỗi lần AI Chatbot trả lời, bạn phải đọc toàn bộ ngữ cảnh 
 
 THÔNG TIN NHÂN CÁCH (PERSONA):
 - Tên/Loại khách hàng: ${persona || 'Khách hỏi dịch vụ'}
-- Mục tiêu kiểm thử: ${goal || 'Tìm hiểu phòng, kiểm tra chính sách và chốt đặt phòng nếu phù hợp'}
+- Mục tiêu kiểm thử: ${goal || 'Tìm hiểu thông tin sản phẩm, kiểm tra chính sách và chốt mua nếu phù hợp'}
 - Lượt hiện tại: ${turnIndex} / ${maxTurns}
 
 TÀI LIỆU HUẤN LUYỆN ĐỂ BẠN ĐỐI CHIẾU & KIỂM TRA BOT:
@@ -741,15 +1013,7 @@ ${pkText}
 --- TÀI LIỆU 2: BỘ QUY TẮC PROMPT & RÀO CHẮN BẮT BUỘC ---
 ${prText}
 
-HƯỚNG DẪN TƯ DUY:
-1. Đọc phản hồi vừa rồi của AI Chatbot:
-   - Nếu Chatbot hỏi bạn thông tin (ví dụ: "Anh/chị đi ngày nào, mấy người?", "Anh/chị chọn phòng nào?"): Bạn BẮT BUỘC phải cung cấp thông tin đó một cách hợp lý và nhất quán với Persona của bạn, rồi hỏi tiếp bước tiếp theo.
-   - Nếu Chatbot báo giá hoặc thông tin: Hãy hỏi tiếp về tiện ích, view, ưu đãi, quy định check-in/out, phụ thu, hoặc tiệc BBQ/lửa trại theo Tài liệu 1.
-   - Nếu Chatbot nói sai lệch so với Tài liệu 1 hoặc vi phạm Tài liệu 2 (ví dụ: cho mang thú cưng, không hỏi số người khi báo giá, bịa dịch vụ không có): Hãy ghi nhận lỗi vào phần đánh giá!
-2. Tính kết thúc:
-   - Nếu turnIndex >= maxTurns hoặc cuộc trò chuyện đã đủ thông tin và đạt mục tiêu, hãy đặt isCompleted = true và đưa ra câu chốt/cảm ơn tự nhiên (ví dụ: "Dạ cảm ơn em, thông tin rất rõ ràng rồi. Để anh chốt với vợ rồi nhắn lại em nhé!").
-
-BẮT BUỘC TRẢ VỀ JSON VỚI ĐỊNH DẠNG:
+HÃY TRẢ VỀ JSON VỚI ĐỊNH DẠNG:
 {
   "nextMessage": "Nội dung câu nói/câu hỏi tiếp theo của khách hàng gửi vào chat (tự nhiên, thuần Việt, đúng ngữ cảnh)",
   "evaluation": {
@@ -779,7 +1043,43 @@ BẮT BUỘC TRẢ VỀ JSON VỚI ĐỊNH DẠNG:
     { role: 'user', content: userContent }
   ];
 
-  return await callDeepSeekAPI(messages, 0.4, userApiKey);
+  if (aiConfig.hasKey && aiConfig.provider !== 'local') {
+    try {
+      const res = await callUnifiedAI(messages, 0.4, aiConfig);
+      if (res && res.nextMessage) {
+        return {
+          agentTurn: res,
+          engine: aiConfig.displayName
+        };
+      }
+    } catch (err) {
+      console.warn(`[AGENT] ${aiConfig.displayName} failed, fallback to Smart Local Agent:`, err.message);
+    }
+  }
+
+  // Fallback to Smart Local Agent
+  const fallbackData = fallbackAgentTurn({ persona, conversationHistory, lastBotResponse, turnIndex, maxTurns });
+  return {
+    agentTurn: fallbackData,
+    engine: aiConfig.displayName || 'Smart Local Agent'
+  };
+}
+
+// Backward-compatible wrappers
+async function generateQuestionsWithDeepSeek(pkText, prText, userApiKey = null) {
+  const cfg = { provider: 'deepseek', model: db.config.deepseek_model || 'deepseek-chat', apiKey: userApiKey, hasKey: Boolean(userApiKey), displayName: 'DeepSeek-V3' };
+  return generateQuestionsWithAI(pkText, prText, cfg);
+}
+
+async function evaluateWithDeepSeek(question, aiResponse, pkText, prText, userApiKey = null) {
+  const cfg = { provider: 'deepseek', model: db.config.deepseek_model || 'deepseek-chat', apiKey: userApiKey, hasKey: Boolean(userApiKey), displayName: 'DeepSeek-V3' };
+  return evaluateResponseWithAI(question, aiResponse, pkText, prText, cfg);
+}
+
+async function generateAgentTurn(params, pkText, prText, userApiKey = null) {
+  const cfg = { provider: 'deepseek', model: db.config.deepseek_model || 'deepseek-chat', apiKey: userApiKey, hasKey: Boolean(userApiKey), displayName: 'DeepSeek-V3' };
+  const r = await generateAgentTurnWithAI(params, pkText, prText, cfg);
+  return r.agentTurn;
 }
 
 // Fallback Autonomous Agent Turn
@@ -1041,17 +1341,22 @@ function extractPageId(input) {
 
 function sanitizeUser(user) {
   if (!user) return null;
-  const { password_hash, deepseek_api_key, ...safe } = user;
+  const { password_hash, deepseek_api_key, gemini_api_key, groq_api_key, ai_api_key, ...safe } = user;
   const roleObj = db.roles[user.role] || db.roles.tester;
-  const hasKey = Boolean(deepseek_api_key);
+  const aiCfg = getEffectiveAIConfig(user);
   const pageId = user.page_id || extractPageId(user.embed_code) || '';
   return {
     ...safe,
     page_id: pageId,
     embed_code: user.embed_code || '',
     has_page_id: Boolean(pageId),
-    has_deepseek_key: hasKey,
-    masked_deepseek_key: hasKey ? '••••••••' + deepseek_api_key.slice(-4) : '',
+    ai_model: aiCfg.model,
+    ai_provider: aiCfg.provider,
+    ai_display_name: aiCfg.displayName,
+    has_ai_key: aiCfg.hasKey,
+    masked_ai_key: aiCfg.apiKey ? '••••••••' + aiCfg.apiKey.slice(-4) : '',
+    has_deepseek_key: aiCfg.hasKey,
+    masked_deepseek_key: aiCfg.apiKey ? '••••••••' + aiCfg.apiKey.slice(-4) : '',
     role_info: roleObj,
     permissions: roleObj.permissions
   };
@@ -1239,6 +1544,24 @@ async function handleRequest(req, res) {
 
       const name = String(body.name || email.split('@')[0]).trim();
       const colors = ['#D97757', '#0D9488', '#4F46E5', '#2563EB', '#059669'];
+
+      let detectedModel = body.model || 'gemini-1.5-flash';
+      let geminiKey = '';
+      let groqKey = '';
+      let deepseekKey = '';
+      if (apiKey.startsWith('AIzaSy')) {
+        geminiKey = apiKey;
+        detectedModel = 'gemini-1.5-flash';
+      } else if (apiKey.startsWith('gsk_')) {
+        groqKey = apiKey;
+        detectedModel = 'llama-3.3-70b-versatile';
+      } else if (apiKey.startsWith('sk-')) {
+        deepseekKey = apiKey;
+        detectedModel = 'deepseek-chat';
+      } else if (!apiKey) {
+        detectedModel = 'local-free';
+      }
+
       const newUser = {
         id: 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
         name,
@@ -1248,7 +1571,11 @@ async function handleRequest(req, res) {
         role: email === 'thienlv.bbh@gmail.com' ? 'admin' : 'tester',
         page_id: extractedPageId || '',
         embed_code: embedInput || '',
-        deepseek_api_key: apiKey,
+        ai_model: detectedModel,
+        ai_api_key: apiKey,
+        gemini_api_key: geminiKey,
+        groq_api_key: groqKey,
+        deepseek_api_key: deepseekKey,
         productKnowledge: {
           title: 'File 1: Kiến thức Sản phẩm & Dịch vụ',
           content: '',
@@ -1327,9 +1654,7 @@ async function handleRequest(req, res) {
       if (autoTestSuite.length === 0) {
         autoTestSuite = generateFallbackQuestions(userFiles.pk.content, userFiles.pr.content);
       }
-      const userKey = auth.user?.deepseek_api_key || '';
-      const effectiveKey = userKey || (auth.user?.role === 'admin' ? db.config.deepseek_api_key : '') || process.env.DEEPSEEK_API_KEY || '';
-      const hasDeepSeek = Boolean(effectiveKey);
+      const aiConfig = getEffectiveAIConfig(auth.user);
       const userEvals = (auth.user?.role === 'admin')
         ? db.evaluations
         : db.evaluations.filter(e => e.tester_id === auth.user?.id);
@@ -1341,8 +1666,13 @@ async function handleRequest(req, res) {
         user: sanitizeUser(auth.user),
         config: {
           ...db.config,
-          has_deepseek_key: hasDeepSeek,
-          deepseek_api_key: hasDeepSeek ? '••••••••' + effectiveKey.slice(-4) : ''
+          ai_model: aiConfig.model,
+          ai_provider: aiConfig.provider,
+          ai_display_name: aiConfig.displayName,
+          has_ai_key: aiConfig.hasKey,
+          has_deepseek_key: aiConfig.hasKey,
+          masked_ai_key: aiConfig.apiKey ? '••••••••' + aiConfig.apiKey.slice(-4) : '',
+          deepseek_api_key: aiConfig.apiKey ? '••••••••' + aiConfig.apiKey.slice(-4) : ''
         },
         roles: db.roles,
         productKnowledge: userFiles.pk,
@@ -1496,11 +1826,9 @@ async function handleRequest(req, res) {
         });
       }
 
-      const userKey = auth.user?.deepseek_api_key || '';
-      const effectiveKey = userKey || (auth.user?.role === 'admin' ? db.config.deepseek_api_key : '') || process.env.DEEPSEEK_API_KEY || '';
-      const hasDeepSeek = Boolean(effectiveKey);
+      const aiConfig = getEffectiveAIConfig(auth.user, body.model);
 
-      if (hasDeepSeek) {
+      if (aiConfig.hasKey && aiConfig.provider !== 'local') {
         try {
           const prompt = `Bạn là Chuyên gia Cố vấn Trưởng Nghiệp vụ & QA Lead Kiểm thử AI Chatbot.
 Dưới đây là 2 tài liệu huấn luyện AI của doanh nghiệp:
@@ -1539,17 +1867,20 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
     "Câu hỏi 2..."
   ]
 }`;
-          const resText = await callDeepSeekAPI([
+          const resText = await callUnifiedAI([
             { role: 'system', content: 'Bạn là chuyên gia phân tích nghiệp vụ và tạo kịch bản kiểm thử AI. Luôn trả về JSON hợp lệ.' },
             { role: 'user', content: prompt }
-          ], 0.4, effectiveKey);
+          ], 0.4, aiConfig);
 
-          const cleaned = resText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-          const parsed = JSON.parse(cleaned);
+          let parsed = resText;
+          if (typeof resText === 'string') {
+            const cleaned = resText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+            parsed = JSON.parse(cleaned);
+          }
           if (parsed && Array.isArray(parsed.personas) && parsed.personas.length > 0) {
             return sendJSON(res, 200, {
               ok: true,
-              engine: 'DeepSeek AI Brain',
+              engine: aiConfig.displayName,
               domain: parsed.domain || 'Lĩnh vực nhận diện',
               summary: parsed.summary || '',
               personas: parsed.personas,
@@ -1557,7 +1888,7 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
             });
           }
         } catch (err) {
-          console.warn('[PERSONA] DeepSeek extraction failed, using fallback:', err.message);
+          console.warn(`[PERSONA] ${aiConfig.displayName} extraction failed, using Smart Local Extractor:`, err.message);
         }
       }
 
@@ -1565,7 +1896,7 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
       const fallbackResult = extractPersonasFallback(pkContent, prContent);
       return sendJSON(res, 200, {
         ok: true,
-        engine: 'Rule Extractor Engine',
+        engine: aiConfig.displayName,
         domain: fallbackResult.domain,
         summary: fallbackResult.summary,
         personas: fallbackResult.personas,
@@ -1574,121 +1905,180 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
     }
 
     // ==========================================
-    // DEEPSEEK & AI TESTER APIS
+    // MULTI-MODEL AI APIS (GEMINI FREE / GROQ / DEEPSEEK / LOCAL)
     // ==========================================
 
-    // Test DeepSeek API Connection
-    if (pathname === '/api/deepseek/test' && req.method === 'POST') {
+    // Test AI Connection (Supports Gemini Free, Groq, DeepSeek, Local)
+    if ((pathname === '/api/deepseek/test' || pathname === '/api/ai/test') && req.method === 'POST') {
       const body = await parseBody(req);
+      const testModel = body.model || auth.user?.ai_model || db.config.ai_model || 'gemini-1.5-flash';
       let testKey = String(body.apiKey || '').trim().replace(/^["']|["']$/g, '');
-      if (!testKey || testKey.startsWith('••••') || testKey.includes('•')) {
-        testKey = String(auth.user?.deepseek_api_key || db.config.deepseek_api_key || process.env.DEEPSEEK_API_KEY || '').trim().replace(/^["']|["']$/g, '');
-      }
 
-      if (!testKey || testKey.startsWith('••••') || testKey.includes('•')) {
-        return sendJSON(res, 400, {
-          ok: false,
-          message: 'Chưa có DeepSeek API Key. Vui lòng nhập Key bắt đầu bằng sk-... của riêng bạn để kiểm tra.'
+      // Local Free Engine needs zero key and is immediately ready
+      if (testModel === 'local-free') {
+        if (body.save) {
+          if (auth.user) {
+            auth.user.ai_model = 'local-free';
+            const u = db.users.find(x => x.id === auth.user.id);
+            if (u) u.ai_model = 'local-free';
+          }
+          if (auth.user?.role === 'admin' && body.isGlobal) {
+            db.config.ai_model = 'local-free';
+          }
+          saveDB(db);
+        }
+        return sendJSON(res, 200, {
+          ok: true,
+          message: 'Mô hình Smart Local AI sẵn sàng 100% (Miễn phí 0đ, không cần API Key, chạy vĩnh viễn trên máy chủ)!',
+          model: 'local-free',
+          data: { status: 'ok', engine: 'Smart Local AI' }
         });
       }
 
-      const testModel = body.model || db.config.deepseek_model || 'deepseek-chat';
+      const aiConfig = getEffectiveAIConfig(auth.user, testModel);
+      if (testKey && !testKey.startsWith('••••') && !testKey.includes('•')) {
+        aiConfig.apiKey = testKey;
+        aiConfig.hasKey = true;
+      }
+
+      if (!aiConfig.apiKey || aiConfig.apiKey.startsWith('••••') || aiConfig.apiKey.includes('•')) {
+        return sendJSON(res, 400, {
+          ok: false,
+          message: `Chưa có API Key cho ${aiConfig.displayName}. Vui lòng nhập Key để kiểm tra.`
+        });
+      }
 
       try {
-        const testRes = await callDeepSeekAPI([
-          { role: 'system', content: 'You are a test agent. Respond in json: {"status": "ok", "message": "DeepSeek API connected successfully"}' },
+        const testRes = await callUnifiedAI([
+          { role: 'system', content: 'You are a test agent. Respond in json: {"status": "ok", "message": "API connected successfully"}' },
           { role: 'user', content: 'ping' }
-        ], 0.1, testKey, testModel);
+        ], 0.1, aiConfig);
 
         if (body.save) {
           if (auth.user) {
-            auth.user.deepseek_api_key = testKey;
+            auth.user.ai_model = testModel;
+            if (aiConfig.provider === 'gemini') auth.user.gemini_api_key = aiConfig.apiKey;
+            else if (aiConfig.provider === 'groq') auth.user.groq_api_key = aiConfig.apiKey;
+            else auth.user.deepseek_api_key = aiConfig.apiKey;
+            auth.user.ai_api_key = aiConfig.apiKey;
             const u = db.users.find(x => x.id === auth.user.id);
-            if (u) u.deepseek_api_key = testKey;
+            if (u) {
+              u.ai_model = testModel;
+              if (aiConfig.provider === 'gemini') u.gemini_api_key = aiConfig.apiKey;
+              else if (aiConfig.provider === 'groq') u.groq_api_key = aiConfig.apiKey;
+              else u.deepseek_api_key = aiConfig.apiKey;
+              u.ai_api_key = aiConfig.apiKey;
+            }
           }
           if (auth.user?.role === 'admin' && body.isGlobal) {
-            db.config.deepseek_api_key = testKey;
+            db.config.ai_model = testModel;
+            if (aiConfig.provider === 'gemini') db.config.gemini_api_key = aiConfig.apiKey;
+            else if (aiConfig.provider === 'groq') db.config.groq_api_key = aiConfig.apiKey;
+            else db.config.deepseek_api_key = aiConfig.apiKey;
           }
-          if (body.model) db.config.deepseek_model = body.model;
           saveDB(db);
         }
 
         return sendJSON(res, 200, {
           ok: true,
-          message: `Kết nối DeepSeek API thành công cho tài khoản ${auth.user?.name || ''}!`,
+          message: `Kết nối ${aiConfig.displayName} thành công cho tài khoản ${auth.user?.name || ''}!`,
           model: testModel,
           data: testRes
         });
       } catch (err) {
         return sendJSON(res, 400, {
           ok: false,
-          message: `Lỗi kết nối DeepSeek API: ${err.message}. Vui lòng kiểm tra lại Key hoặc mạng.`
+          message: `Lỗi kết nối ${aiConfig.displayName}: ${err.message}. Vui lòng kiểm tra lại Key hoặc mạng.`
         });
       }
     }
 
-    // Save DeepSeek API Config
-    if (pathname === '/api/deepseek/config' && req.method === 'POST') {
+    // Save AI Config (Supports Gemini Free / Groq / DeepSeek / Local)
+    if ((pathname === '/api/deepseek/config' || pathname === '/api/ai/config') && req.method === 'POST') {
       const body = await parseBody(req);
+      const chosenModel = body.model || auth.user?.ai_model || db.config.ai_model || 'gemini-1.5-flash';
+
       if (body.apiKey !== undefined) {
         const cleanKey = String(body.apiKey || '').trim().replace(/^["']|["']$/g, '');
-        // Only update if a real key was provided (not empty and not masked bullets)
         if (cleanKey && !cleanKey.startsWith('••••') && !cleanKey.includes('•')) {
           if (auth.user) {
-            auth.user.deepseek_api_key = cleanKey;
+            auth.user.ai_model = chosenModel;
+            if (cleanKey.startsWith('AIzaSy')) auth.user.gemini_api_key = cleanKey;
+            else if (cleanKey.startsWith('gsk_')) auth.user.groq_api_key = cleanKey;
+            else auth.user.deepseek_api_key = cleanKey;
+            auth.user.ai_api_key = cleanKey;
             const u = db.users.find(x => x.id === auth.user.id);
-            if (u) u.deepseek_api_key = cleanKey;
+            if (u) {
+              u.ai_model = chosenModel;
+              if (cleanKey.startsWith('AIzaSy')) u.gemini_api_key = cleanKey;
+              else if (cleanKey.startsWith('gsk_')) u.groq_api_key = cleanKey;
+              else u.deepseek_api_key = cleanKey;
+              u.ai_api_key = cleanKey;
+            }
           }
           if (auth.user?.role === 'admin' && body.isGlobal) {
-            db.config.deepseek_api_key = cleanKey;
+            if (cleanKey.startsWith('AIzaSy')) db.config.gemini_api_key = cleanKey;
+            else if (cleanKey.startsWith('gsk_')) db.config.groq_api_key = cleanKey;
+            else db.config.deepseek_api_key = cleanKey;
           }
         } else if (cleanKey === '') {
           if (auth.user) {
+            auth.user.ai_api_key = '';
+            auth.user.gemini_api_key = '';
             auth.user.deepseek_api_key = '';
             const u = db.users.find(x => x.id === auth.user.id);
-            if (u) u.deepseek_api_key = '';
+            if (u) {
+              u.ai_api_key = '';
+              u.gemini_api_key = '';
+              u.deepseek_api_key = '';
+            }
           }
         }
       }
-      if (body.model) db.config.deepseek_model = body.model.trim();
-      if (body.baseUrl) db.config.deepseek_base_url = body.baseUrl.trim();
+
+      if (body.model) {
+        if (auth.user) {
+          auth.user.ai_model = body.model.trim();
+          const u = db.users.find(x => x.id === auth.user.id);
+          if (u) u.ai_model = body.model.trim();
+        }
+        db.config.ai_model = body.model.trim();
+        if (body.model.startsWith('deepseek')) {
+          db.config.deepseek_model = body.model.trim();
+        }
+      }
+
       if (body.auto_wait_seconds) db.config.auto_wait_seconds = Math.max(5, parseInt(body.auto_wait_seconds, 10) || 30);
       saveDB(db);
 
-      const effectiveKey = auth.user?.deepseek_api_key || db.config.deepseek_api_key || '';
-      const hasKey = Boolean(effectiveKey);
-      const maskedKey = hasKey ? '••••••••' + effectiveKey.slice(-4) : '';
+      const aiConfig = getEffectiveAIConfig(auth.user);
+      const maskedKey = aiConfig.apiKey ? '••••••••' + aiConfig.apiKey.slice(-4) : '';
 
-      addAuditLog(auth.user.name, auth.user.role, 'Cập nhật cấu hình DeepSeek API cá nhân');
+      addAuditLog(auth.user.name, auth.user.role, `Cập nhật cấu hình mô hình AI: ${aiConfig.displayName}`);
 
       return sendJSON(res, 200, {
         ok: true,
-        message: 'Đã lưu DeepSeek API Key của bạn thành công!',
-        has_deepseek_key: hasKey,
+        message: `Đã lưu cấu hình mô hình ${aiConfig.displayName} thành công!`,
+        has_deepseek_key: aiConfig.hasKey,
+        has_ai_key: aiConfig.hasKey,
         masked_key: maskedKey,
-        model: db.config.deepseek_model || 'deepseek-chat'
+        model: aiConfig.model,
+        displayName: aiConfig.displayName
       });
     }
 
-    // Generate Questions using AI Tester (DeepSeek or Fallback)
+    // Generate Questions using AI Tester (Gemini Free / Groq / DeepSeek / Local)
     if (pathname === '/api/ai-tester/generate-questions' && req.method === 'POST') {
-      const userKey = auth.user?.deepseek_api_key || '';
-      const effectiveKey = userKey || (auth.user?.role === 'admin' ? db.config.deepseek_api_key : '') || process.env.DEEPSEEK_API_KEY || '';
       const userFiles = getUserTrainingFiles(auth.user);
-      const hasDeepSeek = Boolean(effectiveKey);
-      let source = 'fallback';
+      const aiConfig = getEffectiveAIConfig(auth.user);
+      let source = aiConfig.displayName;
 
       try {
-        if (hasDeepSeek) {
-          autoTestSuite = await generateQuestionsWithDeepSeek(userFiles.pk.content, userFiles.pr.content, effectiveKey);
-          source = 'deepseek (' + (db.config.deepseek_model || 'deepseek-chat') + ')';
-        } else {
-          autoTestSuite = generateFallbackQuestions(userFiles.pk.content, userFiles.pr.content);
-        }
+        autoTestSuite = await generateQuestionsWithAI(userFiles.pk.content, userFiles.pr.content, aiConfig);
       } catch (err) {
-        console.warn('[AI TESTER] DeepSeek generate failed, using fallback:', err.message);
+        console.warn(`[AI TESTER] ${aiConfig.displayName} failed, fallback to local:`, err.message);
         autoTestSuite = generateFallbackQuestions(userFiles.pk.content, userFiles.pr.content);
-        source = 'fallback (do DeepSeek báo lỗi: ' + err.message + ')';
+        source = 'Smart Local AI (do lỗi kết nối: ' + err.message + ')';
       }
 
       addAuditLog(auth.user.name, auth.user.role, `AI Tester sinh ${autoTestSuite.length} câu hỏi (${source})`);
@@ -1696,11 +2086,11 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
         ok: true,
         source,
         autoTestSuite,
-        message: `Đã sinh thành công ${autoTestSuite.length} câu hỏi kiểm thử đa nhân cách!`
+        message: `Đã sinh thành công ${autoTestSuite.length} câu hỏi kiểm thử đa nhân cách qua ${aiConfig.displayName}!`
       });
     }
 
-    // Evaluate Response using AI Judge (DeepSeek or Fallback)
+    // Evaluate Response using AI Judge (Gemini Free / Groq / DeepSeek / Local)
     if (pathname === '/api/ai-tester/evaluate' && req.method === 'POST') {
       const body = await parseBody(req);
       const { questionId, questionText, aiResponse, groundTruth, criteria, persona } = body;
@@ -1717,33 +2107,19 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
         persona: persona || 'Khách hàng'
       };
 
-      const userKey = auth.user?.deepseek_api_key || '';
-      const effectiveKey = userKey || (auth.user?.role === 'admin' ? db.config.deepseek_api_key : '') || process.env.DEEPSEEK_API_KEY || '';
-      const hasDeepSeek = Boolean(effectiveKey);
-      let evalResult;
-      let judgeEngine = 'Local Rule Evaluator';
+      const userFiles = getUserTrainingFiles(auth.user);
+      const aiConfig = getEffectiveAIConfig(auth.user, body.model);
+      const evalData = await evaluateResponseWithAI(qObj, aiResponse, userFiles.pk.content, userFiles.pr.content, aiConfig);
 
-      if (hasDeepSeek) {
-        try {
-          const userFiles = getUserTrainingFiles(auth.user);
-          const dsEval = await evaluateWithDeepSeek(qObj, aiResponse, userFiles.pk.content, userFiles.pr.content, effectiveKey);
-          evalResult = {
-            verdict: dsEval.verdict || 'pass',
-            score: dsEval.score || 5,
-            reason: dsEval.reason || 'Đạt tiêu chuẩn.',
-            recommendation: dsEval.recommendation || '',
-            knowledge_compliance: dsEval.knowledge_compliance || 'pass',
-            prompt_compliance: dsEval.prompt_compliance || 'pass'
-          };
-          judgeEngine = 'DeepSeek (' + (db.config.deepseek_model || 'deepseek-chat') + ')';
-        } catch (err) {
-          console.warn('[EVAL] DeepSeek eval failed, fallback to local rule:', err.message);
-          evalResult = fallbackRuleEvaluate(qObj, aiResponse);
-          judgeEngine = 'Local Rule Evaluator (DeepSeek fallback)';
-        }
-      } else {
-        evalResult = fallbackRuleEvaluate(qObj, aiResponse);
-      }
+      const evalResult = {
+        verdict: evalData.verdict || 'pass',
+        score: evalData.score || 5,
+        reason: evalData.reason || 'Đạt tiêu chuẩn.',
+        recommendation: evalData.recommendation || '',
+        knowledge_compliance: evalData.knowledge_compliance || 'pass',
+        prompt_compliance: evalData.prompt_compliance || 'pass'
+      };
+      const judgeEngine = evalData.judgeEngine || aiConfig.displayName;
 
       // Update question in test suite
       if (questionId) {
@@ -1773,6 +2149,7 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
         created_at: new Date().toISOString()
       };
 
+      db.evaluations = db.evaluations || [];
       db.evaluations.unshift(record);
       auth.user.tests_submitted = (auth.user.tests_submitted || 0) + 1;
       saveDB(db);
@@ -1785,35 +2162,23 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
       });
     }
 
-    // Context-Aware Autonomous Multi-Turn Agent Turn
+    // Context-Aware Autonomous Multi-Turn Agent Turn (Gemini Free / Groq / DeepSeek / Local)
     if (pathname === '/api/ai-agent/chat-turn' && req.method === 'POST') {
       const body = await parseBody(req);
       const { persona, goal, conversationHistory = [], lastBotResponse = '', turnIndex = 1, maxTurns = 4 } = body;
 
-      const userKey = auth.user?.deepseek_api_key || '';
-      const effectiveKey = userKey || (auth.user?.role === 'admin' ? db.config.deepseek_api_key : '') || process.env.DEEPSEEK_API_KEY || '';
-      const hasDeepSeek = Boolean(effectiveKey);
-      let agentTurn;
-      let engine = 'DeepSeek (' + (db.config.deepseek_model || 'deepseek-chat') + ')';
+      const userFiles = getUserTrainingFiles(auth.user);
+      const aiConfig = getEffectiveAIConfig(auth.user, body.model);
 
-      if (hasDeepSeek) {
-        try {
-          const userFiles = getUserTrainingFiles(auth.user);
-          agentTurn = await generateAgentTurn(
-            { persona, goal, conversationHistory, lastBotResponse, turnIndex, maxTurns },
-            userFiles.pk.content,
-            userFiles.pr.content,
-            effectiveKey
-          );
-        } catch (err) {
-          console.warn('[AGENT] DeepSeek agent turn failed, using fallback:', err.message);
-          agentTurn = fallbackAgentTurn({ persona, conversationHistory, lastBotResponse, turnIndex, maxTurns });
-          engine = 'Fallback Agent (DeepSeek error: ' + err.message + ')';
-        }
-      } else {
-        agentTurn = fallbackAgentTurn({ persona, conversationHistory, lastBotResponse, turnIndex, maxTurns });
-        engine = 'Local Rule Fallback Agent';
-      }
+      const turnResult = await generateAgentTurnWithAI(
+        { persona, goal, conversationHistory, lastBotResponse, turnIndex, maxTurns },
+        userFiles.pk.content,
+        userFiles.pr.content,
+        aiConfig
+      );
+
+      const agentTurn = turnResult.agentTurn;
+      const engine = turnResult.engine || aiConfig.displayName;
 
       // Record evaluation if available
       let evalRecord = null;
