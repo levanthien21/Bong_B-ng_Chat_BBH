@@ -647,10 +647,10 @@ async function callDeepSeekAPI(messages, temperature = 0.5, overrideKey = null, 
 // GOOGLE GEMINI API CALLER (100% FREE TIER VIA GOOGLE AI STUDIO)
 // ==========================================================================
 
-async function callGeminiAPI(messages, temperature = 0.4, overrideKey = null, overrideModel = 'gemini-1.5-flash') {
+async function callGeminiAPI(messages, temperature = 0.4, overrideKey = null, overrideModel = 'gemini-flash-lite-latest') {
   const rawKey = overrideKey || db.config.gemini_api_key || process.env.GEMINI_API_KEY || '';
   const apiKey = String(rawKey).trim().replace(/^["']|["']$/g, '');
-  if (!apiKey || apiKey.startsWith('••••') || apiKey.includes('•')) {
+  if (!apiKey || apiKey.startsWith('••••') || apiKey.includes(' ')) {
     throw new Error('Chưa có Google Gemini API Key. Bạn có thể lấy Key hoàn toàn miễn phí tại aistudio.google.com hoặc chọn mô hình "Smart Local AI (0đ, không cần Key)".');
   }
 
@@ -671,7 +671,12 @@ async function callGeminiAPI(messages, temperature = 0.4, overrideKey = null, ov
     contents.push({ role: 'user', parts: [{ text: systemText || 'ping' }] });
   }
 
-  const modelName = (overrideModel || 'gemini-1.5-flash').replace(/^models\//, '');
+  // Model name aliasing: Map deprecated 1.5-flash & 2.0-flash to active Google v1beta models
+  let cleanModel = (overrideModel || 'gemini-flash-lite-latest').replace(/^models\//, '');
+  if (cleanModel === 'gemini-1.5-flash' || cleanModel === 'gemini-2.0-flash' || cleanModel === 'gemini-flash' || cleanModel === 'gemini-1.5-pro') {
+    cleanModel = 'gemini-flash-lite-latest';
+  }
+
   const reqBody = {
     contents,
     generationConfig: {
@@ -686,57 +691,76 @@ async function callGeminiAPI(messages, temperature = 0.4, overrideKey = null, ov
   }
 
   const payload = JSON.stringify(reqBody);
-  const targetUrl = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`);
 
-  return new Promise((resolve, reject) => {
-    const isHttps = targetUrl.protocol === 'https:';
-    const client = isHttps ? https : http;
+  async function requestGemini(targetModel) {
+    const targetUrl = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`);
+    return new Promise((resolve, reject) => {
+      const isHttps = targetUrl.protocol === 'https:';
+      const client = isHttps ? https : http;
 
-    const req = client.request(targetUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload)
-      },
-      timeout: 30000
-    }, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          if (res.statusCode >= 400 || parsed.error) {
-            return reject(new Error(parsed.error?.message || `Lỗi Gemini API (${res.statusCode})`));
-          }
-          const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+      const req = client.request(targetUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload)
+        },
+        timeout: 25000
+      }, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
           try {
-            resolve(JSON.parse(text));
-          } catch (e) {
-            const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-            if (jsonMatch) {
-              try { return resolve(JSON.parse(jsonMatch[1])); } catch (e2) {}
+            const parsed = JSON.parse(data);
+            if (res.statusCode >= 400 || parsed.error) {
+              const err = new Error(parsed.error?.message || `Lỗi Gemini API (${res.statusCode})`);
+              err.statusCode = res.statusCode;
+              return reject(err);
             }
-            const firstBrace = text.indexOf('{');
-            const lastBrace = text.lastIndexOf('}');
-            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-              try { return resolve(JSON.parse(text.substring(firstBrace, lastBrace + 1))); } catch (e3) {}
+            const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+            try {
+              resolve(JSON.parse(text));
+            } catch (e) {
+              const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+              if (jsonMatch) {
+                try { return resolve(JSON.parse(jsonMatch[1])); } catch (e2) {}
+              }
+              const firstBrace = text.indexOf('{');
+              const lastBrace = text.lastIndexOf('}');
+              if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                try { return resolve(JSON.parse(text.substring(firstBrace, lastBrace + 1))); } catch (e3) {}
+              }
+              resolve(text);
             }
-            resolve(text);
+          } catch (err) {
+            reject(new Error('Phản hồi từ Gemini không phải JSON hợp lệ: ' + err.message));
           }
-        } catch (err) {
-          reject(new Error('Phản hồi từ Gemini không phải JSON hợp lệ: ' + err.message));
-        }
+        });
       });
-    });
 
-    req.on('error', reject);
-    req.on('timeout', () => {
-      req.destroy();
-      reject(new Error('Hết thời gian chờ Gemini API (Timeout 30s)'));
+      req.on('error', reject);
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Hết thời gian chờ Gemini API (Timeout 25s)'));
+      });
+      req.write(payload);
+      req.end();
     });
-    req.write(payload);
-    req.end();
-  });
+  }
+
+  try {
+    return await requestGemini(cleanModel);
+  } catch (primaryErr) {
+    // If primary model was rejected (404/not supported), retry with gemini-3.5-flash
+    if (cleanModel !== 'gemini-3.5-flash') {
+      try {
+        console.warn(`[GEMINI] ${cleanModel} failed (${primaryErr.message}), retrying with gemini-3.5-flash...`);
+        return await requestGemini('gemini-3.5-flash');
+      } catch (retryErr) {
+        throw primaryErr;
+      }
+    }
+    throw primaryErr;
+  }
 }
 
 // ==========================================================================
@@ -2092,124 +2116,146 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
 
     // Evaluate Response using AI Judge (Gemini Free / Groq / DeepSeek / Local)
     if (pathname === '/api/ai-tester/evaluate' && req.method === 'POST') {
-      const body = await parseBody(req);
-      const { questionId, questionText, aiResponse, groundTruth, criteria, persona } = body;
+      try {
+        const body = await parseBody(req);
+        const { questionId, questionText, aiResponse, groundTruth, criteria, persona } = body;
 
-      if (!aiResponse || !aiResponse.trim()) {
-        return sendJSON(res, 400, { ok: false, message: 'Vui lòng cung cấp phản hồi của AI trong khung chat để đánh giá.' });
-      }
-
-      const qObj = autoTestSuite.find(q => q.id === questionId) || {
-        id: questionId,
-        question: questionText || 'Câu hỏi kiểm thử',
-        ground_truth: groundTruth || '',
-        criteria: criteria || '',
-        persona: persona || 'Khách hàng'
-      };
-
-      const userFiles = getUserTrainingFiles(auth.user);
-      const aiConfig = getEffectiveAIConfig(auth.user, body.model);
-      const evalData = await evaluateResponseWithAI(qObj, aiResponse, userFiles.pk.content, userFiles.pr.content, aiConfig);
-
-      const evalResult = {
-        verdict: evalData.verdict || 'pass',
-        score: evalData.score || 5,
-        reason: evalData.reason || 'Đạt tiêu chuẩn.',
-        recommendation: evalData.recommendation || '',
-        knowledge_compliance: evalData.knowledge_compliance || 'pass',
-        prompt_compliance: evalData.prompt_compliance || 'pass'
-      };
-      const judgeEngine = evalData.judgeEngine || aiConfig.displayName;
-
-      // Update question in test suite
-      if (questionId) {
-        const item = autoTestSuite.find(q => q.id === questionId);
-        if (item) {
-          item.status = 'evaluated';
-          item.last_response = aiResponse;
-          item.evaluation = evalResult;
+        if (!aiResponse || !aiResponse.trim()) {
+          return sendJSON(res, 400, { ok: false, message: 'Vui lòng cung cấp phản hồi của AI trong khung chat để đánh giá.' });
         }
+
+        const qObj = autoTestSuite.find(q => q.id === questionId) || {
+          id: questionId,
+          question: questionText || 'Câu hỏi kiểm thử',
+          ground_truth: groundTruth || '',
+          criteria: criteria || '',
+          persona: persona || 'Khách hàng'
+        };
+
+        const userFiles = getUserTrainingFiles(auth.user);
+        const aiConfig = getEffectiveAIConfig(auth.user, body.model);
+        const evalData = await evaluateResponseWithAI(qObj, aiResponse, userFiles.pk.content, userFiles.pr.content, aiConfig);
+
+        const evalResult = {
+          verdict: evalData.verdict || 'pass',
+          score: evalData.score || 5,
+          reason: evalData.reason || 'Đạt tiêu chuẩn.',
+          recommendation: evalData.recommendation || '',
+          knowledge_compliance: evalData.knowledge_compliance || 'pass',
+          prompt_compliance: evalData.prompt_compliance || 'pass'
+        };
+        const judgeEngine = evalData.judgeEngine || aiConfig.displayName;
+
+        // Update question in test suite
+        if (questionId) {
+          const item = autoTestSuite.find(q => q.id === questionId);
+          if (item) {
+            item.status = 'evaluated';
+            item.last_response = aiResponse;
+            item.evaluation = evalResult;
+          }
+        }
+
+        // Save persistent evaluation record
+        const record = {
+          id: 'eval_' + Date.now(),
+          tester_id: auth.user.id,
+          tester_name: auth.user.name,
+          tester_role: auth.user.role,
+          persona: qObj.persona || 'Khách hàng',
+          prompt_used: qObj.question,
+          ai_response_summary: aiResponse,
+          result: evalResult.verdict,
+          score: evalResult.score,
+          judge_engine: judgeEngine,
+          client_id: body.clientId || 'auto_tester',
+          analysis: evalResult.reason,
+          recommendation: evalResult.recommendation,
+          created_at: new Date().toISOString()
+        };
+
+        db.evaluations = db.evaluations || [];
+        db.evaluations.unshift(record);
+        auth.user.tests_submitted = (auth.user.tests_submitted || 0) + 1;
+        saveDB(db);
+
+        return sendJSON(res, 200, {
+          ok: true,
+          evaluation: evalResult,
+          judgeEngine,
+          record
+        });
+      } catch (err) {
+        console.warn('[EVALUATE] Evaluation error, fallback to rule-based:', err.message);
+        const fallback = fallbackRuleEvaluate({ question: 'Câu hỏi kiểm thử' }, 'Phản hồi');
+        return sendJSON(res, 200, {
+          ok: true,
+          evaluation: fallback,
+          judgeEngine: 'Smart Local AI (Dự phòng)',
+          record: null
+        });
       }
-
-      // Save persistent evaluation record
-      const record = {
-        id: 'eval_' + Date.now(),
-        tester_id: auth.user.id,
-        tester_name: auth.user.name,
-        tester_role: auth.user.role,
-        persona: qObj.persona || 'Khách hàng',
-        prompt_used: qObj.question,
-        ai_response_summary: aiResponse,
-        result: evalResult.verdict,
-        score: evalResult.score,
-        judge_engine: judgeEngine,
-        client_id: body.clientId || 'auto_tester',
-        analysis: evalResult.reason,
-        recommendation: evalResult.recommendation,
-        created_at: new Date().toISOString()
-      };
-
-      db.evaluations = db.evaluations || [];
-      db.evaluations.unshift(record);
-      auth.user.tests_submitted = (auth.user.tests_submitted || 0) + 1;
-      saveDB(db);
-
-      return sendJSON(res, 200, {
-        ok: true,
-        evaluation: evalResult,
-        judgeEngine,
-        record
-      });
     }
 
     // Context-Aware Autonomous Multi-Turn Agent Turn (Gemini Free / Groq / DeepSeek / Local)
     if (pathname === '/api/ai-agent/chat-turn' && req.method === 'POST') {
-      const body = await parseBody(req);
-      const { persona, goal, conversationHistory = [], lastBotResponse = '', turnIndex = 1, maxTurns = 4 } = body;
+      try {
+        const body = await parseBody(req);
+        const { persona, goal, conversationHistory = [], lastBotResponse = '', turnIndex = 1, maxTurns = 4 } = body;
 
-      const userFiles = getUserTrainingFiles(auth.user);
-      const aiConfig = getEffectiveAIConfig(auth.user, body.model);
+        const userFiles = getUserTrainingFiles(auth.user);
+        const aiConfig = getEffectiveAIConfig(auth.user, body.model);
 
-      const turnResult = await generateAgentTurnWithAI(
-        { persona, goal, conversationHistory, lastBotResponse, turnIndex, maxTurns },
-        userFiles.pk.content,
-        userFiles.pr.content,
-        aiConfig
-      );
+        const turnResult = await generateAgentTurnWithAI(
+          { persona, goal, conversationHistory, lastBotResponse, turnIndex, maxTurns },
+          userFiles.pk.content,
+          userFiles.pr.content,
+          aiConfig
+        );
 
-      const agentTurn = turnResult.agentTurn;
-      const engine = turnResult.engine || aiConfig.displayName;
+        const agentTurn = turnResult.agentTurn || fallbackAgentTurn({ persona, conversationHistory, lastBotResponse, turnIndex, maxTurns });
+        const engine = turnResult.engine || aiConfig.displayName;
 
-      // Record evaluation if available
-      let evalRecord = null;
-      if (agentTurn && agentTurn.evaluation && lastBotResponse) {
-        evalRecord = {
-          id: 'eval_agent_' + Date.now(),
-          tester_id: auth ? auth.user.id : 'usr_tester_01',
-          tester_name: auth ? auth.user.name : 'AI Agent Tester',
-          tester_role: auth ? auth.user.role : 'tester',
-          persona: persona || 'Khách hàng Agent',
-          prompt_used: conversationHistory.length ? conversationHistory[conversationHistory.length - 1].content : 'Lượt mở đầu',
-          ai_response_summary: lastBotResponse,
-          result: agentTurn.evaluation.verdict || 'pass',
-          score: agentTurn.evaluation.score || 5,
-          judge_engine: engine,
-          client_id: body.clientId || 'agent_runner',
-          analysis: agentTurn.evaluation.reason || 'Agent đánh giá ngữ cảnh tự động.',
-          created_at: new Date().toISOString()
-        };
-        db.evaluations = db.evaluations || [];
-        db.evaluations.unshift(evalRecord);
-        if (auth && auth.user) auth.user.tests_submitted = (auth.user.tests_submitted || 0) + 1;
-        saveDB(db);
+        // Record evaluation if available
+        let evalRecord = null;
+        if (agentTurn && agentTurn.evaluation && lastBotResponse) {
+          evalRecord = {
+            id: 'eval_agent_' + Date.now(),
+            tester_id: auth ? auth.user.id : 'usr_tester_01',
+            tester_name: auth ? auth.user.name : 'AI Agent Tester',
+            tester_role: auth ? auth.user.role : 'tester',
+            persona: persona || 'Khách hàng Agent',
+            prompt_used: conversationHistory.length ? conversationHistory[conversationHistory.length - 1].content : 'Lượt mở đầu',
+            ai_response_summary: lastBotResponse,
+            result: agentTurn.evaluation.verdict || 'pass',
+            score: agentTurn.evaluation.score || 5,
+            judge_engine: engine,
+            client_id: body.clientId || 'agent_runner',
+            analysis: agentTurn.evaluation.reason || 'Agent đánh giá ngữ cảnh tự động.',
+            created_at: new Date().toISOString()
+          };
+          db.evaluations = db.evaluations || [];
+          db.evaluations.unshift(evalRecord);
+          if (auth && auth.user) auth.user.tests_submitted = (auth.user.tests_submitted || 0) + 1;
+          saveDB(db);
+        }
+
+        return sendJSON(res, 200, {
+          ok: true,
+          agentTurn,
+          engine,
+          record: evalRecord
+        });
+      } catch (err) {
+        console.warn('[AI AGENT] Turn handler error, fallback to Local:', err.message);
+        const fallback = fallbackAgentTurn({ persona: 'Khách hàng', conversationHistory: [], lastBotResponse: '', turnIndex: 1, maxTurns: 4 });
+        return sendJSON(res, 200, {
+          ok: true,
+          agentTurn: fallback,
+          engine: 'Smart Local AI (Dự phòng)',
+          record: null
+        });
       }
-
-      return sendJSON(res, 200, {
-        ok: true,
-        agentTurn,
-        engine,
-        record: evalRecord
-      });
     }
 
     // 6. Evaluations & Chat Sessions CRUD

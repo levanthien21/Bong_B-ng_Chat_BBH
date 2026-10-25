@@ -112,8 +112,8 @@
         "updated_at": "2026-10-25T10:39:25.426Z"
       },
       "created_at": "2026-10-25T08:20:08.743Z",
-      "last_login": "2026-10-25T15:37:13.793Z",
-      "tests_submitted": 2
+      "last_login": "2026-10-25T16:41:48.054Z",
+      "tests_submitted": 3
     }
   ],
   "sessions": {
@@ -140,9 +140,41 @@
     "e56d2d400108b9afa988a1915ef762919cf0fa74d47f739de4c023546cc887f8": {
       "user_id": "usr_thien_admin",
       "created_at": "2026-10-25T15:37:13.793Z"
+    },
+    "608c21593b4b5e9a6d4c2c6bf0904fad760c6e9bb2aecb03bdaff0f971204189": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-25T15:37:56.397Z"
+    },
+    "3c0e6983ac7ffc9488b5b19d3f425a94b38d1a5323efe1abc90f436fdf496037": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-25T16:35:31.330Z"
+    },
+    "513ee03c67890165ef50615332eab4794928af8a26f21e73a47ec715292a4b32": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-25T16:41:31.175Z"
+    },
+    "83b57de39b1c54ac12382effcd08e0f6d938f6d6a91c50a5712f253ee8660168": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-25T16:41:48.054Z"
     }
   },
   "evaluations": [
+    {
+      "id": "eval_1792946497381",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Cho mình xin bảng giá chi tiết",
+      "ai_response_summary": "Dạ bên em có bảng giá gói cơ bản 300k/tháng ạ.",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "auto_tester",
+      "analysis": "Chatbot không tuân thủ quy tắc bắt buộc là phải hỏi số lượng người và ngày đi khi khách hỏi về giá, đồng thời đưa ra mức giá không có căn cứ từ tài liệu sản phẩm.",
+      "recommendation": "Cần cập nhật prompt bắt buộc bot phải hỏi lại thông tin chi tiết (số lượng người, ngày đi) trước khi báo giá bất kỳ dịch vụ nào.",
+      "created_at": "2026-10-25T16:41:37.381Z"
+    },
     {
       "id": "eval_1792942620655",
       "tester_id": "usr_thien_admin",
@@ -162,6 +194,48 @@
   ],
   "chat_sessions": [],
   "logs": [
+    {
+      "id": "log_1792946508054_hck6",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-25T16:41:48.054Z"
+    },
+    {
+      "id": "log_1792946496205_ic9u",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "AI Tester sinh 8 câu hỏi (Gemini 1.5 Flash (Free))",
+      "created_at": "2026-10-25T16:41:36.205Z"
+    },
+    {
+      "id": "log_1792946491175_pvlq",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-25T16:41:31.175Z"
+    },
+    {
+      "id": "log_1792946131330_hzae",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-25T16:35:31.330Z"
+    },
+    {
+      "id": "log_1792942676397_5o0j",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-25T15:37:56.397Z"
+    },
+    {
+      "id": "log_1792942634256_mymj",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "AI Tester sinh 8 câu hỏi (Gemini 1.5 Flash (Free))",
+      "created_at": "2026-10-25T15:37:14.256Z"
+    },
     {
       "id": "log_1792942633793_5mih",
       "actor": "Thiện BBH",
