@@ -112,7 +112,7 @@
         "updated_at": "2026-10-25T17:04:18.837Z"
       },
       "created_at": "2026-10-25T08:20:08.743Z",
-      "last_login": "2026-10-26T04:33:49.168Z",
+      "last_login": "2026-10-26T07:38:10.888Z",
       "tests_submitted": 17
     }
   ],
@@ -192,6 +192,26 @@
     "bbh_usr_thien_admin.mvorhrhs.049ae642906cd176bdb042c1f840df18": {
       "user_id": "usr_thien_admin",
       "created_at": "2026-10-26T04:33:49.168Z"
+    },
+    "bbh_usr_thien_admin.mvox5ty8.268289607aacd409ce58a2564e6dee91": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T07:12:30.176Z"
+    },
+    "bbh_usr_thien_admin.mvoy2ur2.d2fcda0593f19bbecec58abcadd0ff6f": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T07:38:10.863Z"
+    },
+    "bbh_usr_thien_admin.mvoy2urf.9ca8d4a6ed009e0630fbd9e21fdb0e58": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T07:38:10.875Z"
+    },
+    "bbh_usr_thien_admin.mvoy2urk.a0ff98842ad11ed1142d763488d908ce": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T07:38:10.880Z"
+    },
+    "bbh_usr_thien_admin.mvoy2urs.1a2c666357cc4ba04985d2312323cd47": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T07:38:10.888Z"
     }
   },
   "evaluations": [
@@ -441,6 +461,41 @@
   ],
   "chat_sessions": [],
   "logs": [
+    {
+      "id": "log_1793000290888_1c70",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T07:38:10.888Z"
+    },
+    {
+      "id": "log_1793000290880_dn83",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đặt lại mật khẩu thành công",
+      "created_at": "2026-10-26T07:38:10.880Z"
+    },
+    {
+      "id": "log_1793000290875_ru01",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T07:38:10.875Z"
+    },
+    {
+      "id": "log_1793000290863_08mw",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T07:38:10.864Z"
+    },
+    {
+      "id": "log_1792998750177_xz3j",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T07:12:30.177Z"
+    },
     {
       "id": "log_1792989229168_i1g6",
       "actor": "Thiện BBH",

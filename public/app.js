@@ -150,6 +150,16 @@
     loginIdentifier: document.getElementById('login-identifier'),
     loginPassword: document.getElementById('login-password'),
     loginFeedback: document.getElementById('login-feedback'),
+    loginRememberMe: document.getElementById('login-remember-me'),
+    btnToggleLoginPwd: document.getElementById('btn-toggle-login-pwd'),
+    linkForgotPwd: document.getElementById('link-forgot-pwd'),
+    formResetPwd: document.getElementById('form-reset-pwd'),
+    resetEmail: document.getElementById('reset-email'),
+    resetNewPassword: document.getElementById('reset-new-password'),
+    btnToggleResetPwd: document.getElementById('btn-toggle-reset-pwd'),
+    btnToggleRegPwd: document.getElementById('btn-toggle-reg-pwd'),
+    linkBackToLogin: document.getElementById('link-back-to-login'),
+    resetPwdFeedback: document.getElementById('reset-pwd-feedback'),
     registerFeedback: document.getElementById('register-feedback'),
     btnQuickFillAdmin: document.getElementById('btn-quick-fill-admin'),
     btnQuickFillTester: document.getElementById('btn-quick-fill-tester'),
@@ -465,15 +475,42 @@
   // AUTHENTICATION & RBAC
   // ==========================================================================
 
+  function restoreSavedCredentials() {
+    const savedEmail = localStorage.getItem('bbh_saved_email');
+    const savedPass = localStorage.getItem('bbh_saved_password');
+    const rememberMe = localStorage.getItem('bbh_remember_me') !== 'false';
+    if (el.loginRememberMe) el.loginRememberMe.checked = rememberMe;
+    if (savedEmail && el.loginIdentifier) el.loginIdentifier.value = savedEmail;
+    if (savedPass && el.loginPassword) el.loginPassword.value = savedPass;
+    if (!savedEmail && el.loginIdentifier && !el.loginIdentifier.value) {
+      el.loginIdentifier.value = 'thienlv.bbh@gmail.com';
+    }
+  }
+
+  function setupPasswordToggle(btn, input) {
+    if (!btn || !input) return;
+    btn.addEventListener('click', () => {
+      const isPwd = input.type === 'password';
+      input.type = isPwd ? 'text' : 'password';
+      btn.textContent = isPwd ? '🙈' : '👁️';
+    });
+  }
+
+  setupPasswordToggle(el.btnToggleLoginPwd, el.loginPassword);
+  setupPasswordToggle(el.btnToggleRegPwd, el.regPassword);
+  setupPasswordToggle(el.btnToggleResetPwd, el.resetNewPassword);
+
   function switchAuthTab(tab) {
     if (el.loginFeedback) el.loginFeedback.style.display = 'none';
     if (el.registerFeedback) el.registerFeedback.style.display = 'none';
+    if (el.formResetPwd) el.formResetPwd.style.display = 'none';
 
     if (tab === 'login') {
       el.tabLoginBtn.classList.add('active');
       el.tabRegisterBtn.classList.remove('active');
       el.formLogin.style.display = 'flex';
       el.formRegister.style.display = 'none';
+      restoreSavedCredentials();
     } else {
       el.tabLoginBtn.classList.remove('active');
       el.tabRegisterBtn.classList.add('active');
@@ -499,10 +536,67 @@
     });
   }
 
+  // Forgot Password Link Click
+  if (el.linkForgotPwd) {
+    el.linkForgotPwd.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (el.formLogin) el.formLogin.style.display = 'none';
+      if (el.formRegister) el.formRegister.style.display = 'none';
+      if (el.formResetPwd) {
+        el.formResetPwd.style.display = 'flex';
+        if (el.resetEmail && el.loginIdentifier) {
+          el.resetEmail.value = el.loginIdentifier.value.trim() || 'thienlv.bbh@gmail.com';
+        }
+        if (el.resetNewPassword) el.resetNewPassword.value = '';
+        if (el.resetPwdFeedback) el.resetPwdFeedback.style.display = 'none';
+      }
+    });
+  }
+
+  if (el.linkBackToLogin) {
+    el.linkBackToLogin.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (el.formResetPwd) el.formResetPwd.style.display = 'none';
+      switchAuthTab('login');
+    });
+  }
+
+  // Form Reset Password Submit
+  if (el.formResetPwd) {
+    el.formResetPwd.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = el.resetEmail.value.trim();
+      const newPassword = el.resetNewPassword.value.trim();
+      if (el.resetPwdFeedback) el.resetPwdFeedback.style.display = 'none';
+
+      try {
+        const data = await api('/api/auth/reset-password', 'POST', { email, newPassword });
+        state.token = data.token;
+        state.user = data.user;
+        localStorage.setItem('bbh_auth_token', data.token);
+        localStorage.setItem('bbh_saved_email', email);
+        localStorage.setItem('bbh_saved_password', newPassword);
+        localStorage.setItem('bbh_remember_me', 'true');
+        showToast(data.message, 'success');
+        applyAuthState();
+        loadWorkspace();
+      } catch (err) {
+        if (el.resetPwdFeedback) {
+          el.resetPwdFeedback.style.display = 'block';
+          el.resetPwdFeedback.style.background = 'var(--danger-soft)';
+          el.resetPwdFeedback.style.color = 'var(--danger)';
+          el.resetPwdFeedback.innerHTML = `⚠️ <b>Lỗi:</b> ${escapeHtml(err.message)}`;
+        }
+        showToast(err.message, 'error');
+      }
+    });
+  }
+
   el.formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
     const identifier = el.loginIdentifier.value.trim();
     const password = el.loginPassword.value;
+    const rememberMe = el.loginRememberMe ? el.loginRememberMe.checked : true;
 
     if (el.loginFeedback) {
       el.loginFeedback.style.display = 'none';
@@ -513,6 +607,18 @@
       state.token = data.token;
       state.user = data.user;
       localStorage.setItem('bbh_auth_token', data.token);
+
+      // Save password and identifier if remember me is enabled
+      if (rememberMe) {
+        localStorage.setItem('bbh_saved_email', identifier);
+        localStorage.setItem('bbh_saved_password', password);
+        localStorage.setItem('bbh_remember_me', 'true');
+      } else {
+        localStorage.removeItem('bbh_saved_email');
+        localStorage.removeItem('bbh_saved_password');
+        localStorage.setItem('bbh_remember_me', 'false');
+      }
+
       showToast(data.message, 'success');
       applyAuthState();
       loadWorkspace();
@@ -543,6 +649,12 @@
       state.token = data.token;
       state.user = data.user;
       localStorage.setItem('bbh_auth_token', data.token);
+
+      // Auto save credentials on register
+      localStorage.setItem('bbh_saved_email', email);
+      localStorage.setItem('bbh_saved_password', password);
+      localStorage.setItem('bbh_remember_me', 'true');
+
       showToast(data.message, 'success');
       applyAuthState();
       loadWorkspace();
@@ -578,6 +690,7 @@
       el.btnAdminManage.style.display = 'none';
       if (el.headerUserRole) el.headerUserRole.style.display = 'none';
       mountUserChatbox('');
+      restoreSavedCredentials();
       return;
     }
 
