@@ -38,8 +38,34 @@ function hashPassword(password, salt = 'claude-bbh-salt-2026') {
   return crypto.pbkdf2Sync(String(password), salt, 1000, 64, 'sha512').toString('hex');
 }
 
-function generateToken() {
-  return crypto.randomBytes(32).toString('hex');
+const AUTH_SECRET = process.env.AUTH_SECRET || 'bbh-studio-secret-token-hmac-2026';
+
+function generateToken(userId = '') {
+  const ts = Date.now().toString(36);
+  const rawId = String(userId || crypto.randomBytes(8).toString('hex'));
+  const data = `${rawId}.${ts}`;
+  const sig = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex').slice(0, 32);
+  return `bbh_${rawId}.${ts}.${sig}`;
+}
+
+function verifySignedToken(token) {
+  if (!token || typeof token !== 'string' || !token.startsWith('bbh_')) return null;
+  const parts = token.slice(4).split('.');
+  if (parts.length !== 3) return null;
+  const [userId, ts, sig] = parts;
+  const data = `${userId}.${ts}`;
+  const expectedSig = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex').slice(0, 32);
+  try {
+    if (crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
+      const issuedAt = parseInt(ts, 36);
+      if (!isNaN(issuedAt) && (Date.now() - issuedAt) < 30 * 24 * 60 * 60 * 1000) {
+        return userId;
+      }
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
 }
 
 function removeAccents(str) {
@@ -893,6 +919,105 @@ async function callGroqAPI(messages, temperature = 0.4, overrideKey = null, over
 }
 
 // ==========================================================================
+// OLLAMA LOCAL / PRIVATE LLM CALLER (0đ - UNLIMITED TOKENS, 100% PRIVATE)
+// ==========================================================================
+
+async function callOllamaAPI(messages, temperature = 0.4, overrideModel = 'qwen2.5:latest', overrideBaseUrl = null) {
+  const rawBase = overrideBaseUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+  const baseUrl = String(rawBase).trim().replace(/\/+$/, '');
+  const model = overrideModel || 'qwen2.5:latest';
+
+  const reqBody = {
+    model: model,
+    messages: messages.map(m => ({
+      role: m.role === 'developer' ? 'system' : m.role,
+      content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+    })),
+    format: 'json',
+    stream: false,
+    options: {
+      temperature: Math.min(Math.max(temperature, 0), 1)
+    }
+  };
+  const payload = JSON.stringify(reqBody);
+  const targetUrl = new URL(`${baseUrl}/api/chat`);
+
+  return new Promise((resolve, reject) => {
+    const isHttps = targetUrl.protocol === 'https:';
+    const client = isHttps ? https : http;
+
+    const req = client.request(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      },
+      timeout: 60000
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (res.statusCode >= 400 || parsed.error) {
+            return reject(new Error(parsed.error || `Lỗi Ollama (${res.statusCode})`));
+          }
+          const content = parsed.message?.content || '{}';
+          try {
+            resolve(JSON.parse(content));
+          } catch (e) {
+            const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            if (jsonMatch) {
+              try { return resolve(JSON.parse(jsonMatch[1])); } catch (e2) {}
+            }
+            resolve(content);
+          }
+        } catch (err) {
+          reject(new Error('Lỗi phản hồi từ Ollama: ' + err.message));
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      reject(new Error(`Không thể kết nối đến Ollama tại ${baseUrl}. Đảm bảo Ollama đang chạy trên máy tính ('ollama serve'). Lỗi: ${err.message}`));
+    });
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Hết thời gian chờ phản hồi từ Ollama (Timeout 60s)'));
+    });
+    req.write(payload);
+    req.end();
+  });
+}
+
+async function testOllamaConnection(baseUrl = 'http://localhost:11434') {
+  const cleanBase = String(baseUrl || 'http://localhost:11434').trim().replace(/\/+$/, '');
+  const targetUrl = new URL(`${cleanBase}/api/tags`);
+  return new Promise((resolve, reject) => {
+    const client = targetUrl.protocol === 'https:' ? https : http;
+    const req = client.request(targetUrl, { method: 'GET', timeout: 5000 }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          const models = Array.isArray(parsed.models) ? parsed.models.map(m => m.name) : [];
+          resolve({ ok: true, models, count: models.length, baseUrl: cleanBase });
+        } catch (e) {
+          resolve({ ok: true, models: [], count: 0, baseUrl: cleanBase });
+        }
+      });
+    });
+    req.on('error', (err) => reject(new Error(`Không thể kết nối đến Ollama (${cleanBase}): ${err.message}`)));
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error(`Hết thời gian chờ kết nối Ollama (${cleanBase})`));
+    });
+    req.end();
+  });
+}
+
+// ==========================================================================
 // UNIFIED AI DISPATCHER & CONFIG RESOLVER
 // ==========================================================================
 
@@ -902,6 +1027,8 @@ function getEffectiveAIConfig(user, requestedModel = null) {
   let provider = 'gemini';
   if (model === 'local-free') {
     provider = 'local';
+  } else if (model === 'ollama' || model.startsWith('ollama')) {
+    provider = 'ollama';
   } else if (model.startsWith('gemini')) {
     provider = 'gemini';
   } else if (model.startsWith('llama')) {
@@ -911,6 +1038,9 @@ function getEffectiveAIConfig(user, requestedModel = null) {
   }
 
   let apiKey = '';
+  let ollamaBaseUrl = user?.ollama_base_url || db.config.ollama_base_url || process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+  let ollamaModel = user?.ollama_model || db.config.ollama_model || (model.includes(':') ? model.split('ollama:')[1] : 'qwen2.5:latest');
+
   if (provider === 'gemini') {
     apiKey = user?.gemini_api_key || user?.ai_api_key || '';
     if (!apiKey && user?.deepseek_api_key?.startsWith('AIzaSy')) apiKey = user.deepseek_api_key;
@@ -928,9 +1058,10 @@ function getEffectiveAIConfig(user, requestedModel = null) {
     if (!apiKey) apiKey = process.env.DEEPSEEK_API_KEY || '';
   }
 
-  const hasKey = provider === 'local' || Boolean(apiKey);
+  const hasKey = provider === 'local' || provider === 'ollama' || Boolean(apiKey);
   let displayName = 'Smart Local AI (Miễn phí 0đ)';
-  if (model === 'gemini-1.5-flash') displayName = 'Gemini 1.5 Flash (Free)';
+  if (provider === 'ollama') displayName = `Ollama (${ollamaModel} - 0đ Local)`;
+  else if (model === 'gemini-1.5-flash') displayName = 'Gemini 1.5 Flash (Free)';
   else if (model === 'gemini-2.0-flash') displayName = 'Gemini 2.0 Flash (Free)';
   else if (model === 'llama-3.3-70b-versatile') displayName = 'Groq Llama 3.3 (Free)';
   else if (model === 'deepseek-chat') displayName = 'DeepSeek-V3';
@@ -941,16 +1072,21 @@ function getEffectiveAIConfig(user, requestedModel = null) {
     model,
     apiKey,
     hasKey,
-    displayName
+    displayName,
+    ollamaBaseUrl,
+    ollamaModel
   };
 }
 
 async function callUnifiedAI(messages, temperature = 0.4, aiConfig = {}) {
-  const { provider, model, apiKey } = aiConfig;
+  const { provider, model, apiKey, ollamaBaseUrl, ollamaModel } = aiConfig;
 
   // Local Free Engine requires no remote network calls
   if (provider === 'local' || model === 'local-free') {
     return null;
+  }
+  if (provider === 'ollama') {
+    return await callOllamaAPI(messages, temperature, ollamaModel || 'qwen2.5:latest', ollamaBaseUrl);
   }
   if (!apiKey) {
     return null;
@@ -1736,6 +1872,8 @@ function sanitizeUser(user) {
     masked_ai_key: aiCfg.apiKey ? '••••••••' + aiCfg.apiKey.slice(-4) : '',
     has_deepseek_key: aiCfg.hasKey,
     masked_deepseek_key: aiCfg.apiKey ? '••••••••' + aiCfg.apiKey.slice(-4) : '',
+    ollama_base_url: user.ollama_base_url || db.config.ollama_base_url || 'http://localhost:11434',
+    ollama_model: user.ollama_model || db.config.ollama_model || 'qwen2.5:latest',
     role_info: roleObj,
     permissions: roleObj.permissions
   };
@@ -1787,12 +1925,24 @@ function sendJSON(res, statusCode, data) {
 function getAuthenticatedUser(req) {
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+  if (!token) return null;
 
-  // Strict per-user token check: sessions are tied strictly to the authenticated user token
-  if (token && db.sessions && db.sessions[token]) {
+  // 1. Strict per-user token check: check in-memory sessions first
+  if (db.sessions && db.sessions[token]) {
     const session = db.sessions[token];
     const user = db.users.find(u => u.id === session.user_id);
     if (user && user.status === 'active') {
+      return { user, token, permissions: (db.roles[user.role] || db.roles.tester).permissions };
+    }
+  }
+
+  // 2. Stateless cryptographic HMAC verification (survives Vercel serverless cold starts & server restarts)
+  const userIdFromToken = verifySignedToken(token);
+  if (userIdFromToken) {
+    const user = db.users.find(u => u.id === userIdFromToken);
+    if (user && user.status === 'active') {
+      if (!db.sessions) db.sessions = {};
+      db.sessions[token] = { user_id: user.id, created_at: new Date().toISOString() };
       return { user, token, permissions: (db.roles[user.role] || db.roles.tester).permissions };
     }
   }
@@ -1890,7 +2040,7 @@ async function handleRequest(req, res) {
         return sendJSON(res, 403, { ok: false, message: 'Tài khoản của bạn hiện đang bị tạm khóa.' });
       }
 
-      const token = generateToken();
+      const token = generateToken(user.id);
       user.last_login = new Date().toISOString();
       db.sessions[token] = { user_id: user.id, created_at: new Date().toISOString() };
       addAuditLog(user.name, user.role, 'Đăng nhập vào hệ thống');
@@ -1974,7 +2124,7 @@ async function handleRequest(req, res) {
       };
 
       db.users.push(newUser);
-      const token = generateToken();
+      const token = generateToken(newUser.id);
       db.sessions[token] = { user_id: newUser.id, created_at: new Date().toISOString() };
       addAuditLog(newUser.name, newUser.role, 'Đăng ký tài khoản mới');
       saveDB(db);
@@ -2287,7 +2437,24 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
     // MULTI-MODEL AI APIS (GEMINI FREE / GROQ / DEEPSEEK / LOCAL)
     // ==========================================
 
-    // Test AI Connection (Supports Gemini Free, Groq, DeepSeek, Local)
+    // Endpoint: List / Scan Ollama models
+    if (pathname === '/api/ollama/tags' && (req.method === 'GET' || req.method === 'POST')) {
+      let baseUrl = 'http://localhost:11434';
+      if (req.method === 'POST') {
+        const body = await parseBody(req);
+        if (body.baseUrl) baseUrl = body.baseUrl;
+      } else {
+        baseUrl = parsedUrl.searchParams.get('baseUrl') || auth?.user?.ollama_base_url || db.config.ollama_base_url || 'http://localhost:11434';
+      }
+      try {
+        const testRes = await testOllamaConnection(baseUrl);
+        return sendJSON(res, 200, testRes);
+      } catch (err) {
+        return sendJSON(res, 200, { ok: false, error: err.message, models: [] });
+      }
+    }
+
+    // Test AI Connection (Supports Gemini Free, Groq, DeepSeek, Local, Ollama)
     if ((pathname === '/api/deepseek/test' || pathname === '/api/ai/test') && req.method === 'POST') {
       const body = await parseBody(req);
       const testModel = body.model || auth.user?.ai_model || db.config.ai_model || 'gemini-1.5-flash';
@@ -2312,6 +2479,46 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
           model: 'local-free',
           data: { status: 'ok', engine: 'Smart Local AI' }
         });
+      }
+
+      // Ollama Local Engine: zero key, connects to local or private Ollama host
+      if (testModel === 'ollama' || testModel.startsWith('ollama')) {
+        const baseUrl = body.ollama_base_url || auth.user?.ollama_base_url || db.config.ollama_base_url || 'http://localhost:11434';
+        const ollamaModel = body.ollama_model || auth.user?.ollama_model || db.config.ollama_model || 'qwen2.5:latest';
+        try {
+          const tags = await testOllamaConnection(baseUrl);
+          if (body.save) {
+            if (auth.user) {
+              auth.user.ai_model = 'ollama';
+              auth.user.ollama_base_url = baseUrl;
+              auth.user.ollama_model = ollamaModel;
+              const u = db.users.find(x => x.id === auth.user.id);
+              if (u) {
+                u.ai_model = 'ollama';
+                u.ollama_base_url = baseUrl;
+                u.ollama_model = ollamaModel;
+              }
+            }
+            if (auth.user?.role === 'admin' && body.isGlobal) {
+              db.config.ai_model = 'ollama';
+              db.config.ollama_base_url = baseUrl;
+              db.config.ollama_model = ollamaModel;
+            }
+            saveDB(db);
+          }
+          return sendJSON(res, 200, {
+            ok: true,
+            message: `Kết nối Ollama thành công tại ${baseUrl}! Tìm thấy ${tags.models.length} mô hình: ${tags.models.slice(0, 3).join(', ')}${tags.models.length > 3 ? '...' : ''}`,
+            model: 'ollama',
+            models: tags.models,
+            has_ai_key: true
+          });
+        } catch (err) {
+          return sendJSON(res, 400, {
+            ok: false,
+            message: `Không thể kết nối Ollama (${baseUrl}): ${err.message}. Đảm bảo bạn đã bật Ollama ('ollama serve' hoặc ứng dụng desktop).`
+          });
+        }
       }
 
       const aiConfig = getEffectiveAIConfig(auth.user, testModel);
@@ -2425,6 +2632,25 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
         if (body.model.startsWith('deepseek')) {
           db.config.deepseek_model = body.model.trim();
         }
+      }
+
+      if (body.ollama_base_url !== undefined) {
+        const url = String(body.ollama_base_url || '').trim();
+        if (auth.user) {
+          auth.user.ollama_base_url = url;
+          const u = db.users.find(x => x.id === auth.user.id);
+          if (u) u.ollama_base_url = url;
+        }
+        if (auth.user?.role === 'admin') db.config.ollama_base_url = url;
+      }
+      if (body.ollama_model !== undefined) {
+        const m = String(body.ollama_model || '').trim();
+        if (auth.user) {
+          auth.user.ollama_model = m;
+          const u = db.users.find(x => x.id === auth.user.id);
+          if (u) u.ollama_model = m;
+        }
+        if (auth.user?.role === 'admin') db.config.ollama_model = m;
       }
 
       if (body.auto_wait_seconds) db.config.auto_wait_seconds = Math.max(5, parseInt(body.auto_wait_seconds, 10) || 30);

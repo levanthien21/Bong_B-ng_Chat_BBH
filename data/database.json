@@ -112,8 +112,8 @@
         "updated_at": "2026-10-25T17:04:18.837Z"
       },
       "created_at": "2026-10-25T08:20:08.743Z",
-      "last_login": "2026-10-25T17:24:06.657Z",
-      "tests_submitted": 12
+      "last_login": "2026-10-26T04:33:49.168Z",
+      "tests_submitted": 17
     }
   ],
   "sessions": {
@@ -184,9 +184,92 @@
     "29d39c7a7edb094de497daa09378002d2d076eca001c8134228263e38d9c0e82": {
       "user_id": "usr_thien_admin",
       "created_at": "2026-10-25T17:24:06.657Z"
+    },
+    "83ff5ff4393d40da390f5798c6f5cf1e32f09058b72a8f6f28dbca6773d38e1d": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T04:10:00.015Z"
+    },
+    "bbh_usr_thien_admin.mvorhrhs.049ae642906cd176bdb042c1f840df18": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T04:33:49.168Z"
     }
   },
   "evaluations": [
+    {
+      "id": "eval_agent_1792989244086",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Lượt mở đầu",
+      "ai_response_summary": "Dạ bên mình quy định không mang thú cưng ạ.",
+      "result": "pass",
+      "score": 5,
+      "judge_engine": "Smart Local AI (Miễn phí 0đ)",
+      "client_id": "agent_runner",
+      "analysis": "TUÂN THỦ TỐT: Bot từ chối mang thú cưng đúng theo quy định trong File 2.",
+      "created_at": "2026-10-26T04:34:04.086Z"
+    },
+    {
+      "id": "eval_agent_1792989229202",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng quan tâm",
+      "prompt_used": "Dạ chào bạn, phòng bên mình giá từ 800.000đ/đêm...",
+      "ai_response_summary": "Dạ chào bạn, phòng bên mình giá từ 800.000đ/đêm, bạn đi mấy người và ngày nào ạ?",
+      "result": "pass",
+      "score": 5,
+      "judge_engine": "Smart Local AI (Miễn phí 0đ)",
+      "client_id": "agent_runner",
+      "analysis": "Bot phản hồi đúng mực, hỗ trợ thông tin phù hợp.",
+      "created_at": "2026-10-26T04:33:49.202Z"
+    },
+    {
+      "id": "eval_agent_1792989229199",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng quan tâm",
+      "prompt_used": "Dạ chào bạn, phòng bên mình giá từ 800.000đ/đêm...",
+      "ai_response_summary": "Dạ chào bạn, phòng bên mình giá từ 800.000đ/đêm, bạn đi mấy người và ngày nào ạ?",
+      "result": "pass",
+      "score": 5,
+      "judge_engine": "Smart Local AI (Miễn phí 0đ)",
+      "client_id": "agent_runner",
+      "analysis": "Bot phản hồi đúng mực, hỗ trợ thông tin phù hợp.",
+      "created_at": "2026-10-26T04:33:49.199Z"
+    },
+    {
+      "id": "eval_agent_1792989229196",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng quan tâm",
+      "prompt_used": "Dạ chào bạn, phòng bên mình giá từ 800.000đ/đêm...",
+      "ai_response_summary": "Dạ chào bạn, phòng bên mình giá từ 800.000đ/đêm, bạn đi mấy người và ngày nào ạ?",
+      "result": "pass",
+      "score": 5,
+      "judge_engine": "Smart Local AI (Miễn phí 0đ)",
+      "client_id": "agent_runner",
+      "analysis": "Bot phản hồi đúng mực, hỗ trợ thông tin phù hợp.",
+      "created_at": "2026-10-26T04:33:49.196Z"
+    },
+    {
+      "id": "eval_agent_1792989229193",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng quan tâm",
+      "prompt_used": "Dạ chào bạn, phòng bên mình giá từ 800.000đ/đêm...",
+      "ai_response_summary": "Dạ chào bạn, phòng bên mình giá từ 800.000đ/đêm, bạn đi mấy người và ngày nào ạ?",
+      "result": "pass",
+      "score": 5,
+      "judge_engine": "Smart Local AI (Miễn phí 0đ)",
+      "client_id": "agent_runner",
+      "analysis": "Bot phản hồi đúng mực, hỗ trợ thông tin phù hợp.",
+      "created_at": "2026-10-26T04:33:49.193Z"
+    },
     {
       "id": "eval_agent_1792949051178",
       "tester_id": "usr_thien_admin",
@@ -358,6 +441,20 @@
   ],
   "chat_sessions": [],
   "logs": [
+    {
+      "id": "log_1792989229168_i1g6",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T04:33:49.168Z"
+    },
+    {
+      "id": "log_1792987800015_ktax",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T04:10:00.016Z"
+    },
     {
       "id": "log_1792949046657_39t8",
       "actor": "Thiện BBH",
