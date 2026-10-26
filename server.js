@@ -1078,6 +1078,27 @@ function getEffectiveAIConfig(user, requestedModel = null) {
   };
 }
 
+function extractJSON(text) {
+  if (typeof text === 'object' && text !== null) return text;
+  if (!text || typeof text !== 'string') return null;
+  const trimmed = text.trim();
+  try { return JSON.parse(trimmed); } catch (e) {}
+
+  const codeBlockMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (codeBlockMatch) {
+    try { return JSON.parse(codeBlockMatch[1].trim()); } catch (e) {}
+  }
+
+  const firstBrace = trimmed.indexOf('{');
+  const lastBrace = trimmed.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    try {
+      return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1).trim());
+    } catch (e) {}
+  }
+  return null;
+}
+
 async function callUnifiedAI(messages, temperature = 0.4, aiConfig = {}) {
   const { provider, model, apiKey, ollamaBaseUrl, ollamaModel } = aiConfig;
 
@@ -1352,6 +1373,78 @@ async function generateAgentTurn(params, pkText, prText, userApiKey = null) {
   const cfg = { provider: 'deepseek', model: db.config.deepseek_model || 'deepseek-chat', apiKey: userApiKey, hasKey: Boolean(userApiKey), displayName: 'DeepSeek-V3' };
   const r = await generateAgentTurnWithAI(params, pkText, prText, cfg);
   return r.agentTurn;
+}
+
+// ==========================================================================
+// AI FOCUS & CONTEXT TRAINER HELPERS
+// ==========================================================================
+
+function generateFallbackGoldQA(question = '', pkText = '', prText = '') {
+  const qLower = question.toLowerCase();
+  const pkLower = (pkText || '').toLowerCase();
+  
+  let idealResponse = '';
+  let badResponse = 'Dạ em chào anh/chị ạ! Cảm ơn anh/chị đã quan tâm đến dịch vụ bên em. Về câu hỏi của anh/chị thì tùy vào từng trường hợp bên em sẽ xem xét sau ạ...';
+  let analysis = 'Bot mắc lỗi chào hỏi rườm rà, vòng vo né tránh câu hỏi chính và không đưa ra câu trả lời dứt khoát.';
+  let focusRule = 'Trả lời thẳng thắn và đưa ra đáp án cụ thể ngay trong câu đầu tiên.';
+
+  if (qLower.includes('thú cưng') || qLower.includes('chó') || qLower.includes('mèo')) {
+    idealResponse = 'Dạ theo quy định của bên em, homestay/khách sạn hiện KHÔNG cho phép mang theo thú cưng để đảm bảo không gian chung và vệ sinh phòng nghỉ ạ. Mong anh/chị thông cảm!';
+    badResponse = 'Dạ bên em rất yêu động vật, anh/chị cứ mang qua bên em xem bé ngoan không nhé!';
+    analysis = 'Bot đồng ý hoặc ậm ừ vi phạm quy tắc cấm mang thú cưng trong File 2.';
+    focusRule = 'Tuyệt đối từ chối mang thú cưng theo quy định rào chắn File 2.';
+  } else if (qLower.includes('giá') || qLower.includes('nhiêu') || qLower.includes('chi phí')) {
+    idealResponse = 'Dạ giá phòng bên em dao động từ 800.000đ - 1.200.000đ/đêm tùy theo loại phòng và ngày trong tuần hay cuối tuần. Mức giá này đã bao gồm trọn gói dịch vụ cơ bản và không phát sinh phụ thu ạ.';
+    badResponse = 'Dạ anh/chị cho em xin số điện thoại để em bảo nhân viên tư vấn gọi điện báo giá chi tiết cho mình nha!';
+    analysis = 'Bot né tránh báo giá, ép khách để lại số điện thoại khiến khách hàng khó chịu.';
+    focusRule = 'Cung cấp khung giá hoặc mức giá rõ ràng theo File 1 trước khi xin thông tin.';
+  } else if (qLower.includes('giảm giá') || qLower.includes('ưu đãi') || qLower.includes('voucher') || qLower.includes('chiết khấu')) {
+    idealResponse = 'Dạ bên em đang có ưu đãi giảm 10% khi đặt từ 5 đêm trở lên và giảm 5% khi đặt từ 3 phòng cùng lúc ạ. Nếu anh/chị đặt ngay hôm nay, bên em sẽ áp dụng ngay mức chiết khấu này nhé!';
+    badResponse = 'Dạ bên em luôn có nhiều quà tặng hấp dẫn, anh/chị cứ đặt đi bên em tặng quà bất ngờ!';
+    analysis = 'Hứa hẹn chung chung, không nắm rõ điều kiện giảm giá trong File 1.';
+    focusRule = 'Nêu đúng tỷ lệ giảm % và điều kiện số đêm/số phòng từ File 1.';
+  } else {
+    idealResponse = `Dạ về vấn đề này, theo chính sách bên em luôn hỗ trợ đầy đủ và đúng quy định trong tài liệu dịch vụ. Anh/chị cần em hỗ trợ thêm chi tiết nào về mục này không ạ?`;
+  }
+
+  return { analysis, badResponse, idealResponse, focusRule };
+}
+
+function auditFocusFallback(question = '', botReply = '', pkText = '') {
+  const replyLower = (botReply || '').toLowerCase();
+  const qLower = (question || '').toLowerCase();
+
+  let focusScore = 80;
+  let contextScore = 85;
+  let directAnswer = true;
+  let critique = 'Bot phản hồi tương đối phù hợp với câu hỏi.';
+  let suggestedResponse = botReply;
+
+  if (replyLower.length > 250) {
+    focusScore -= 20;
+    critique = 'Câu trả lời hơi dài dòng, lan man nhiều ý phụ trước khi trả lời câu hỏi chính.';
+  }
+
+  if (qLower.includes('thú cưng') && (replyLower.includes('được') || replyLower.includes('cho mang'))) {
+    focusScore = 30;
+    contextScore = 20;
+    directAnswer = false;
+    critique = 'CẢNH BÁO: Vi phạm nghiêm trọng quy tắc rào chắn File 2 (Bot đồng ý cho mang thú cưng).';
+    suggestedResponse = 'Dạ bên em quy định không cho phép mang theo thú cưng vào phòng để đảm bảo vệ sinh chung ạ.';
+  } else if ((qLower.includes('giá') || qLower.includes('bao nhiêu')) && !/\d+/.test(replyLower)) {
+    focusScore = 50;
+    directAnswer = false;
+    critique = 'Khách hỏi giá nhưng bot không đưa ra con số cụ thể mà né tránh hoặc xin SĐT.';
+    suggestedResponse = 'Dạ giá phòng bên em hiện tại là từ 800.000đ/đêm đã bao gồm thuế phí trọn gói ạ.';
+  }
+
+  return {
+    focusScore: Math.max(20, Math.min(100, focusScore)),
+    contextScore: Math.max(20, Math.min(100, contextScore)),
+    directAnswer,
+    critique,
+    suggestedResponse
+  };
 }
 
 // Dynamic Context-Aware Local Autonomous Agent Engine (0đ, No Remote API needed)
@@ -2461,11 +2554,7 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
             { role: 'user', content: prompt }
           ], 0.4, aiConfig);
 
-          let parsed = resText;
-          if (typeof resText === 'string') {
-            const cleaned = resText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-            parsed = JSON.parse(cleaned);
-          }
+          const parsed = extractJSON(resText);
           if (parsed && Array.isArray(parsed.personas) && parsed.personas.length > 0) {
             return sendJSON(res, 200, {
               ok: true,
@@ -2490,6 +2579,214 @@ CHỈ TRẢ VỀ DUY NHẤT ĐỐI TƯỢNG JSON (không kèm markdown ngoài):
         summary: fallbackResult.summary,
         personas: fallbackResult.personas,
         recommendedQuestions: fallbackResult.recommendedQuestions
+      });
+    }
+
+    // ==========================================
+    // AI FOCUS & CONTEXT TRAINER APIS
+    // ==========================================
+
+    // 1. Inject 5 Strict Focus Guardrails into File 2
+    if (pathname === '/api/ai-trainer/inject-focus-rules' && req.method === 'POST') {
+      const userFiles = getUserTrainingFiles(auth.user);
+      const focusRulesHeader = '### 🎯 QUY TẮC PHẢN HỒI ĐÚNG TRỌNG TÂM & CHUẨN NGỮ CẢNH (BẮT BUỘC)';
+      
+      const focusRulesContent = `\n\n${focusRulesHeader}\n` +
+        `1. [TRẢ LỜI THẲNG & DỨT KHOÁT]: Khách hỏi gì thì trả lời thẳng vào trọng tâm câu hỏi đó ngay ở câu đầu tiên. Tuyệt đối không chào hỏi dài dòng, không vòng vo, không lặp lại nguyên văn câu hỏi của khách.\n` +
+        `2. [NGUYÊN TẮC CĂN CỨ SỰ THẬT TỪ FILE 1]: Toàn bộ thông tin giá bán, chính sách, quy định, thông số kỹ thuật CHỈ ĐƯỢC LẤY TỪ TÀI LIỆU FILE 1. Nếu tài liệu không có hoặc cấm, phải trả lời rõ ràng là không hỗ trợ hoặc cần kiểm tra lại, tuyệt đối KHÔNG tự bịa đặt hay suy diễn sai lệch.\n` +
+        `3. [KHÔNG NÉ TRÁNH BÁO GIÁ]: Khi khách hỏi giá hoặc chi phí, hãy cung cấp mức giá hoặc khung giá cụ thể đã ghi trong File 1. Không ép khách để lại số điện thoại trước khi cung cấp thông tin giá cơ bản.\n` +
+        `4. [TUÂN THỦ RÀO CHẮN & ĐIỀU KIỆN LOẠI TRỪ]: Với các câu hỏi bẫy hoặc vi phạm rào chắn (như mang thú cưng, giảm giá quá mức quy định, yêu cầu thanh toán ngoài luồng...), phải từ chối dứt khoát, lịch sự và nêu rõ quy định từ File 2.\n` +
+        `5. [NGẮN GỌN & CÔ ĐỌNG]: Độ dài phản hồi lý tưởng từ 2 đến 4 câu văn. Tập trung giải quyết dứt điểm thắc mắc hiện tại trước khi gợi ý bước tiếp theo.`;
+
+      let currentPr = userFiles.pr.content || '';
+      if (currentPr.includes(focusRulesHeader)) {
+        return sendJSON(res, 200, {
+          ok: true,
+          promptRules: userFiles.pr,
+          message: '5 Quy tắc trọng tâm đã tồn tại trong File 2 của bạn!'
+        });
+      }
+
+      currentPr = (currentPr.trim() + focusRulesContent).trim();
+      userFiles.pr.content = currentPr;
+      const savedPr = saveUserPromptRules(auth.user.id, userFiles.pr);
+      addAuditLog(auth.user.name, auth.user.role, 'Nạp 5 Quy tắc Rào chắn Đúng Trọng Tâm vào File 2');
+
+      return sendJSON(res, 200, {
+        ok: true,
+        promptRules: savedPr,
+        message: 'Đã nạp thành công 5 Quy tắc Rào chắn Đúng Trọng Tâm vào File 2!'
+      });
+    }
+
+    // 2. Generate Few-Shot Gold Standard Q&A
+    if (pathname === '/api/ai-trainer/generate-gold-qa' && req.method === 'POST') {
+      const body = await parseBody(req);
+      const question = String(body.question || '').trim();
+      if (!question) {
+        return sendJSON(res, 400, { ok: false, message: 'Vui lòng nhập câu hỏi kiểm thử cần huấn luyện.' });
+      }
+
+      const userFiles = getUserTrainingFiles(auth.user);
+      const pkContent = String(body.productKnowledge !== undefined ? body.productKnowledge : userFiles.pk.content).trim();
+      const prContent = String(body.promptRules !== undefined ? body.promptRules : userFiles.pr.content).trim();
+      const aiConfig = getEffectiveAIConfig(auth.user, body.model);
+
+      if (aiConfig.hasKey && aiConfig.provider !== 'local') {
+        try {
+          const prompt = `Bạn là Chuyên gia Huấn luyện Prompt & Ngữ cảnh AI Chatbot cấp cao (AI Training Lead).
+Dưới đây là 2 tài liệu huấn luyện nghiệp vụ:
+
+=== FILE 1: KIẾN THỨC SẢN PHẨM & DỊCH VỤ ===
+${pkContent.slice(0, 5000)}
+
+=== FILE 2: QUY TẮC PROMPT & RÀO CHẮN ===
+${prContent.slice(0, 3000)}
+
+Khách hàng hỏi: "${question}"
+
+YÊU CẦU HUẤN LUYỆN:
+1. Phân tích trọng tâm câu hỏi: Xác định ý định thực sự, từ khóa mấu chốt, và rào chắn/chính sách cần kích hoạt.
+2. Sinh câu trả lời TỒI (Bad Response): Phản ánh thực trạng AI trả lời kém (vòng vo, lan man, chào hỏi rườm rà, xin SĐT né tránh, hoặc vi phạm rào chắn).
+3. Sinh câu trả lời CHUẨN VÀNG (Ideal / Gold Standard Response): Trả lời thẳng vào trọng tâm ngay câu đầu, ngắn gọn (2-4 câu), chuẩn xác 100% dữ liệu File 1, tuân thủ tuyệt đối rào chắn File 2.
+4. Rút ra Quy tắc trọng tâm ngắn gọn (focusRule) để AI ghi nhớ.
+
+CHỈ TRẢ VỀ JSON HỢP LỆ (KHÔNG THÊM TEXT NGOÀI):
+{
+  "analysis": "Phân tích trọng tâm...",
+  "badResponse": "Câu trả lời tồi...",
+  "idealResponse": "Câu trả lời chuẩn vàng...",
+  "focusRule": "Quy tắc cốt lõi..."
+}`;
+
+          const resText = await callUnifiedAI([
+            { role: 'system', content: 'Bạn là chuyên gia huấn luyện AI Chatbot trả lời đúng trọng tâm. Luôn trả về định dạng JSON hợp lệ.' },
+            { role: 'user', content: prompt }
+          ], 0.3, aiConfig);
+
+          const parsed = extractJSON(resText);
+
+          if (parsed && parsed.idealResponse) {
+            return sendJSON(res, 200, {
+              ok: true,
+              engine: aiConfig.displayName,
+              result: parsed
+            });
+          }
+        } catch (err) {
+          console.warn('[AI TRAINER] AI call error, falling back to local engine:', err.message);
+        }
+      }
+
+      // Fallback
+      const fb = generateFallbackGoldQA(question, pkContent, prContent);
+      return sendJSON(res, 200, {
+        ok: true,
+        engine: 'Smart Local Rule Engine (0đ)',
+        result: fb
+      });
+    }
+
+    // 3. Save Gold Standard Q&A to File 1
+    if (pathname === '/api/ai-trainer/save-gold-qa' && req.method === 'POST') {
+      const body = await parseBody(req);
+      const question = String(body.question || '').trim();
+      const idealResponse = String(body.idealResponse || '').trim();
+      const focusRule = String(body.focusRule || '').trim();
+
+      if (!question || !idealResponse) {
+        return sendJSON(res, 400, { ok: false, message: 'Thiếu câu hỏi hoặc câu trả lời chuẩn vàng.' });
+      }
+
+      const userFiles = getUserTrainingFiles(auth.user);
+      let currentPk = userFiles.pk.content || '';
+
+      const goldBlock = `\n\n### ⭐️ CẶP HỎI ĐÁP CHUẨN VÀNG (FEW-SHOT GOLD STANDARD)\n` +
+        `- **Khách hỏi**: "${question}"\n` +
+        `- **Quy tắc trọng tâm**: ${focusRule || 'Trả lời dứt khoát, đi thẳng vào câu hỏi và bám sát File 1'}\n` +
+        `- **Chatbot trả lời chuẩn**: "${idealResponse}"`;
+
+      currentPk = (currentPk.trim() + goldBlock).trim();
+      userFiles.pk.content = currentPk;
+      const savedPk = saveUserProductKnowledge(auth.user.id, userFiles.pk);
+      addAuditLog(auth.user.name, auth.user.role, `Nạp Cặp Q&A Chuẩn Vàng vào File 1: "${question.slice(0, 30)}..."`);
+
+      return sendJSON(res, 200, {
+        ok: true,
+        productKnowledge: savedPk,
+        message: 'Đã lưu Cặp Hỏi Đáp Chuẩn Vàng vào File 1 thành công!'
+      });
+    }
+
+    // 4. Audit Focus & Context Compliance
+    if (pathname === '/api/ai-trainer/audit-focus' && req.method === 'POST') {
+      const body = await parseBody(req);
+      const question = String(body.question || '').trim();
+      const botReply = String(body.botReply || '').trim();
+
+      if (!question || !botReply) {
+        return sendJSON(res, 400, { ok: false, message: 'Vui lòng cung cấp cả câu hỏi của khách và phản hồi của Bot.' });
+      }
+
+      const userFiles = getUserTrainingFiles(auth.user);
+      const pkContent = String(body.productKnowledge !== undefined ? body.productKnowledge : userFiles.pk.content).trim();
+      const prContent = String(body.promptRules !== undefined ? body.promptRules : userFiles.pr.content).trim();
+      const aiConfig = getEffectiveAIConfig(auth.user, body.model);
+
+      if (aiConfig.hasKey && aiConfig.provider !== 'local') {
+        try {
+          const prompt = `Bạn là Trưởng ban Đánh giá Chất lượng Hội thoại AI (QA Auditor).
+Tài liệu doanh nghiệp:
+=== FILE 1: KIẾN THỨC SẢN PHẨM ===
+${pkContent.slice(0, 4000)}
+
+=== FILE 2: QUY TẮC PROMPT & RÀO CHẮN ===
+${prContent.slice(0, 3000)}
+
+Khách hàng hỏi: "${question}"
+Phản hồi thực tế của Bot: "${botReply}"
+
+YÊU CẦU CHẤM ĐIỂM NGHIÊM KHẮC:
+1. focusScore (thang điểm 0 - 100): Mức độ đi thẳng vào trọng tâm câu hỏi. Trừ nặng nếu chào hỏi sáo rỗng, vòng vo, né tránh.
+2. contextScore (thang điểm 0 - 100): Mức độ tuân thủ dữ liệu File 1 và rào chắn File 2. Trừ nặng nếu bịa đặt hoặc vi phạm rào chắn cấm.
+3. directAnswer (true hoặc false): Bot có trả lời trực tiếp thắc mắc ngay trong 1-2 câu đầu tiên không?
+4. critique: Nhận xét chi tiết các điểm đạt và các lỗi vi phạm (nếu có).
+5. suggestedResponse: Viết lại câu trả lời Chuẩn Vàng tối ưu nhất theo đúng phong cách ngắn gọn, thẳng thắn và chính xác.
+
+CHỈ TRẢ VỀ JSON HỢP LỆ:
+{
+  "focusScore": 85,
+  "contextScore": 90,
+  "directAnswer": true,
+  "critique": "Nhận xét...",
+  "suggestedResponse": "Câu trả lời tối ưu..."
+}`;
+
+          const resText = await callUnifiedAI([
+            { role: 'system', content: 'Bạn là chuyên gia thẩm định chất lượng phản hồi AI. Luôn trả về JSON.' },
+            { role: 'user', content: prompt }
+          ], 0.2, aiConfig);
+
+          const parsed = extractJSON(resText);
+
+          if (parsed && typeof parsed.focusScore === 'number') {
+            return sendJSON(res, 200, {
+              ok: true,
+              engine: aiConfig.displayName,
+              audit: parsed
+            });
+          }
+        } catch (err) {
+          console.warn('[AI AUDIT] AI call error, falling back to local audit:', err.message);
+        }
+      }
+
+      // Fallback
+      const fbAudit = auditFocusFallback(question, botReply, pkContent);
+      return sendJSON(res, 200, {
+        ok: true,
+        engine: 'Smart Local Rule Engine (0đ)',
+        audit: fbAudit
       });
     }
 

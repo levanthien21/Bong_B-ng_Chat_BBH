@@ -291,6 +291,30 @@
     tabFile2Content: document.getElementById('tab-file2-content'),
     tabDeepseekContent: document.getElementById('tab-deepseek-content'),
     tabEmbedContent: document.getElementById('tab-embed-content'),
+    tabFocusTrainerContent: document.getElementById('tab-focus-trainer-content'),
+    btnOpenFocusTrainer: document.getElementById('btn-open-focus-trainer'),
+    focusTrainerModelBadge: document.getElementById('focus-trainer-model-badge'),
+    btnInjectFocusRules: document.getElementById('btn-inject-focus-rules'),
+    injectRulesFeedback: document.getElementById('inject-rules-feedback'),
+    trainerQuestionInput: document.getElementById('trainer-question-input'),
+    btnGenerateGoldQA: document.getElementById('btn-generate-gold-qa'),
+    trainerQAResultBox: document.getElementById('trainer-qa-result-box'),
+    trainerResultEngineBadge: document.getElementById('trainer-result-engine-badge'),
+    trainerFocusRuleBadge: document.getElementById('trainer-focus-rule-badge'),
+    trainerAnalysisText: document.getElementById('trainer-analysis-text'),
+    trainerBadResponse: document.getElementById('trainer-bad-response'),
+    trainerIdealResponse: document.getElementById('trainer-ideal-response'),
+    btnSaveGoldQAToFile1: document.getElementById('btn-save-gold-qa-to-file1'),
+    auditQuestionInput: document.getElementById('audit-question-input'),
+    auditBotReplyInput: document.getElementById('audit-bot-reply-input'),
+    btnRunFocusAudit: document.getElementById('btn-run-focus-audit'),
+    auditResultBox: document.getElementById('audit-result-box'),
+    auditFocusScore: document.getElementById('audit-focus-score'),
+    auditContextScore: document.getElementById('audit-context-score'),
+    auditDirectBadge: document.getElementById('audit-direct-badge'),
+    auditCritiqueText: document.getElementById('audit-critique-text'),
+    auditSuggestedText: document.getElementById('audit-suggested-text'),
+    btnAuditCopyRewrite: document.getElementById('btn-audit-copy-rewrite'),
     formEmbedConfigSave: document.getElementById('form-embed-config-save'),
     settingsEmbedCode: document.getElementById('settings-embed-code-input'),
     embedSaveFeedback: document.getElementById('embed-save-feedback'),
@@ -1064,9 +1088,11 @@
     el.tabFile2Content.style.display = tab === 'tab-file2' ? 'block' : 'none';
     el.tabDeepseekContent.style.display = tab === 'tab-deepseek' ? 'block' : 'none';
     if (el.tabEmbedContent) el.tabEmbedContent.style.display = tab === 'tab-embed' ? 'block' : 'none';
+    if (el.tabFocusTrainerContent) el.tabFocusTrainerContent.style.display = tab === 'tab-focus-trainer' ? 'block' : 'none';
     if (tab === 'tab-embed' && el.settingsEmbedCode && state.user) {
       el.settingsEmbedCode.value = state.user.embed_code || state.user.page_id || '';
     }
+    if (tab === 'tab-focus-trainer') updateFocusTrainerStatus();
 
     updateDeepSeekModalStatus();
   }
@@ -1159,7 +1185,9 @@
       el.tabFile2Content.style.display = tab === 'tab-file2' ? 'block' : 'none';
       el.tabDeepseekContent.style.display = tab === 'tab-deepseek' ? 'block' : 'none';
       if (el.tabEmbedContent) el.tabEmbedContent.style.display = tab === 'tab-embed' ? 'block' : 'none';
+      if (el.tabFocusTrainerContent) el.tabFocusTrainerContent.style.display = tab === 'tab-focus-trainer' ? 'block' : 'none';
       if (tab === 'tab-deepseek') updateDeepSeekModalStatus();
+      if (tab === 'tab-focus-trainer') updateFocusTrainerStatus();
       if (tab === 'tab-embed' && el.settingsEmbedCode && state.user) {
         el.settingsEmbedCode.value = state.user.embed_code || state.user.page_id || '';
       }
@@ -1678,6 +1706,217 @@
           el.agentCustomPersonaInput.value = `${found.description} (Mở đầu: "${found.initialQuestion}")`;
         }
       }
+    });
+  }
+
+  // ==========================================================================
+  // AI FOCUS & CONTEXT TRAINER STUDIO
+  // ==========================================================================
+
+  let lastGeneratedGoldQA = null;
+
+  function updateFocusTrainerStatus() {
+    if (!el.focusTrainerModelBadge) return;
+    const activeModel = (state.user && state.user.ai_model) || (state.config && state.config.ai_model) || 'gemini-1.5-flash';
+    const meta = MODEL_META[activeModel] || { badge: activeModel };
+    el.focusTrainerModelBadge.textContent = '⚡ Đang dùng: ' + (meta.badge || activeModel);
+
+    // Check if 5 rules already present in File 2
+    const prContent = (state.promptRules && state.promptRules.content) || (el.file2ContentInput ? el.file2ContentInput.value : '');
+    const hasRules = prContent.includes('### 🎯 QUY TẮC PHẢN HỒI ĐÚNG TRỌNG TÂM & CHUẨN NGỮ CẢNH');
+    if (el.btnInjectFocusRules) {
+      if (hasRules) {
+        el.btnInjectFocusRules.textContent = '✅ Đã Có Trong File 2';
+        el.btnInjectFocusRules.style.background = '#059669';
+        el.btnInjectFocusRules.style.borderColor = '#059669';
+      } else {
+        el.btnInjectFocusRules.textContent = '⚡ Nạp 5 Quy Tắc Vào File 2';
+        el.btnInjectFocusRules.style.background = '#10b981';
+        el.btnInjectFocusRules.style.borderColor = '#10b981';
+      }
+    }
+  }
+
+  if (el.btnOpenFocusTrainer) {
+    el.btnOpenFocusTrainer.addEventListener('click', () => openTrainingModal('tab-focus-trainer'));
+  }
+
+  // 1. Inject 5 Focus Guardrails into File 2
+  if (el.btnInjectFocusRules) {
+    el.btnInjectFocusRules.addEventListener('click', async () => {
+      const origText = el.btnInjectFocusRules.textContent;
+      el.btnInjectFocusRules.disabled = true;
+      el.btnInjectFocusRules.textContent = '⏳ Đang nạp quy tắc...';
+      try {
+        const res = await api('/api/ai-trainer/inject-focus-rules', 'POST', {});
+        if (res.ok) {
+          state.promptRules = res.promptRules;
+          if (el.file2ContentInput) el.file2ContentInput.value = res.promptRules.content;
+          showToast(res.message || 'Đã nạp 5 Quy tắc Rào chắn vào File 2!', 'success');
+          if (el.injectRulesFeedback) {
+            el.injectRulesFeedback.style.display = 'block';
+            el.injectRulesFeedback.style.background = 'rgba(16, 185, 129, 0.12)';
+            el.injectRulesFeedback.style.color = '#10b981';
+            el.injectRulesFeedback.textContent = '✅ ' + (res.message || 'Đã nạp thành công vào File 2!');
+          }
+          el.btnInjectFocusRules.textContent = '✅ Đã Có Trong File 2';
+          el.btnInjectFocusRules.style.background = '#059669';
+          el.btnInjectFocusRules.style.borderColor = '#059669';
+        }
+      } catch (err) {
+        showToast('Lỗi khi nạp quy tắc: ' + err.message, 'error');
+        el.btnInjectFocusRules.textContent = origText;
+      } finally {
+        el.btnInjectFocusRules.disabled = false;
+      }
+    });
+  }
+
+  // Sample Chips Click
+  document.querySelectorAll('.focus-sample-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (el.trainerQuestionInput) {
+        el.trainerQuestionInput.value = chip.dataset.q;
+        el.trainerQuestionInput.focus();
+      }
+    });
+  });
+
+  // 2. Generate Few-Shot Gold Standard Q&A
+  if (el.btnGenerateGoldQA) {
+    el.btnGenerateGoldQA.addEventListener('click', async () => {
+      const q = (el.trainerQuestionInput ? el.trainerQuestionInput.value : '').trim();
+      if (!q) {
+        showToast('Vui lòng nhập câu hỏi kiểm thử cần huấn luyện!', 'warning');
+        return;
+      }
+
+      const activeModel = (state.user && state.user.ai_model) || (state.config && state.config.ai_model) || 'gemini-1.5-flash';
+      el.btnGenerateGoldQA.disabled = true;
+      el.btnGenerateGoldQA.textContent = '⏳ Đang phân tích...';
+
+      try {
+        const res = await api('/api/ai-trainer/generate-gold-qa', 'POST', {
+          question: q,
+          model: activeModel,
+          productKnowledge: (state.productKnowledge && state.productKnowledge.content) || (el.file1ContentInput ? el.file1ContentInput.value : ''),
+          promptRules: (state.promptRules && state.promptRules.content) || (el.file2ContentInput ? el.file2ContentInput.value : '')
+        });
+
+        if (res.ok && res.result) {
+          lastGeneratedGoldQA = {
+            question: q,
+            idealResponse: res.result.idealResponse,
+            focusRule: res.result.focusRule
+          };
+
+          if (el.trainerQAResultBox) el.trainerQAResultBox.style.display = 'block';
+          if (el.trainerResultEngineBadge) el.trainerResultEngineBadge.textContent = '🤖 Kết quả từ: ' + (res.engine || 'AI Engine');
+          if (el.trainerFocusRuleBadge) el.trainerFocusRuleBadge.textContent = '📌 ' + (res.result.focusRule || 'Nguyên tắc trọng tâm');
+          if (el.trainerAnalysisText) el.trainerAnalysisText.textContent = res.result.analysis || '';
+          if (el.trainerBadResponse) el.trainerBadResponse.textContent = `"${res.result.badResponse || ''}"`;
+          if (el.trainerIdealResponse) el.trainerIdealResponse.textContent = `"${res.result.idealResponse || ''}"`;
+
+          if (el.btnSaveGoldQAToFile1) {
+            el.btnSaveGoldQAToFile1.disabled = false;
+            el.btnSaveGoldQAToFile1.textContent = '📥 Lưu Cặp Q&A Này Vào File 1 Ngay';
+          }
+          showToast('Phân tích trọng tâm & sinh mẫu chuẩn vàng thành công!', 'success');
+        }
+      } catch (err) {
+        showToast('Lỗi khi sinh mẫu chuẩn vàng: ' + err.message, 'error');
+      } finally {
+        el.btnGenerateGoldQA.disabled = false;
+        el.btnGenerateGoldQA.textContent = '✨ Sinh Mẫu Chuẩn Vàng';
+      }
+    });
+  }
+
+  // 3. Save Gold Standard Q&A to File 1
+  if (el.btnSaveGoldQAToFile1) {
+    el.btnSaveGoldQAToFile1.addEventListener('click', async () => {
+      if (!lastGeneratedGoldQA) return;
+      el.btnSaveGoldQAToFile1.disabled = true;
+      el.btnSaveGoldQAToFile1.textContent = '⏳ Đang lưu vào File 1...';
+      try {
+        const res = await api('/api/ai-trainer/save-gold-qa', 'POST', lastGeneratedGoldQA);
+        if (res.ok) {
+          state.productKnowledge = res.productKnowledge;
+          if (el.file1ContentInput) el.file1ContentInput.value = res.productKnowledge.content;
+          el.btnSaveGoldQAToFile1.textContent = '✅ Đã Lưu Vào File 1';
+          showToast('Đã lưu mẫu chuẩn vàng vào File 1! Bot sẽ học và phản hồi chuẩn xác ngay!', 'success');
+        }
+      } catch (err) {
+        showToast('Lỗi khi lưu vào File 1: ' + err.message, 'error');
+        el.btnSaveGoldQAToFile1.disabled = false;
+        el.btnSaveGoldQAToFile1.textContent = '📥 Thử lưu lại vào File 1';
+      }
+    });
+  }
+
+  // 4. Focus Auditor (Audit Bot response)
+  if (el.btnRunFocusAudit) {
+    el.btnRunFocusAudit.addEventListener('click', async () => {
+      const q = (el.auditQuestionInput ? el.auditQuestionInput.value : '').trim();
+      const botReply = (el.auditBotReplyInput ? el.auditBotReplyInput.value : '').trim();
+      if (!q || !botReply) {
+        showToast('Vui lòng nhập cả câu hỏi của khách và phản hồi thực tế của Bot!', 'warning');
+        return;
+      }
+
+      const activeModel = (state.user && state.user.ai_model) || (state.config && state.config.ai_model) || 'gemini-1.5-flash';
+      el.btnRunFocusAudit.disabled = true;
+      el.btnRunFocusAudit.textContent = '⏳ Đang thẩm định...';
+
+      try {
+        const res = await api('/api/ai-trainer/audit-focus', 'POST', {
+          question: q,
+          botReply: botReply,
+          model: activeModel,
+          productKnowledge: (state.productKnowledge && state.productKnowledge.content) || (el.file1ContentInput ? el.file1ContentInput.value : ''),
+          promptRules: (state.promptRules && state.promptRules.content) || (el.file2ContentInput ? el.file2ContentInput.value : '')
+        });
+
+        if (res.ok && res.audit) {
+          const a = res.audit;
+          if (el.auditResultBox) el.auditResultBox.style.display = 'block';
+          if (el.auditFocusScore) el.auditFocusScore.textContent = (a.focusScore || 0) + '/100';
+          if (el.auditContextScore) el.auditContextScore.textContent = (a.contextScore || 0) + '/100';
+
+          if (el.auditDirectBadge) {
+            if (a.directAnswer) {
+              el.auditDirectBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+              el.auditDirectBadge.style.color = '#10b981';
+              el.auditDirectBadge.textContent = '✅ Trả lời thẳng câu đầu';
+            } else {
+              el.auditDirectBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+              el.auditDirectBadge.style.color = '#ef4444';
+              el.auditDirectBadge.textContent = '⚠️ Chưa trả lời thẳng câu đầu';
+            }
+          }
+
+          if (el.auditCritiqueText) el.auditCritiqueText.textContent = '🔍 ' + (a.critique || '');
+          if (el.auditSuggestedText) el.auditSuggestedText.textContent = a.suggestedResponse || '';
+          showToast('Đã chấm điểm mức độ đúng trọng tâm!', 'success');
+        }
+      } catch (err) {
+        showToast('Lỗi khi thẩm định: ' + err.message, 'error');
+      } finally {
+        el.btnRunFocusAudit.disabled = false;
+        el.btnRunFocusAudit.textContent = '🔍 Chấm Điểm & Soi Lỗi Trọng Tâm';
+      }
+    });
+  }
+
+  if (el.btnAuditCopyRewrite) {
+    el.btnAuditCopyRewrite.addEventListener('click', () => {
+      const text = el.auditSuggestedText ? el.auditSuggestedText.textContent.trim() : '';
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Đã sao chép câu trả lời chuẩn vàng!', 'success');
+      }).catch(() => {
+        showToast('Không thể sao chép vào bộ nhớ tạm', 'warning');
+      });
     });
   }
 
