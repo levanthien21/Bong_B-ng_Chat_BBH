@@ -1507,12 +1507,6 @@
       showToast(err.message, 'error');
     }
   });
-      el.modalTraining.classList.remove('open');
-      el.body.classList.remove('modal-open');
-    } catch (err) {
-      showToast(err.message, 'error');
-    }
-  });
 
   // Dynamic Model Select Handler in Modal
   if (el.dsModelSelect) {
