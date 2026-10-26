@@ -304,9 +304,15 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
               </div>
 
               <!-- Auto /reset toggle -->
-              <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer; margin-top: 4px; padding: 4px 0;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer; margin-top: 4px; padding: 2px 0;">
                 <input type="checkbox" id="agent-auto-reset-checkbox" checked style="accent-color: var(--accent);">
                 <span><b>Tự động gửi /reset</b> khi kết thúc cuộc trò chuyện</span>
+              </label>
+
+              <!-- Interactive Step Mode toggle (Wait for bot reply) -->
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer; margin-top: 2px; padding: 2px 0;" title="Khi bật, hệ thống sẽ tạm dừng sau mỗi lượt hỏi để bạn dán câu trả lời thực tế của Bot trong bong bóng chat, giúp Ollama đọc hiểu 100% ngữ cảnh">
+                <input type="checkbox" id="agent-interactive-mode-checkbox" checked style="accent-color: #10b981;">
+                <span><b>🧠 Chế độ Đọc Hiểu Bot</b> (Chờ dán câu trả lời)</span>
               </label>
 
               <!-- Start Button -->
@@ -325,8 +331,9 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
                 
                 <!-- Quick Bot Reply input right in the running box -->
                 <div style="display: flex; gap: 4px; margin-top: 2px;">
-                  <input type="text" class="input input-xs" id="agent-inline-bot-reply" placeholder="💬 Dán câu trả lời của bot (hoặc để trống)..." style="flex: 1; font-size: 11px;">
-                  <button type="button" class="btn btn-secondary btn-xs" id="btn-agent-paste-reply" title="Dán nhanh từ Clipboard" style="padding: 2px 7px;">📋 Dán</button>
+                  <input type="text" class="input input-xs" id="agent-inline-bot-reply" placeholder="💬 Dán phản hồi của Bot tại đây..." style="flex: 1; font-size: 11px;">
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-agent-paste-reply" title="Dán từ Clipboard" style="padding: 2px 7px;">📋 Dán</button>
+                  <button type="button" class="btn btn-primary btn-xs" id="btn-agent-paste-and-send" title="Dán và cho Ollama đọc hiểu để hỏi tiếp ngay" style="background: #10b981; border-color: #10b981; font-weight: 700; padding: 2px 7px; white-space: nowrap;">⚡ Dán & Tiếp</button>
                 </div>
 
                 <div style="display: flex; gap: 4px; margin-top: 2px;">
@@ -464,14 +471,15 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
             </div>
 
             <!-- Quick Bot Reply Bar in Transcript -->
-            <div id="transcript-quick-reply-bar" style="display: none; margin-bottom: 8px; padding: 7px 9px; background: var(--bg-panel); border-radius: 8px; border: 1px solid var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div id="transcript-quick-reply-bar" style="display: none; margin-bottom: 8px; padding: 8px 10px; background: var(--bg-panel); border-radius: 8px; border: 1px solid #10b981; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1);">
               <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 4px;">
-                <span style="font-weight: 700; color: var(--accent);">💬 Dán phản hồi từ AI Bot trong bong bóng chat:</span>
-                <button type="button" class="btn btn-secondary btn-xs" id="btn-transcript-paste-clip" style="font-size: 10px; padding: 1px 6px;">📋 Dán Clipboard</button>
+                <span style="font-weight: 700; color: #10b981;">💬 Dán phản hồi từ AI Bot để Ollama đọc hiểu:</span>
+                <span id="transcript-reply-status" style="font-size: 10px; color: var(--text-muted);">Copy từ chatbox rồi bấm Dán</span>
               </div>
               <div style="display: flex; gap: 4px;">
-                <input type="text" class="input input-xs" id="transcript-inline-bot-reply" placeholder="Dán nội dung câu trả lời của AI bot vào đây..." style="flex: 1; font-size: 11px;">
-                <button type="button" class="btn btn-primary btn-xs" id="btn-transcript-send-reply" style="font-weight: 600;">Phản hồi (Enter)</button>
+                <input type="text" class="input input-xs" id="transcript-inline-bot-reply" placeholder="Dán nội dung phản hồi của AI bot vào đây (hoặc bấm Dán Clipboard)..." style="flex: 1; font-size: 11px;">
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-transcript-paste-clip" style="font-size: 10.5px; padding: 2px 7px;">📋 Dán</button>
+                <button type="button" class="btn btn-primary btn-xs" id="btn-transcript-send-reply" style="font-weight: 700; background: #10b981; border-color: #10b981; white-space: nowrap;">⚡ Gửi Cho Ollama Đọc (Enter)</button>
               </div>
             </div>
 

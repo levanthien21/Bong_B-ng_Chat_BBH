@@ -112,8 +112,8 @@
         "updated_at": "2026-10-26T08:07:15.234Z"
       },
       "created_at": "2026-10-25T08:20:08.743Z",
-      "last_login": "2026-10-26T08:10:04.966Z",
-      "tests_submitted": 17
+      "last_login": "2026-10-26T16:27:37.463Z",
+      "tests_submitted": 23
     }
   ],
   "sessions": {
@@ -240,9 +240,123 @@
     "bbh_usr_thien_admin.mvoz7vol.e2daf592bfdb31b37c3df159994fcf9b": {
       "user_id": "usr_thien_admin",
       "created_at": "2026-10-26T08:10:04.966Z"
+    },
+    "bbh_usr_thien_admin.mvpgico1.8700d173c189e0fb7f37d4a1a97d82fd": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T16:14:07.009Z"
+    },
+    "bbh_usr_thien_admin.mvpgnk0v.f343a7cba9d1595c72d709c0dac05289": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T16:18:09.823Z"
+    },
+    "bbh_usr_thien_admin.mvpgtc46.9994bb26225153e105ea65ec00627b8b": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T16:22:39.511Z"
+    },
+    "bbh_usr_thien_admin.mvpgue4n.a437b25e6c4cecb5bc7b3801e296755f": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T16:23:28.775Z"
+    },
+    "bbh_usr_thien_admin.mvpgx08u.4b3e7e6cb67ed80a319ba8785d1f7e77": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T16:25:30.750Z"
+    },
+    "bbh_usr_thien_admin.mvpgzq0n.f715f1d8177947b2df54d6a71be1e944": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T16:27:37.463Z"
     }
   },
   "evaluations": [
+    {
+      "id": "eval_agent_1793032140816",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Gia đình 4 người có con nhỏ",
+      "prompt_used": "Dạ, mình có 4 người lớn và 1 trẻ em dưới 6 tuổi. Dự định đi từ thứ 5 đến thứ 6 tuần này. Anh/chị có ưu đãi gì không ạ?",
+      "ai_response_summary": "Dạ phòng gia đình bên em giá 1.800.000đ/đêm ạ. Bên em hiện có chính sách giảm 10% khi đặt từ 5 đêm trở lên và giảm 5% khi đặt từ 3 phòng cùng lúc.",
+      "result": "pass",
+      "score": 4,
+      "judge_engine": "Ollama (qwen2.5:latest - 0đ Local)",
+      "client_id": "agent_runner",
+      "analysis": "Bot đã nêu chính xác mức giá và các chính sách ưu đãi, nhưng chưa hỏi về số lượng người và ngày dự định. Câu trả lời của tôi đã hỏi về mức giá và có thể mở rộng để hỏi thêm về số lượng người và ngày dự định.",
+      "created_at": "2026-10-26T16:29:00.816Z"
+    },
+    {
+      "id": "eval_agent_1793032007216",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Gia đình 4 người có con nhỏ",
+      "prompt_used": "Dạ, mình có 4 người lớn và 1 trẻ em dưới 6 tuổi. Dự định đi từ thứ 5 đến thứ 6 tuần này. Anh/chị có ưu đãi gì không ạ?",
+      "ai_response_summary": "Dạ phòng gia đình bên em giá 1.800.000đ/đêm ạ. Bên em hiện có chính sách giảm 10% khi đặt từ 5 đêm trở lên và giảm 5% khi đặt từ 3 phòng cùng lúc.",
+      "result": "pass",
+      "score": 4,
+      "judge_engine": "Ollama (qwen2.5:latest - 0đ Local)",
+      "client_id": "agent_runner",
+      "analysis": "Bot đã nêu chính sách ưu đãi đúng theo File 1, và câu hỏi của tôi về số lượng người và ngày cụ thể giúp đa dạng ngữ cảnh cho cuộc hội thoại.",
+      "created_at": "2026-10-26T16:26:47.216Z"
+    },
+    {
+      "id": "eval_agent_1793031879858",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Gia đình 4 người có con nhỏ",
+      "prompt_used": "Dạ, mình có 4 người lớn và 1 trẻ em dưới 6 tuổi. Dự định đi từ thứ 5 đến thứ 6 tuần này. Anh/chị có ưu đãi gì không ạ?",
+      "ai_response_summary": "Dạ phòng gia đình bên em giá 1.800.000đ/đêm ạ. Bên em hiện có chính sách giảm 10% khi đặt từ 5 đêm trở lên và giảm 5% khi đặt từ 3 phòng cùng lúc.",
+      "result": "pass",
+      "score": 4,
+      "judge_engine": "Ollama (qwen2.5:latest - 0đ Local)",
+      "client_id": "agent_runner",
+      "analysis": "Bot đã nêu chính sách ưu đãi đúng theo File 1 và hỏi lại thông tin về số lượng người và ngày dự định đúng theo quy tắc.",
+      "created_at": "2026-10-26T16:24:39.858Z"
+    },
+    {
+      "id": "eval_agent_1793031791971",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Gia đình 4 người có con nhỏ",
+      "prompt_used": "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn giúp mình nhé!",
+      "ai_response_summary": "Dạ bên em còn phòng ạ. Anh/chị dự định đi ngày nào và có mấy người lớn, mấy trẻ em để em kiểm tra loại phòng và báo giá chính xác cho mình ạ?",
+      "result": "pass",
+      "score": 5,
+      "judge_engine": "Ollama (qwen2.5:latest - 0đ Local)",
+      "client_id": "agent_runner",
+      "analysis": "Câu trả lời của khách hàng cung cấp đầy đủ thông tin về số lượng người và ngày dự định. Đồng thời, khách hàng đã hỏi về chính sách ưu đãi, phù hợp với quy tắc trong File 2.",
+      "created_at": "2026-10-26T16:23:11.971Z"
+    },
+    {
+      "id": "eval_agent_1793031536216",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Gia đình 4 người có con nhỏ",
+      "prompt_used": "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn giúp mình nhé!",
+      "ai_response_summary": "Dạ bên em còn phòng ạ. Anh/chị dự định đi ngày nào và có mấy người lớn, mấy trẻ em để em kiểm tra loại phòng và báo giá chính xác cho mình ạ?",
+      "result": "pass",
+      "score": 5,
+      "judge_engine": "Ollama (qwen2.5:latest - 0đ Local)",
+      "client_id": "agent_runner",
+      "analysis": "Câu trả lời đa dạng ngữ cảnh, cung cấp đầy đủ thông tin về số lượng người và ngày dự định đi, đồng thời hỏi về phòng loại và báo giá.",
+      "created_at": "2026-10-26T16:18:56.216Z"
+    },
+    {
+      "id": "eval_agent_1793031307060",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Gia đình 4 người có con nhỏ",
+      "prompt_used": "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn giúp mình nhé!",
+      "ai_response_summary": "Dạ bên em còn phòng ạ. Anh/chị dự định đi ngày nào và có mấy người lớn, mấy trẻ em để em kiểm tra loại phòng và báo giá chính xác cho mình ạ?",
+      "result": "pass",
+      "score": 5,
+      "judge_engine": "Ollama (qwen2.5:latest - 0đ Local)",
+      "client_id": "agent_runner",
+      "analysis": "Bot phản hồi đúng mực, hỗ trợ thông tin phù hợp.",
+      "created_at": "2026-10-26T16:15:07.060Z"
+    },
     {
       "id": "eval_agent_1792989244086",
       "tester_id": "usr_thien_admin",
@@ -489,6 +603,48 @@
   ],
   "chat_sessions": [],
   "logs": [
+    {
+      "id": "log_1793032057463_ebn3",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T16:27:37.463Z"
+    },
+    {
+      "id": "log_1793031930750_66he",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T16:25:30.750Z"
+    },
+    {
+      "id": "log_1793031808775_fw31",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T16:23:28.775Z"
+    },
+    {
+      "id": "log_1793031759511_a2wj",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T16:22:39.511Z"
+    },
+    {
+      "id": "log_1793031489823_7cx3",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T16:18:09.823Z"
+    },
+    {
+      "id": "log_1793031247009_04h1",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T16:14:07.009Z"
+    },
     {
       "id": "log_1793002204966_yyi5",
       "actor": "Thiện BBH",

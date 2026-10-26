@@ -385,8 +385,11 @@
     btnAgentCopyLogMini: document.getElementById('btn-agent-copy-log-mini'),
     agentInlineBotReply: document.getElementById('agent-inline-bot-reply'),
     btnAgentPasteReply: document.getElementById('btn-agent-paste-reply'),
+    btnAgentPasteAndSend: document.getElementById('btn-agent-paste-and-send'),
+    agentInteractiveModeCheckbox: document.getElementById('agent-interactive-mode-checkbox'),
     transcriptQuickReplyBar: document.getElementById('transcript-quick-reply-bar'),
     transcriptInlineBotReply: document.getElementById('transcript-inline-bot-reply'),
+    transcriptReplyStatus: document.getElementById('transcript-reply-status'),
     btnTranscriptPasteClip: document.getElementById('btn-transcript-paste-clip'),
     btnTranscriptSendReply: document.getElementById('btn-transcript-send-reply'),
 
@@ -2647,20 +2650,27 @@
       state.agentRunner.history.push({ role: 'user', content: nextMsg });
 
       // Enter waiting for bot response
-      state.agentRunner.countdownRemaining = state.agentRunner.turnWait;
-      el.agentRunningTurnTitle.textContent = `Lượt ${state.agentRunner.turnIndex}/${state.agentRunner.maxTurns}: Đang đợi bot trả lời (${state.agentRunner.countdownRemaining}s)...`;
+      const isInteractive = el.agentInteractiveModeCheckbox ? el.agentInteractiveModeCheckbox.checked : true;
+      if (isInteractive) {
+        el.agentRunningTurnTitle.textContent = `Lượt ${state.agentRunner.turnIndex}/${state.agentRunner.maxTurns}: ⏸️ Đang chờ dán phản hồi của Bot...`;
+        if (el.transcriptReplyStatus) el.transcriptReplyStatus.textContent = '⏸️ Đang đợi bạn dán phản hồi Bot';
+        showToast('⏸️ Đã gửi câu hỏi! Hãy copy câu trả lời của Bot và bấm [⚡ Dán & Tiếp] để Ollama đọc hiểu.', 'info');
+      } else {
+        state.agentRunner.countdownRemaining = state.agentRunner.turnWait;
+        el.agentRunningTurnTitle.textContent = `Lượt ${state.agentRunner.turnIndex}/${state.agentRunner.maxTurns}: Đang đợi bot trả lời (${state.agentRunner.countdownRemaining}s)...`;
 
-      const tick = () => {
-        if (!state.agentRunner.isRunning) return;
-        state.agentRunner.countdownRemaining -= 1;
-        if (state.agentRunner.countdownRemaining > 0) {
-          el.agentRunningTurnTitle.textContent = `Lượt ${state.agentRunner.turnIndex}/${state.agentRunner.maxTurns}: Đang đợi bot trả lời (${state.agentRunner.countdownRemaining}s)...`;
-          state.agentRunner.timerId = setTimeout(tick, 1000);
-        } else {
-          onAgentTurnResponseReceived(turnData);
-        }
-      };
-      state.agentRunner.timerId = setTimeout(tick, 1000);
+        const tick = () => {
+          if (!state.agentRunner.isRunning) return;
+          state.agentRunner.countdownRemaining -= 1;
+          if (state.agentRunner.countdownRemaining > 0) {
+            el.agentRunningTurnTitle.textContent = `Lượt ${state.agentRunner.turnIndex}/${state.agentRunner.maxTurns}: Đang đợi bot trả lời (${state.agentRunner.countdownRemaining}s)...`;
+            state.agentRunner.timerId = setTimeout(tick, 1000);
+          } else {
+            onAgentTurnResponseReceived(turnData);
+          }
+        };
+        state.agentRunner.timerId = setTimeout(tick, 1000);
+      }
 
     } catch (err) {
       console.warn('[AGENT] Execute turn error, applying Smart Local fallback:', err);
@@ -2680,19 +2690,25 @@
       sendPromptToChat(fallbackMsg);
       state.agentRunner.history.push({ role: 'user', content: fallbackMsg });
 
-      state.agentRunner.countdownRemaining = state.agentRunner.turnWait;
-      el.agentRunningTurnTitle.textContent = `Lượt ${state.agentRunner.turnIndex}/${state.agentRunner.maxTurns}: Đang đợi bot trả lời (${state.agentRunner.countdownRemaining}s)...`;
-      const fallbackTick = () => {
-        if (!state.agentRunner.isRunning) return;
-        state.agentRunner.countdownRemaining -= 1;
-        if (state.agentRunner.countdownRemaining > 0) {
-          el.agentRunningTurnTitle.textContent = `Lượt ${state.agentRunner.turnIndex}/${state.agentRunner.maxTurns}: Đang đợi bot trả lời (${state.agentRunner.countdownRemaining}s)...`;
-          state.agentRunner.timerId = setTimeout(fallbackTick, 1000);
-        } else {
-          onAgentTurnResponseReceived(fallbackData);
-        }
-      };
-      state.agentRunner.timerId = setTimeout(fallbackTick, 1000);
+      const isInteractive = el.agentInteractiveModeCheckbox ? el.agentInteractiveModeCheckbox.checked : true;
+      if (isInteractive) {
+        el.agentRunningTurnTitle.textContent = `Lượt ${state.agentRunner.turnIndex}/${state.agentRunner.maxTurns}: ⏸️ Đang chờ dán phản hồi của Bot...`;
+        if (el.transcriptReplyStatus) el.transcriptReplyStatus.textContent = '⏸️ Đang đợi bạn dán phản hồi Bot';
+      } else {
+        state.agentRunner.countdownRemaining = state.agentRunner.turnWait;
+        el.agentRunningTurnTitle.textContent = `Lượt ${state.agentRunner.turnIndex}/${state.agentRunner.maxTurns}: Đang đợi bot trả lời (${state.agentRunner.countdownRemaining}s)...`;
+        const fallbackTick = () => {
+          if (!state.agentRunner.isRunning) return;
+          state.agentRunner.countdownRemaining -= 1;
+          if (state.agentRunner.countdownRemaining > 0) {
+            el.agentRunningTurnTitle.textContent = `Lượt ${state.agentRunner.turnIndex}/${state.agentRunner.maxTurns}: Đang đợi bot trả lời (${state.agentRunner.countdownRemaining}s)...`;
+            state.agentRunner.timerId = setTimeout(fallbackTick, 1000);
+          } else {
+            onAgentTurnResponseReceived(fallbackData);
+          }
+        };
+        state.agentRunner.timerId = setTimeout(fallbackTick, 1000);
+      }
     }
   }
 
@@ -2800,34 +2816,39 @@
   }
 
   // Quick Inline Bot Reply Listeners (Running Box & Transcript Pane)
-  if (el.btnAgentPasteReply) {
-    el.btnAgentPasteReply.addEventListener('click', async () => {
-      try {
-        const text = await navigator.clipboard.readText();
-        const input = document.getElementById('agent-inline-bot-reply');
-        if (input && text) {
-          input.value = text.trim();
-          showToast('📋 Đã dán phản hồi của Bot từ clipboard!', 'info');
-        }
-      } catch (e) {
-        showToast('Vui lòng bấm Ctrl+V để dán trực tiếp vào ô nhập.', 'warning');
+  async function pasteClipboardToBotReply(autoProceed = false) {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text || !text.trim()) {
+        showToast('Clipboard trống. Hãy sao chép câu trả lời của bot trước!', 'warning');
+        return;
       }
-    });
+      const clean = text.trim();
+      const inlineInput = document.getElementById('agent-inline-bot-reply');
+      const transcriptInput = document.getElementById('transcript-inline-bot-reply');
+      if (inlineInput) inlineInput.value = clean;
+      if (transcriptInput) transcriptInput.value = clean;
+
+      showToast('📋 Đã nhận diện phản hồi của Bot từ Clipboard!', 'success');
+
+      if (autoProceed && state.agentRunner.isRunning) {
+        onAgentTurnResponseReceived();
+      }
+    } catch (e) {
+      showToast('Vui lòng bấm Ctrl+V để dán trực tiếp vào ô nhập.', 'warning');
+    }
+  }
+
+  if (el.btnAgentPasteReply) {
+    el.btnAgentPasteReply.addEventListener('click', () => pasteClipboardToBotReply(false));
+  }
+
+  if (el.btnAgentPasteAndSend) {
+    el.btnAgentPasteAndSend.addEventListener('click', () => pasteClipboardToBotReply(true));
   }
 
   if (el.btnTranscriptPasteClip) {
-    el.btnTranscriptPasteClip.addEventListener('click', async () => {
-      try {
-        const text = await navigator.clipboard.readText();
-        const input = document.getElementById('transcript-inline-bot-reply');
-        if (input && text) {
-          input.value = text.trim();
-          showToast('📋 Đã dán phản hồi của Bot từ clipboard!', 'info');
-        }
-      } catch (e) {
-        showToast('Vui lòng bấm Ctrl+V để dán trực tiếp vào ô nhập.', 'warning');
-      }
-    });
+    el.btnTranscriptPasteClip.addEventListener('click', () => pasteClipboardToBotReply(false));
   }
 
   if (el.btnTranscriptSendReply) {
