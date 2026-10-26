@@ -112,7 +112,7 @@
         "updated_at": "2026-10-25T17:04:18.837Z"
       },
       "created_at": "2026-10-25T08:20:08.743Z",
-      "last_login": "2026-10-26T07:38:10.888Z",
+      "last_login": "2026-10-26T07:42:37.932Z",
       "tests_submitted": 17
     }
   ],
@@ -212,6 +212,22 @@
     "bbh_usr_thien_admin.mvoy2urs.1a2c666357cc4ba04985d2312323cd47": {
       "user_id": "usr_thien_admin",
       "created_at": "2026-10-26T07:38:10.888Z"
+    },
+    "bbh_usr_thien_admin.mvoy8kt4.609ad68d83ea442c5687531c3437f62e": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T07:42:37.912Z"
+    },
+    "bbh_usr_thien_admin.mvoy8ktf.0b66a79ca10bad9d0f090597d25b33d9": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T07:42:37.923Z"
+    },
+    "bbh_usr_thien_admin.mvoy8ktj.fd18004a145aa8f88fcf07dd3c4beacf": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T07:42:37.927Z"
+    },
+    "bbh_usr_thien_admin.mvoy8kto.7141e218bc03eee3a037b3f85bf38b50": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-26T07:42:37.932Z"
     }
   },
   "evaluations": [
@@ -461,6 +477,34 @@
   ],
   "chat_sessions": [],
   "logs": [
+    {
+      "id": "log_1793000557932_j8hx",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T07:42:37.932Z"
+    },
+    {
+      "id": "log_1793000557927_uztt",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đặt lại mật khẩu thành công",
+      "created_at": "2026-10-26T07:42:37.927Z"
+    },
+    {
+      "id": "log_1793000557923_s9ao",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T07:42:37.923Z"
+    },
+    {
+      "id": "log_1793000557912_f0rf",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-26T07:42:37.912Z"
+    },
     {
       "id": "log_1793000290888_1c70",
       "actor": "Thiện BBH",

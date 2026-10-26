@@ -1433,15 +1433,23 @@ function dynamicLocalAgentTurn({ persona = '', goal = '', conversationHistory = 
     }
   } else if (turnIndex === 2) {
     if (botAskedPhone) {
-      nextMessage = `Dạ số điện thoại của mình là 0988.xxx.999. Bạn tư vấn sơ bộ các ưu điểm nổi bật và chính sách của ${primaryTopic} trước giúp mình nhé.`;
+      nextMessage = `Dạ số điện thoại của mình là 0988.xxx.999. Bạn tư vấn sơ bộ các ưu điểm nổi bật và chính sách trước giúp mình nhé.`;
     } else if (botAskedDetails) {
       if (domain === 'khách sạn & homestay') {
         nextMessage = 'Nhà mình đi 3 người lớn và 1 bé 5 tuổi từ ngày 28 đến 30 này, bạn xem có phòng nào phù hợp và báo giá giúp mình.';
       } else {
-        nextMessage = `Mình đang cần sử dụng cho cá nhân / gia đình trong tuần này với ngân sách vừa phải. Bạn xem phương án nào của ${primaryTopic} tối ưu nhất tư vấn giúp mình.`;
+        nextMessage = `Mình đang cần sử dụng cho cá nhân / gia đình trong tuần này với ngân sách vừa phải. Bạn xem phương án nào tối ưu nhất tư vấn giúp mình.`;
       }
     } else {
-      nextMessage = `Cảm ơn bạn. Bạn cho mình hỏi rõ hơn về quyền lợi và các tính năng chi tiết của ${primaryTopic} thì gồm những gì vậy?`;
+      if (domain === 'khách sạn & homestay') {
+        nextMessage = 'Cảm ơn bạn. Cho mình hỏi chi tiết về các loại phòng, tiện nghi trong phòng và các quyền lợi ưu đãi bên mình gồm những gì vậy?';
+      } else if (domain === 'bất động sản & căn hộ') {
+        nextMessage = 'Cảm ơn bạn. Cho mình hỏi rõ hơn về mặt bằng thiết kế, diện tích và các tiện ích nội khu của dự án nhé.';
+      } else if (domain === 'mỹ phẩm & chăm sóc da') {
+        nextMessage = 'Cảm ơn bạn. Cho mình hỏi rõ hơn về thành phần chính, công dụng cụ thể và cách dùng của sản phẩm này nhé.';
+      } else {
+        nextMessage = 'Cảm ơn bạn. Bạn cho mình hỏi rõ hơn về quyền lợi, tính năng chi tiết và chính sách hỗ trợ thì gồm những gì vậy?';
+      }
     }
   } else if (turnIndex === 3) {
     if (botGavePrice) {
@@ -1450,7 +1458,9 @@ function dynamicLocalAgentTurn({ persona = '', goal = '', conversationHistory = 
       nextMessage = `Báo giá chi tiết giúp mình với, chi phí cụ thể hiện tại là bao nhiêu một gói/sản phẩm?`;
     }
   } else if (turnIndex === 4) {
-    nextMessage = `Mình thấy bên bạn có chính sách ưu đãi (${samplePromo}). Trường hợp mình mua/đặt ngay thì có được áp dụng mức giảm tối đa hoặc có mã voucher nào không?`;
+    let cleanPromo = samplePromo.replace(/^[I|V|X|0-9]+[\.\:]\s*/, '').replace(/[\:\-]+$/, '').trim();
+    if (cleanPromo.length > 50) cleanPromo = cleanPromo.slice(0, 50);
+    nextMessage = `Mình thấy bên bạn có chính sách ưu đãi (${cleanPromo}). Trường hợp mình mua/đặt ngay thì có được áp dụng mức giảm tối đa hoặc có mã voucher nào không?`;
   } else if (turnIndex === 5) {
     if (domain === 'khách sạn & homestay') {
       nextMessage = 'Bên mình có phục vụ tiệc nướng BBQ ngoài trời và có cho mang theo một bé cún Poodle nhỏ không bạn?';
@@ -1466,7 +1476,15 @@ function dynamicLocalAgentTurn({ persona = '', goal = '', conversationHistory = 
   } else if (turnIndex === 6) {
     nextMessage = 'Nếu sau khi nhận hàng/dịch vụ mà mình không hài lòng hoặc có sự cố phát sinh thì chính sách đổi trả, hoàn tiền hoặc bảo hành bên bạn quy định thế nào?';
   } else if (turnIndex === 7) {
-    nextMessage = `Nếu mình đổi ý chuyển sang ${secondaryTopic} thì chi phí chênh lệch ra sao và thủ tục chuyển đổi có nhanh không bạn?`;
+    if (domain === 'khách sạn & homestay') {
+      nextMessage = 'Nếu mình muốn check-in sớm hoặc check-out muộn hơn giờ quy định thì có phụ thu không và quy định tính phí thế nào bạn?';
+    } else if (domain === 'bất động sản & căn hộ') {
+      nextMessage = 'Nếu mình đổi ý chuyển sang căn có diện tích lớn hơn hoặc hướng khác thì thủ tục chuyển nhượng/đổi cọc có thuận tiện không bạn?';
+    } else if (domain === 'mỹ phẩm & chăm sóc da') {
+      nextMessage = 'Nếu mình muốn đổi sang dòng sản phẩm chuyên sâu hơn hoặc lấy theo combo thì chi phí chênh lệch ra sao bạn?';
+    } else {
+      nextMessage = 'Nếu mình đổi ý chuyển sang phương án hoặc gói dịch vụ nâng cao hơn thì chi phí chênh lệch và thủ tục chuyển đổi có nhanh không bạn?';
+    }
   } else if (turnIndex === 8) {
     nextMessage = 'Quy trình đặt và thanh toán bên bạn thế nào? Cần đặt cọc trước bao nhiêu %, có hỗ trợ chuyển khoản hoặc xuất hóa đơn VAT không bạn?';
   } else if (turnIndex === 9) {
