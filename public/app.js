@@ -184,6 +184,24 @@
     btnOpenTrainingHub: document.getElementById('btn-open-training-hub'),
     deepseekBadgeStatus: document.getElementById('deepseek-badge-status'),
     btnAdminManage: document.getElementById('btn-admin-manage'),
+    modalAdminUsers: document.getElementById('modal-admin-users'),
+    btnCloseAdminModal: document.getElementById('btn-close-admin-modal'),
+    adminModalTabs: document.getElementById('admin-modal-tabs'),
+    adminUsersTbody: document.getElementById('admin-users-tbody'),
+    adminSearchUsers: document.getElementById('admin-search-users'),
+    adminUserTotalBadge: document.getElementById('admin-user-total-badge'),
+    statBadgeTotal: document.getElementById('stat-badge-total'),
+    statBadgeTesters: document.getElementById('stat-badge-testers'),
+    statBadgeActive: document.getElementById('stat-badge-active'),
+    formAdminCreateUser: document.getElementById('form-admin-create-user'),
+    adminCreateName: document.getElementById('admin-create-name'),
+    adminCreateEmail: document.getElementById('admin-create-email'),
+    adminCreatePassword: document.getElementById('admin-create-password'),
+    adminCreateRole: document.getElementById('admin-create-role'),
+    adminCreateEmbed: document.getElementById('admin-create-embed'),
+    btnAdminExportDb: document.getElementById('btn-admin-export-db'),
+    btnAdminImportTrigger: document.getElementById('btn-admin-import-trigger'),
+    inputAdminImportFile: document.getElementById('input-admin-import-file'),
     btnThemeToggle: document.getElementById('btn-theme-toggle'),
     themeIcon: document.getElementById('theme-icon'),
     btnLogout: document.getElementById('btn-logout'),
@@ -604,6 +622,7 @@
         localStorage.setItem('bbh_saved_email', email);
         localStorage.setItem('bbh_saved_password', newPassword);
         localStorage.setItem('bbh_remember_me', 'true');
+        if (data.voucher) localStorage.setItem('bbh_voucher_' + email.toLowerCase(), data.voucher);
         showToast(data.message, 'success');
         applyAuthState();
         loadWorkspace();
@@ -630,10 +649,12 @@
     }
 
     try {
-      const data = await api('/api/auth/login', 'POST', { identifier, password });
+      const voucher = localStorage.getItem('bbh_voucher_' + identifier.toLowerCase()) || '';
+      const data = await api('/api/auth/login', 'POST', { identifier, password, voucher });
       state.token = data.token;
       state.user = data.user;
       localStorage.setItem('bbh_auth_token', data.token);
+      if (data.voucher) localStorage.setItem('bbh_voucher_' + identifier.toLowerCase(), data.voucher);
 
       // Save password and identifier if remember me is enabled
       if (rememberMe) {
@@ -676,6 +697,7 @@
       state.token = data.token;
       state.user = data.user;
       localStorage.setItem('bbh_auth_token', data.token);
+      if (data.voucher) localStorage.setItem('bbh_voucher_' + email.toLowerCase(), data.voucher);
 
       // Auto save credentials on register
       localStorage.setItem('bbh_saved_email', email);
@@ -741,9 +763,12 @@
     el.headerUserAvatar.textContent = displayName.charAt(0).toUpperCase();
     if (state.user.avatar_color) el.headerUserAvatar.style.backgroundColor = state.user.avatar_color;
 
-    // Do not show any role tags (Admin/Tester) as requested
+    // Super Admin Management button (thienlv.bbh@gmail.com exclusively)
+    const isSuperAdminUser = Boolean(state.user && state.user.email === 'thienlv.bbh@gmail.com');
     if (el.headerUserRole) el.headerUserRole.style.display = 'none';
-    if (el.btnAdminManage) el.btnAdminManage.style.display = 'none';
+    if (el.btnAdminManage) {
+      el.btnAdminManage.style.display = isSuperAdminUser ? 'inline-flex' : 'none';
+    }
 
     // AI Model resolution & status indicator (Free Gemini, Local Free, DeepSeek)
     const currentModel = (state.user && state.user.ai_model) || (state.config && state.config.ai_model) || 'gemini-1.5-flash';
@@ -796,8 +821,11 @@
       el.body.classList.remove('chat-permission-denied');
     }
 
-    // Dynamic Chatbox loading per user
-    const pageId = state.user.page_id || state.config.page_id || '';
+    // Dynamic Chatbox loading per user - STRICT ISOLATION!
+    // Regular colleagues who have not configured a page_id get EMPTY string!
+    // They NEVER inherit or load admin's chat bubble!
+    const userPageId = (state.user && state.user.page_id) ? String(state.user.page_id).trim() : '';
+    const pageId = userPageId || (isSuperAdminUser ? (state.config && state.config.page_id) : '') || '';
     mountUserChatbox(pageId);
 
     if (el.settingsEmbedCode) {
@@ -1017,7 +1045,12 @@
 
   if (el.headerPageIdBadge) {
     el.headerPageIdBadge.addEventListener('click', () => {
-      const pageId = state.config.page_id || '095817282564177';
+      const isSuperAdmin = Boolean(state.user && state.user.email === 'thienlv.bbh@gmail.com');
+      const pageId = (state.user && state.user.page_id) || (isSuperAdmin ? state.config?.page_id : '') || '';
+      if (!pageId) {
+        showToast('Tài khoản chưa cấu hình Page ID cá nhân. Vui lòng bấm Cài đặt để nhập mã nhúng.', 'info');
+        return;
+      }
       navigator.clipboard.writeText(pageId).then(() => {
         showToast(`📋 Đã sao chép Page ID: ${pageId}`, 'success');
       }).catch(() => {
@@ -1196,6 +1229,336 @@
       }
     });
   });
+
+  // ==========================================================================
+  // SUPER ADMIN USER MANAGEMENT MODAL CONTROLLER (THIỆN BBH EXCLUSIVE)
+  // ==========================================================================
+
+  let adminUsersList = [];
+
+  function openAdminModal() {
+    if (!state.user || state.user.email !== 'thienlv.bbh@gmail.com') {
+      showToast('Chỉ tài khoản Super Admin (thienlv.bbh@gmail.com) mới có quyền truy cập!', 'error');
+      return;
+    }
+    if (el.modalAdminUsers) {
+      el.modalAdminUsers.classList.add('open');
+      el.body.classList.add('modal-open');
+      loadAdminUsers();
+    }
+  }
+
+  function closeAdminModal() {
+    if (el.modalAdminUsers) {
+      el.modalAdminUsers.classList.remove('open');
+      el.body.classList.remove('modal-open');
+    }
+  }
+
+  if (el.btnAdminManage) {
+    el.btnAdminManage.addEventListener('click', openAdminModal);
+  }
+
+  if (el.btnCloseAdminModal) {
+    el.btnCloseAdminModal.addEventListener('click', closeAdminModal);
+  }
+
+  // Admin Modal Tab Switching
+  if (el.adminModalTabs) {
+    el.adminModalTabs.addEventListener('click', (e) => {
+      const btn = e.target.closest('.seg-btn');
+      if (!btn) return;
+      el.adminModalTabs.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const targetTab = btn.getAttribute('data-admin-tab');
+      const contentList = document.getElementById('tab-admin-users-content');
+      const contentCreate = document.getElementById('tab-admin-create-content');
+      const contentBackup = document.getElementById('tab-admin-backup-content');
+
+      if (contentList) contentList.style.display = targetTab === 'tab-admin-users' ? 'block' : 'none';
+      if (contentCreate) contentCreate.style.display = targetTab === 'tab-admin-create' ? 'block' : 'none';
+      if (contentBackup) contentBackup.style.display = targetTab === 'tab-admin-backup' ? 'block' : 'none';
+
+      if (targetTab === 'tab-admin-users') {
+        loadAdminUsers();
+      }
+    });
+  }
+
+  async function loadAdminUsers() {
+    if (!el.adminUsersTbody) return;
+    el.adminUsersTbody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--text-muted);">Đang tải danh sách người dùng...</td></tr>`;
+
+    try {
+      const res = await api('/api/users');
+      adminUsersList = res.users || [];
+      renderAdminUsersTable(adminUsersList);
+    } catch (err) {
+      el.adminUsersTbody.innerHTML = `<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--danger);">⚠️ Lỗi tải danh sách: ${escapeHtml(err.message)}</td></tr>`;
+      showToast(err.message, 'error');
+    }
+  }
+
+  function renderAdminUsersTable(users) {
+    if (!el.adminUsersTbody) return;
+
+    // Filter by search query if any
+    const query = el.adminSearchUsers ? el.adminSearchUsers.value.trim().toLowerCase() : '';
+    const filtered = users.filter(u => {
+      if (!query) return true;
+      const name = (u.name || '').toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      return name.includes(query) || email.includes(query);
+    });
+
+    // Update stats
+    const totalCount = users.length;
+    const testersCount = users.filter(u => u.role === 'tester').length;
+    const activeCount = users.filter(u => u.status === 'active').length;
+
+    if (el.adminUserTotalBadge) el.adminUserTotalBadge.textContent = totalCount;
+    if (el.statBadgeTotal) el.statBadgeTotal.textContent = `Tổng: ${totalCount}`;
+    if (el.statBadgeTesters) el.statBadgeTesters.textContent = `Tester: ${testersCount}`;
+    if (el.statBadgeActive) el.statBadgeActive.textContent = `Hoạt động: ${activeCount}`;
+
+    if (filtered.length === 0) {
+      el.adminUsersTbody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--text-muted);">Không tìm thấy tài khoản nào phù hợp.</td></tr>`;
+      return;
+    }
+
+    el.adminUsersTbody.innerHTML = filtered.map(u => {
+      const isSuper = u.is_super_admin || u.email === 'thienlv.bbh@gmail.com';
+      const initial = (u.name || u.email || 'U').charAt(0).toUpperCase();
+      const lastLoginStr = u.last_login ? new Date(u.last_login).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : 'Chưa đăng nhập';
+      const createdStr = u.created_at ? new Date(u.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : '';
+      const pageIdDisplay = u.page_id ? `<span class="mono-badge" style="color: var(--teal); background: rgba(13, 148, 136, 0.1);">${escapeHtml(u.page_id)}</span>` : `<span style="color: var(--text-muted); font-size: 10.5px;">Chưa nạp</span>`;
+
+      return `
+        <tr style="border-bottom: 1px solid var(--border-subtle); transition: background 0.15s ease;" data-user-id="${escapeHtml(u.id)}">
+          <td style="padding: 10px 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: ${escapeHtml(u.avatar_color || '#D97757')}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0;">
+                ${escapeHtml(initial)}
+              </div>
+              <div>
+                <div style="font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                  <span>${escapeHtml(u.name || 'Người dùng')}</span>
+                  ${isSuper ? '<span class="auth-badge-pill" style="background: rgba(217, 119, 87, 0.2); color: var(--accent); font-size: 9px; padding: 1px 5px;">SUPER ADMIN</span>' : ''}
+                </div>
+                <div style="font-size: 10.5px; color: var(--text-muted); font-family: var(--font-mono);">${escapeHtml(u.email)}</div>
+              </div>
+            </div>
+          </td>
+          <td style="padding: 10px 12px;">
+            ${isSuper ? `
+              <span class="mono-badge" style="background: rgba(217, 119, 87, 0.15); color: var(--accent); font-weight: 700;">Quản trị viên</span>
+            ` : `
+              <select class="select select-sm admin-role-select" data-id="${escapeHtml(u.id)}" style="font-size: 11px; padding: 3px 6px;">
+                <option value="tester" ${u.role === 'tester' ? 'selected' : ''}>Tester</option>
+                <option value="leader" ${u.role === 'leader' ? 'selected' : ''}>Leader QA</option>
+                <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin phụ</option>
+              </select>
+            `}
+          </td>
+          <td style="padding: 10px 12px;">
+            ${isSuper ? `
+              <span class="mono-badge" style="background: rgba(5, 150, 105, 0.15); color: var(--success);">Hoạt động</span>
+            ` : `
+              <select class="select select-sm admin-status-select" data-id="${escapeHtml(u.id)}" style="font-size: 11px; padding: 3px 6px; color: ${u.status === 'active' ? 'var(--success)' : 'var(--danger)'};">
+                <option value="active" ${u.status === 'active' ? 'selected' : ''}>Hoạt động</option>
+                <option value="inactive" ${u.status === 'inactive' ? 'selected' : ''}>Tạm khóa</option>
+              </select>
+            `}
+          </td>
+          <td style="padding: 10px 12px;">
+            ${pageIdDisplay}
+          </td>
+          <td style="padding: 10px 12px; font-size: 10.5px; color: var(--text-secondary);">
+            <div>${lastLoginStr}</div>
+            <div style="color: var(--text-muted); font-size: 9.5px;">Tạo: ${createdStr}</div>
+          </td>
+          <td style="padding: 10px 12px; text-align: right;">
+            <div style="display: flex; gap: 5px; justify-content: flex-end;">
+              <button type="button" class="btn btn-secondary btn-xs btn-admin-reset-pwd" data-id="${escapeHtml(u.id)}" data-name="${escapeHtml(u.name || u.email)}" title="Đổi mật khẩu người dùng" style="font-size: 10.5px; padding: 2px 7px;">
+                🔑 Đổi MK
+              </button>
+              ${isSuper ? '' : `
+                <button type="button" class="btn btn-secondary btn-xs btn-admin-delete-user" data-id="${escapeHtml(u.id)}" data-email="${escapeHtml(u.email)}" title="Xóa tài khoản" style="font-size: 10.5px; padding: 2px 7px; color: var(--danger); border-color: rgba(225, 29, 72, 0.3);">
+                  🗑️ Xóa
+                </button>
+              `}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Attach row events
+    el.adminUsersTbody.querySelectorAll('.admin-role-select').forEach(sel => {
+      sel.addEventListener('change', async (e) => {
+        const id = e.target.getAttribute('data-id');
+        const role = e.target.value;
+        try {
+          await api(`/api/users/${id}`, 'PATCH', { role });
+          showToast('Đã cập nhật vai trò thành công!', 'success');
+        } catch (err) {
+          showToast('Lỗi cập nhật: ' + err.message, 'error');
+          loadAdminUsers();
+        }
+      });
+    });
+
+    el.adminUsersTbody.querySelectorAll('.admin-status-select').forEach(sel => {
+      sel.addEventListener('change', async (e) => {
+        const id = e.target.getAttribute('data-id');
+        const status = e.target.value;
+        try {
+          await api(`/api/users/${id}`, 'PATCH', { status });
+          showToast(`Đã ${status === 'active' ? 'mở khóa' : 'tạm khóa'} tài khoản!`, 'success');
+          e.target.style.color = status === 'active' ? 'var(--success)' : 'var(--danger)';
+        } catch (err) {
+          showToast('Lỗi cập nhật: ' + err.message, 'error');
+          loadAdminUsers();
+        }
+      });
+    });
+
+    el.adminUsersTbody.querySelectorAll('.btn-admin-reset-pwd').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name');
+        const newPwd = prompt(`Nhập mật khẩu mới cho tài khoản "${name}" (tối thiểu 5 ký tự):`, '123456');
+        if (newPwd === null) return;
+        if (!newPwd || newPwd.trim().length < 5) {
+          showToast('Mật khẩu mới phải từ 5 ký tự trở lên.', 'error');
+          return;
+        }
+        try {
+          await api(`/api/users/${id}`, 'PATCH', { password: newPwd.trim() });
+          showToast(`Đã đổi mật khẩu thành công cho "${name}"!`, 'success');
+        } catch (err) {
+          showToast('Lỗi đổi mật khẩu: ' + err.message, 'error');
+        }
+      });
+    });
+
+    el.adminUsersTbody.querySelectorAll('.btn-admin-delete-user').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const email = btn.getAttribute('data-email');
+        if (!confirm(`Bạn có chắc chắn muốn XÓA VĨNH VIỄN tài khoản "${email}" khỏi hệ thống?`)) return;
+        try {
+          await api(`/api/users/${id}`, 'DELETE');
+          showToast(`Đã xóa tài khoản "${email}".`, 'success');
+          loadAdminUsers();
+        } catch (err) {
+          showToast('Lỗi xóa tài khoản: ' + err.message, 'error');
+        }
+      });
+    });
+  }
+
+  // Admin Search filter input
+  if (el.adminSearchUsers) {
+    el.adminSearchUsers.addEventListener('input', () => {
+      renderAdminUsersTable(adminUsersList);
+    });
+  }
+
+  // Admin Create User Form Submit
+  if (el.formAdminCreateUser) {
+    el.formAdminCreateUser.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = el.adminCreateName ? el.adminCreateName.value.trim() : '';
+      const email = el.adminCreateEmail ? el.adminCreateEmail.value.trim() : '';
+      const password = el.adminCreatePassword ? el.adminCreatePassword.value.trim() : '123456';
+      const role = el.adminCreateRole ? el.adminCreateRole.value : 'tester';
+      const embedCode = el.adminCreateEmbed ? el.adminCreateEmbed.value.trim() : '';
+
+      if (!email) {
+        showToast('Vui lòng nhập địa chỉ Gmail.', 'error');
+        return;
+      }
+
+      try {
+        const res = await api('/api/users', 'POST', { name, email, password, role, embed_code: embedCode });
+        showToast(res.message || 'Tạo tài khoản thành công!', 'success');
+        el.formAdminCreateUser.reset();
+        if (el.adminCreatePassword) el.adminCreatePassword.value = '123456';
+
+        // Switch to users list tab
+        const listBtn = el.adminModalTabs?.querySelector('[data-admin-tab="tab-admin-users"]');
+        if (listBtn) listBtn.click();
+      } catch (err) {
+        showToast('Lỗi tạo tài khoản: ' + err.message, 'error');
+      }
+    });
+  }
+
+  // Admin Backup & Export DB
+  if (el.btnAdminExportDb) {
+    el.btnAdminExportDb.addEventListener('click', async () => {
+      try {
+        const res = await api('/api/admin/database/export');
+        const jsonStr = JSON.stringify(res.database || res, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `database_backup_bbh_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('✅ Đã tải file sao lưu CSDL thành công!', 'success');
+      } catch (err) {
+        showToast('Lỗi xuất sao lưu: ' + err.message, 'error');
+      }
+    });
+  }
+
+  // Admin Import & Restore DB
+  if (el.btnAdminImportTrigger && el.inputAdminImportFile) {
+    el.btnAdminImportTrigger.addEventListener('click', () => {
+      el.inputAdminImportFile.click();
+    });
+
+    el.inputAdminImportFile.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const raw = evt.target.result;
+          const parsed = JSON.parse(raw);
+          const dbPayload = parsed.database ? parsed.database : parsed;
+
+          if (!dbPayload || !Array.isArray(dbPayload.users)) {
+            showToast('File JSON không đúng cấu trúc database.', 'error');
+            return;
+          }
+
+          if (!confirm(`Khôi phục CSDL từ file? Thao tác này sẽ đồng bộ ${dbPayload.users.length} tài khoản vào hệ thống.`)) {
+            el.inputAdminImportFile.value = '';
+            return;
+          }
+
+          const res = await api('/api/admin/database/import', 'POST', { database: dbPayload });
+          showToast(res.message || 'Khôi phục CSDL thành công!', 'success');
+          loadAdminUsers();
+          loadWorkspace();
+        } catch (err) {
+          showToast('Lỗi đọc/nạp file: ' + err.message, 'error');
+        } finally {
+          el.inputAdminImportFile.value = '';
+        }
+      };
+      reader.readAsText(file, 'utf8');
+    });
+  }
 
   // File 1 Upload (Supports .xlsx, .xls, .csv, .txt, .md)
   el.btnUploadFile1.addEventListener('click', () => el.uploadFile1Input.click());
@@ -3615,7 +3978,7 @@
       state.chatSessions = data.chat_sessions || [];
       state.users = data.users;
 
-      el.headerPageIdBadge.textContent = `ID: ${state.config.page_id}`;
+      if (el.headerPageIdBadge) el.headerPageIdBadge.textContent = 'Chưa nạp';
       applyAuthState();
       syncRunnerPreferences();
       updateManualQuestionCount();
@@ -3700,7 +4063,7 @@
       state.roles = boot.roles;
       state.productKnowledge = boot.productKnowledge;
       state.promptRules = boot.promptRules;
-      el.headerPageIdBadge.textContent = `ID: ${state.config.page_id}`;
+      if (el.headerPageIdBadge) el.headerPageIdBadge.textContent = 'Chưa nạp';
 
       syncRunnerPreferences();
 

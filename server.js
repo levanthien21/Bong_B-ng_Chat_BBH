@@ -39,6 +39,55 @@ function hashPassword(password, salt = 'claude-bbh-salt-2026') {
 }
 
 const AUTH_SECRET = process.env.AUTH_SECRET || 'bbh-studio-secret-token-hmac-2026';
+const SUPER_ADMIN_EMAIL = 'thienlv.bbh@gmail.com';
+
+function isSuperAdmin(user) {
+  if (!user) return false;
+  const email = String(user.email || user.identifier || '').trim().toLowerCase();
+  return email === SUPER_ADMIN_EMAIL;
+}
+
+function generateAccountVoucher(user) {
+  try {
+    if (!user || !user.email) return null;
+    const payload = {
+      id: user.id || ('usr_' + Date.now()),
+      email: String(user.email).trim().toLowerCase(),
+      name: user.name || (user.email ? user.email.split('@')[0] : 'User'),
+      role: isSuperAdmin(user) ? 'admin' : (user.role || 'tester'),
+      page_id: user.page_id || '',
+      embed_code: user.embed_code || '',
+      password_hash: user.password_hash,
+      created_at: user.created_at || new Date().toISOString()
+    };
+    const b64 = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64');
+    const sig = crypto.createHmac('sha256', AUTH_SECRET).update(b64).digest('hex').slice(0, 32);
+    return `bbhv_${b64}.${sig}`;
+  } catch (e) {
+    return null;
+  }
+}
+
+function verifyAccountVoucher(voucherStr) {
+  if (!voucherStr || typeof voucherStr !== 'string' || !voucherStr.startsWith('bbhv_')) return null;
+  const raw = voucherStr.slice(5);
+  const parts = raw.split('.');
+  if (parts.length !== 2) return null;
+  const [b64, sig] = parts;
+  const expectedSig = crypto.createHmac('sha256', AUTH_SECRET).update(b64).digest('hex').slice(0, 32);
+  try {
+    if (crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
+      const jsonStr = Buffer.from(b64, 'base64').toString('utf8');
+      const payload = JSON.parse(jsonStr);
+      if (payload && payload.email && payload.password_hash) {
+        return payload;
+      }
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
+}
 
 function generateToken(userId = '') {
   const ts = Date.now().toString(36);
@@ -286,25 +335,86 @@ const INITIAL_DB = {
   logs: []
 };
 
+const USERS_BACKUP_FILE = path.join(DATA_DIR, 'users_vault.json');
+
 function loadDB() {
   try {
+    let db = null;
     if (!fs.existsSync(DB_FILE)) {
       fs.writeFileSync(DB_FILE, JSON.stringify(INITIAL_DB, null, 2), 'utf8');
-      return JSON.parse(JSON.stringify(INITIAL_DB));
+      db = JSON.parse(JSON.stringify(INITIAL_DB));
+    } else {
+      const raw = fs.readFileSync(DB_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      db = {
+        ...INITIAL_DB,
+        ...parsed,
+        config: { ...INITIAL_DB.config, ...(parsed.config || {}) },
+        roles: { ...INITIAL_DB.roles, ...(parsed.roles || {}) }
+      };
     }
-    const raw = fs.readFileSync(DB_FILE, 'utf8');
-    const parsed = JSON.parse(raw);
-    const db = {
-      ...INITIAL_DB,
-      ...parsed,
-      config: { ...INITIAL_DB.config, ...(parsed.config || {}) },
-      roles: { ...INITIAL_DB.roles, ...(parsed.roles || {}) }
-    };
-    // Ensure tester and leader have canManageConfig in testing studio
-    if (db.roles?.tester?.permissions) db.roles.tester.permissions.canManageConfig = true;
-    if (db.roles?.leader?.permissions) db.roles.leader.permissions.canManageConfig = true;
+
+    db.users = Array.isArray(db.users) ? db.users : [];
+
+    // Ensure Super Admin thienlv.bbh@gmail.com ALWAYS exists and is active admin
+    let thienAdmin = db.users.find(u => String(u.email || '').toLowerCase() === SUPER_ADMIN_EMAIL);
+    if (!thienAdmin) {
+      thienAdmin = {
+        id: 'usr_thien_admin',
+        name: 'Thiện BBH',
+        email: SUPER_ADMIN_EMAIL,
+        username: 'thienlv.bbh',
+        role: 'admin',
+        status: 'active',
+        avatar_color: '#D97757',
+        password_hash: hashPassword('admin123'),
+        page_id: '095817282564177',
+        embed_code: '095817282564177',
+        deepseek_api_key: '',
+        created_at: '2026-10-25T08:00:00.000Z',
+        last_login: new Date().toISOString(),
+        tests_submitted: 0
+      };
+      db.users.unshift(thienAdmin);
+    } else {
+      thienAdmin.role = 'admin';
+      thienAdmin.status = 'active';
+      if (!thienAdmin.page_id) thienAdmin.page_id = '095817282564177';
+    }
+
+    // Merge persistent users backup if available
+    if (fs.existsSync(USERS_BACKUP_FILE)) {
+      try {
+        const backupUsers = JSON.parse(fs.readFileSync(USERS_BACKUP_FILE, 'utf8'));
+        if (Array.isArray(backupUsers)) {
+          for (const bu of backupUsers) {
+            if (bu && bu.email && !db.users.some(u => String(u.email || '').toLowerCase() === bu.email.toLowerCase())) {
+              db.users.push(bu);
+            }
+          }
+        }
+      } catch (be) {
+        console.warn('[DB] Backup load notice:', be.message);
+      }
+    }
+
+    // Ensure permissions
+    if (db.roles?.tester?.permissions) {
+      db.roles.tester.permissions.canManageConfig = true;
+      db.roles.tester.permissions.canManageUsers = false;
+    }
+    if (db.roles?.leader?.permissions) {
+      db.roles.leader.permissions.canManageConfig = true;
+      db.roles.leader.permissions.canManageUsers = false;
+    }
+    if (db.roles?.admin?.permissions) {
+      db.roles.admin.permissions.canManageConfig = true;
+      db.roles.admin.permissions.canManageUsers = true;
+    }
+
     db.evaluations = Array.isArray(db.evaluations) ? db.evaluations : [];
     db.chat_sessions = Array.isArray(db.chat_sessions) ? db.chat_sessions : [];
+    db.sessions = (db.sessions && typeof db.sessions === 'object') ? db.sessions : {};
     db.config.ai_model = db.config.ai_model || 'gemini-1.5-flash';
     db.config.ai_provider = db.config.ai_provider || 'gemini';
     return db;
@@ -317,6 +427,19 @@ function loadDB() {
 function saveDB(db) {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf8');
+    // Save redundant backup of users to protect against container wipe
+    if (Array.isArray(db.users)) {
+      try {
+        fs.writeFileSync(USERS_BACKUP_FILE, JSON.stringify(db.users, null, 2), 'utf8');
+      } catch (e) {}
+    }
+    // In local development, ensure data/database.json in git root is synced
+    const localDbPath = path.join(__dirname, 'data', 'database.json');
+    if (!IS_VERCEL && localDbPath !== DB_FILE && fs.existsSync(path.dirname(localDbPath))) {
+      try {
+        fs.writeFileSync(localDbPath, JSON.stringify(db, null, 2), 'utf8');
+      } catch (e) {}
+    }
   } catch (err) {
     console.error('[DB] Error saving DB:', err);
   }
@@ -2052,18 +2175,39 @@ function getAuthenticatedUser(req) {
     const session = db.sessions[token];
     const user = db.users.find(u => u.id === session.user_id);
     if (user && user.status === 'active') {
-      return { user, token, permissions: (db.roles[user.role] || db.roles.tester).permissions };
+      const isSuper = isSuperAdmin(user);
+      const rolePerms = (db.roles[user.role] || db.roles.tester).permissions;
+      return {
+        user,
+        token,
+        permissions: {
+          ...rolePerms,
+          canManageUsers: isSuper
+        }
+      };
     }
   }
 
   // 2. Stateless cryptographic HMAC verification (survives Vercel serverless cold starts & server restarts)
   const userIdFromToken = verifySignedToken(token);
   if (userIdFromToken) {
-    const user = db.users.find(u => u.id === userIdFromToken);
+    let user = db.users.find(u => u.id === userIdFromToken);
+    if (!user && userIdFromToken === 'usr_thien_admin') {
+      user = db.users.find(u => isSuperAdmin(u));
+    }
     if (user && user.status === 'active') {
       if (!db.sessions) db.sessions = {};
       db.sessions[token] = { user_id: user.id, created_at: new Date().toISOString() };
-      return { user, token, permissions: (db.roles[user.role] || db.roles.tester).permissions };
+      const isSuper = isSuperAdmin(user);
+      const rolePerms = (db.roles[user.role] || db.roles.tester).permissions;
+      return {
+        user,
+        token,
+        permissions: {
+          ...rolePerms,
+          canManageUsers: isSuper
+        }
+      };
     }
   }
 
@@ -2130,14 +2274,42 @@ async function handleRequest(req, res) {
       const body = await parseBody(req);
       const identifier = String(body.identifier || body.email || body.username || '').trim().toLowerCase();
       const password = String(body.password || '').trim();
+      const voucher = body.voucher || body.account_voucher || null;
 
       if (!identifier) {
         return sendJSON(res, 400, { ok: false, message: 'Vui lòng nhập địa chỉ Gmail.' });
       }
 
-      const user = db.users.find(
+      let user = db.users.find(
         u => u.email.toLowerCase() === identifier || (u.username && u.username.toLowerCase() === identifier)
       );
+
+      // Self-healing: If user not found in in-memory DB (cold start/reboot), check if a valid cryptographically signed voucher was provided
+      if (!user && voucher) {
+        const verified = verifyAccountVoucher(voucher);
+        if (verified && (verified.email.toLowerCase() === identifier || (verified.username && verified.username.toLowerCase() === identifier))) {
+          if (verified.password_hash === hashPassword(password)) {
+            user = {
+              id: verified.id || ('usr_' + Date.now()),
+              name: verified.name || identifier.split('@')[0],
+              email: verified.email.toLowerCase(),
+              username: verified.email.split('@')[0],
+              role: verified.email.toLowerCase() === SUPER_ADMIN_EMAIL ? 'admin' : (verified.role || 'tester'),
+              status: 'active',
+              page_id: verified.page_id || '',
+              embed_code: verified.embed_code || '',
+              avatar_color: '#0D9488',
+              password_hash: verified.password_hash,
+              created_at: verified.created_at || new Date().toISOString(),
+              last_login: new Date().toISOString(),
+              tests_submitted: 0
+            };
+            db.users.push(user);
+            saveDB(db);
+            addAuditLog(user.name, user.role, 'Khôi phục tài khoản tự động từ mã chứng thực bảo mật');
+          }
+        }
+      }
 
       if (!user) {
         return sendJSON(res, 401, {
@@ -2147,7 +2319,7 @@ async function handleRequest(req, res) {
         });
       }
 
-      const isThienAdmin = user.email === 'thienlv.bbh@gmail.com' && (
+      const isThienAdmin = isSuperAdmin(user) && (
         password === 'admin123' ||
         password === 'thien123' ||
         password === 'admin' ||
@@ -2160,7 +2332,7 @@ async function handleRequest(req, res) {
         return sendJSON(res, 401, {
           ok: false,
           code: 'WRONG_PASSWORD',
-          message: `Mật khẩu không chính xác cho tài khoản "${user.email}". Bạn có thể đăng nhập bằng "admin123" hoặc bấm "Quên mật khẩu?" để đổi mật khẩu mới ngay.`
+          message: `Mật khẩu không chính xác cho tài khoản "${user.email}". Bạn có thể bấm "Quên mật khẩu?" để đổi mật khẩu mới ngay.`
         });
       }
 
@@ -2169,7 +2341,7 @@ async function handleRequest(req, res) {
       }
 
       if (user.status !== 'active') {
-        return sendJSON(res, 403, { ok: false, message: 'Tài khoản của bạn hiện đang bị tạm khóa.' });
+        return sendJSON(res, 403, { ok: false, message: 'Tài khoản của bạn hiện đang bị tạm khóa. Vui lòng liên hệ Admin thienlv.bbh@gmail.com.' });
       }
 
       const token = generateToken(user.id);
@@ -2178,10 +2350,13 @@ async function handleRequest(req, res) {
       addAuditLog(user.name, user.role, 'Đăng nhập vào hệ thống');
       saveDB(db);
 
+      const accountVoucher = generateAccountVoucher(user);
+
       return sendJSON(res, 200, {
         ok: true,
         token,
         user: sanitizeUser(user),
+        voucher: accountVoucher,
         message: `Đăng nhập thành công! Chào mừng ${user.name}.`
       });
     }
@@ -2196,7 +2371,7 @@ async function handleRequest(req, res) {
         return sendJSON(res, 400, { ok: false, message: 'Vui lòng nhập đầy đủ Gmail và mật khẩu mới tối thiểu 5 ký tự.' });
       }
 
-      const user = db.users.find(u => u.email.toLowerCase() === email);
+      let user = db.users.find(u => u.email.toLowerCase() === email);
       if (!user) {
         return sendJSON(res, 404, { ok: false, message: `Không tìm thấy tài khoản với Gmail "${email}".` });
       }
@@ -2208,10 +2383,13 @@ async function handleRequest(req, res) {
       addAuditLog(user.name, user.role, 'Đặt lại mật khẩu thành công');
       saveDB(db);
 
+      const accountVoucher = generateAccountVoucher(user);
+
       return sendJSON(res, 200, {
         ok: true,
         token,
         user: sanitizeUser(user),
+        voucher: accountVoucher,
         message: `Đã đổi mật khẩu mới thành công cho ${user.name}! Đang chuyển hướng vào hệ thống...`
       });
     }
@@ -2233,6 +2411,7 @@ async function handleRequest(req, res) {
         return sendJSON(res, 409, { ok: false, message: `Email "${email}" đã được đăng ký. Vui lòng chuyển sang tab Đăng nhập.` });
       }
 
+      const isThien = email === SUPER_ADMIN_EMAIL;
       const name = String(body.name || email.split('@')[0]).trim();
       const colors = ['#D97757', '#0D9488', '#4F46E5', '#2563EB', '#059669'];
 
@@ -2253,15 +2432,19 @@ async function handleRequest(req, res) {
         detectedModel = 'local-free';
       }
 
+      // Strictly isolate chatbox! Regular users who do NOT provide an embed code get empty page_id
+      const userPageId = extractedPageId || '';
+      const userEmbedCode = embedInput || '';
+
       const newUser = {
-        id: 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        id: isThien ? 'usr_thien_admin' : ('usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6)),
         name,
         email,
         username: email.split('@')[0],
         phone: '',
-        role: email === 'thienlv.bbh@gmail.com' ? 'admin' : 'tester',
-        page_id: extractedPageId || '',
-        embed_code: embedInput || '',
+        role: isThien ? 'admin' : 'tester', // Strictly force tester for all others
+        page_id: userPageId,
+        embed_code: userEmbedCode,
         ai_model: detectedModel,
         ai_api_key: apiKey,
         gemini_api_key: geminiKey,
@@ -2291,10 +2474,13 @@ async function handleRequest(req, res) {
       addAuditLog(newUser.name, newUser.role, 'Đăng ký tài khoản mới');
       saveDB(db);
 
+      const accountVoucher = generateAccountVoucher(newUser);
+
       return sendJSON(res, 201, {
         ok: true,
         token,
         user: sanitizeUser(newUser),
+        voucher: accountVoucher,
         message: `Đăng ký thành công! Chào mừng ${name}.`
       });
     }
@@ -3294,39 +3480,193 @@ CHỈ TRẢ VỀ JSON HỢP LỆ:
       return sendJSON(res, 200, { ok: true });
     }
 
-    // 7. Users Management (Admin)
+    // 7. Users Management - STRICTLY SUPER ADMIN (thienlv.bbh@gmail.com) ONLY
+    if (pathname === '/api/users' && req.method === 'GET') {
+      if (!isSuperAdmin(auth.user)) {
+        return sendJSON(res, 403, { ok: false, message: 'Chỉ riêng Super Admin (thienlv.bbh@gmail.com) mới có quyền truy cập quản lý người dùng!' });
+      }
+      return sendJSON(res, 200, {
+        ok: true,
+        users: db.users.map(u => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          username: u.username,
+          role: u.role,
+          status: u.status || 'active',
+          page_id: u.page_id || '',
+          embed_code: u.embed_code || '',
+          avatar_color: u.avatar_color || '#D97757',
+          created_at: u.created_at,
+          last_login: u.last_login,
+          tests_submitted: u.tests_submitted || 0,
+          is_super_admin: isSuperAdmin(u)
+        })),
+        roles: db.roles
+      });
+    }
+
     if (pathname === '/api/users' && req.method === 'POST') {
-      if (!auth.permissions.canManageUsers) return sendJSON(res, 403, { ok: false, message: 'Forbidden' });
+      if (!isSuperAdmin(auth.user)) {
+        return sendJSON(res, 403, { ok: false, message: 'Chỉ riêng Super Admin mới có quyền tạo người dùng mới!' });
+      }
       const body = await parseBody(req);
+      const email = String(body.email || '').trim().toLowerCase();
+      const password = String(body.password || '123456').trim();
+      const name = String(body.name || email.split('@')[0]).trim();
+      const role = ['admin', 'leader', 'tester', 'viewer'].includes(body.role) ? body.role : 'tester';
+      const embedCode = String(body.embed_code || body.page_id || '').trim();
+      const pageId = extractPageId(embedCode);
+
+      if (!email || !email.includes('@')) {
+        return sendJSON(res, 400, { ok: false, message: 'Vui lòng nhập địa chỉ Gmail hợp lệ.' });
+      }
+      if (db.users.some(u => u.email.toLowerCase() === email)) {
+        return sendJSON(res, 409, { ok: false, message: `Email "${email}" đã tồn tại trong hệ thống.` });
+      }
+
+      const colors = ['#D97757', '#0D9488', '#4F46E5', '#2563EB', '#059669'];
       const newUser = {
-        id: 'usr_' + Date.now(),
-        name: String(body.name || '').trim(),
-        email: String(body.email || '').trim().toLowerCase(),
-        username: (body.email || '').split('@')[0],
+        id: 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        name,
+        email,
+        username: email.split('@')[0],
         phone: String(body.phone || '').trim(),
-        role: body.role || 'tester',
+        role: email === SUPER_ADMIN_EMAIL ? 'admin' : role,
         status: 'active',
-        avatar_color: '#D97757',
-        password_hash: hashPassword(body.password || 'password123'),
+        page_id: pageId || '',
+        embed_code: embedCode || '',
+        avatar_color: colors[db.users.length % colors.length],
+        password_hash: hashPassword(password),
+        productKnowledge: {
+          title: 'File 1: Kiến thức Sản phẩm & Dịch vụ',
+          content: '',
+          updated_at: new Date().toISOString()
+        },
+        promptRules: {
+          title: 'File 2: Quy tắc Prompt & Rào chắn AI Chatbot',
+          content: '',
+          updated_at: new Date().toISOString()
+        },
         created_at: new Date().toISOString(),
         last_login: null,
         tests_submitted: 0
       };
       db.users.push(newUser);
       saveDB(db);
-      return sendJSON(res, 201, { ok: true, user: sanitizeUser(newUser) });
+      addAuditLog(auth.user.name, auth.user.role, `Tạo tài khoản mới cho: ${email} (${role})`);
+      return sendJSON(res, 201, { ok: true, user: sanitizeUser(newUser), message: `Đã tạo tài khoản cho ${email} thành công!` });
     }
 
     if (pathname.startsWith('/api/users/') && req.method === 'PATCH') {
-      if (!auth.permissions.canManageUsers) return sendJSON(res, 403, { ok: false, message: 'Forbidden' });
+      if (!isSuperAdmin(auth.user)) {
+        return sendJSON(res, 403, { ok: false, message: 'Chỉ riêng Super Admin mới có quyền chỉnh sửa người dùng!' });
+      }
       const id = pathname.split('/').pop();
       const body = await parseBody(req);
       const target = db.users.find(u => u.id === id);
-      if (!target) return sendJSON(res, 404, { ok: false, message: 'Not found' });
-      if (body.role) target.role = body.role;
-      if (body.status) target.status = body.status;
+      if (!target) return sendJSON(res, 404, { ok: false, message: 'Không tìm thấy người dùng.' });
+
+      if (isSuperAdmin(target)) {
+        if (body.role && body.role !== 'admin') {
+          return sendJSON(res, 400, { ok: false, message: 'Không thể hạ quyền Super Admin thienlv.bbh@gmail.com!' });
+        }
+        if (body.status && body.status !== 'active') {
+          return sendJSON(res, 400, { ok: false, message: 'Không thể khóa tài khoản Super Admin!' });
+        }
+      }
+
+      if (body.role && ['admin', 'leader', 'tester', 'viewer'].includes(body.role)) {
+        target.role = isSuperAdmin(target) ? 'admin' : body.role;
+      }
+      if (body.status && ['active', 'inactive'].includes(body.status)) {
+        if (!isSuperAdmin(target)) target.status = body.status;
+      }
+      if (body.name && String(body.name).trim()) {
+        target.name = String(body.name).trim();
+      }
+      if (body.password && String(body.password).trim().length >= 5) {
+        target.password_hash = hashPassword(String(body.password).trim());
+      }
+      if (body.page_id !== undefined) {
+        target.page_id = extractPageId(String(body.page_id).trim()) || '';
+      }
+      if (body.embed_code !== undefined) {
+        target.embed_code = String(body.embed_code).trim();
+        if (!body.page_id) target.page_id = extractPageId(target.embed_code) || '';
+      }
+
       saveDB(db);
-      return sendJSON(res, 200, { ok: true, user: sanitizeUser(target) });
+      addAuditLog(auth.user.name, auth.user.role, `Cập nhật thông tin tài khoản: ${target.email}`);
+      return sendJSON(res, 200, { ok: true, user: sanitizeUser(target), message: 'Cập nhật thành công!' });
+    }
+
+    if (pathname.startsWith('/api/users/') && req.method === 'DELETE') {
+      if (!isSuperAdmin(auth.user)) {
+        return sendJSON(res, 403, { ok: false, message: 'Chỉ riêng Super Admin mới có quyền xóa người dùng!' });
+      }
+      const id = pathname.split('/').pop();
+      const target = db.users.find(u => u.id === id);
+      if (!target) return sendJSON(res, 404, { ok: false, message: 'Không tìm thấy người dùng.' });
+
+      if (isSuperAdmin(target)) {
+        return sendJSON(res, 400, { ok: false, message: 'Tuyệt đối không được xóa tài khoản Super Admin thienlv.bbh@gmail.com!' });
+      }
+
+      db.users = db.users.filter(u => u.id !== id);
+      if (db.sessions) {
+        for (const [t, s] of Object.entries(db.sessions)) {
+          if (s.user_id === id) delete db.sessions[t];
+        }
+      }
+      saveDB(db);
+      addAuditLog(auth.user.name, auth.user.role, `Xóa tài khoản người dùng: ${target.email}`);
+      return sendJSON(res, 200, { ok: true, message: `Đã xóa tài khoản ${target.email} thành công!` });
+    }
+
+    // Admin Backup & Restore Database
+    if (pathname === '/api/admin/database/export' && req.method === 'GET') {
+      if (!isSuperAdmin(auth.user)) {
+        return sendJSON(res, 403, { ok: false, message: 'Chỉ riêng Super Admin mới có quyền xuất bản sao lưu!' });
+      }
+      return sendJSON(res, 200, {
+        ok: true,
+        exported_at: new Date().toISOString(),
+        database: db
+      });
+    }
+
+    if (pathname === '/api/admin/database/import' && req.method === 'POST') {
+      if (!isSuperAdmin(auth.user)) {
+        return sendJSON(res, 403, { ok: false, message: 'Chỉ riêng Super Admin mới có quyền khôi phục CSDL!' });
+      }
+      const body = await parseBody(req);
+      if (!body.database || !Array.isArray(body.database.users)) {
+        return sendJSON(res, 400, { ok: false, message: 'Định dạng file sao lưu không hợp lệ.' });
+      }
+      const importedUsers = body.database.users;
+      let count = 0;
+      for (const imp of importedUsers) {
+        if (!imp.email) continue;
+        const existing = db.users.find(u => u.email.toLowerCase() === imp.email.toLowerCase());
+        if (existing) {
+          if (!isSuperAdmin(existing)) {
+            existing.name = imp.name || existing.name;
+            existing.role = imp.role || existing.role;
+            existing.status = imp.status || existing.status;
+            existing.page_id = imp.page_id || existing.page_id;
+            existing.embed_code = imp.embed_code || existing.embed_code;
+            if (imp.password_hash) existing.password_hash = imp.password_hash;
+            count++;
+          }
+        } else {
+          db.users.push(imp);
+          count++;
+        }
+      }
+      saveDB(db);
+      addAuditLog(auth.user.name, auth.user.role, `Khôi phục/Đồng bộ ${count} tài khoản từ file sao lưu`);
+      return sendJSON(res, 200, { ok: true, message: `Đã khôi phục/đồng bộ thành công ${count} tài khoản!`, total_users: db.users.length });
     }
 
     // 8. General Config Update

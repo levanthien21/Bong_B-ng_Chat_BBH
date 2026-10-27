@@ -1583,3 +1583,26 @@ body.mode-zen .side-panel {
 .highlight-saved-card {
   animation: highlightSaved 1.4s ease-out;
 }
+
+/* ==========================================================================
+   SUPER ADMIN USER MANAGEMENT STYLES
+   ========================================================================== */
+.admin-table-wrapper {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.admin-users-table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.admin-users-table tr:hover {
+  background: var(--bg-hover) !important;
+}
+
+.admin-users-table td {
+  vertical-align: middle;
+}

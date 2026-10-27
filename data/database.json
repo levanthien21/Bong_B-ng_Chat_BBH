@@ -97,7 +97,7 @@
       "role": "admin",
       "status": "active",
       "avatar_color": "#D97757",
-      "password_hash": "8cf9f1da7739505949909e5f31a20f8fdbeed3e08dbd94260d48cf94a2eb5834fa97015a3a2431a1009d4b183bcad54a929362ee835f5acf4556c984a5dcd9ed",
+      "password_hash": "eba763bd1a0d65b8df4d96dd64fc9984244384d2d8b30cf0195681327529a0f8653597536b37b42709a3e8ac4c2a45100628e68fcc874d2bc310ef0ff28ed771",
       "page_id": "095817282564177",
       "embed_code": "095817282564177",
       "deepseek_api_key": "",
@@ -112,8 +112,60 @@
         "updated_at": "2026-10-26T08:07:15.234Z"
       },
       "created_at": "2026-10-25T08:20:08.743Z",
-      "last_login": "2026-10-26T16:27:37.463Z",
+      "last_login": "2026-10-27T04:30:46.072Z",
       "tests_submitted": 23
+    },
+    {
+      "id": "usr_colleague_demo",
+      "name": "Đồng nghiệp BBH",
+      "email": "colleague@gmail.com",
+      "username": "colleague",
+      "role": "tester",
+      "status": "active",
+      "avatar_color": "#0D9488",
+      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
+      "page_id": "",
+      "embed_code": "",
+      "deepseek_api_key": "",
+      "productKnowledge": {
+        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
+        "content": "",
+        "updated_at": "2026-10-25T08:34:42.258Z"
+      },
+      "promptRules": {
+        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
+        "content": "",
+        "updated_at": "2026-10-25T08:34:42.258Z"
+      },
+      "created_at": "2026-10-25T08:34:42.258Z",
+      "last_login": null,
+      "tests_submitted": 0
+    },
+    {
+      "id": "usr_colleague2_demo",
+      "name": "Tester Đồng nghiệp",
+      "email": "test_colleague2@gmail.com",
+      "username": "test_colleague2",
+      "role": "tester",
+      "status": "active",
+      "avatar_color": "#4F46E5",
+      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
+      "page_id": "",
+      "embed_code": "",
+      "deepseek_api_key": "",
+      "productKnowledge": {
+        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
+        "content": "",
+        "updated_at": "2026-10-25T10:39:24.051Z"
+      },
+      "promptRules": {
+        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
+        "content": "",
+        "updated_at": "2026-10-25T10:39:24.051Z"
+      },
+      "created_at": "2026-10-25T10:39:24.051Z",
+      "last_login": null,
+      "tests_submitted": 0
     }
   ],
   "sessions": {
@@ -264,6 +316,22 @@
     "bbh_usr_thien_admin.mvpgzq0n.f715f1d8177947b2df54d6a71be1e944": {
       "user_id": "usr_thien_admin",
       "created_at": "2026-10-26T16:27:37.463Z"
+    },
+    "bbh_usr_thien_admin.mvq6tovr.a0dbde1d09332b59a7dc81994462dd6a": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-10-27T04:30:46.072Z"
+    },
+    "bbh_usr_1793075446082_lkvn.mvq6tow3.edd355bee5944e1b90a30c85fec75cba": {
+      "user_id": "usr_1793075446082_lkvn",
+      "created_at": "2026-10-27T04:30:46.083Z"
+    },
+    "bbh_usr_1793075446082_lkvn.mvq6tow9.4fe40a46818afca7f3e04453dd3374aa": {
+      "user_id": "usr_1793075446082_lkvn",
+      "created_at": "2026-10-27T04:30:46.089Z"
+    },
+    "bbh_usr_1793075446082_lkvn.mvq6towe.2be4e5157ab10437e1ee2a7544482bd1": {
+      "user_id": "usr_1793075446082_lkvn",
+      "created_at": "2026-10-27T04:30:46.094Z"
     }
   },
   "evaluations": [
@@ -603,6 +671,48 @@
   ],
   "chat_sessions": [],
   "logs": [
+    {
+      "id": "log_1793075446102_co00",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Cập nhật thông tin tài khoản: new_worker_1793075446096@gmail.com",
+      "created_at": "2026-10-27T04:30:46.103Z"
+    },
+    {
+      "id": "log_1793075446100_phty",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Tạo tài khoản mới cho: new_worker_1793075446096@gmail.com (tester)",
+      "created_at": "2026-10-27T04:30:46.100Z"
+    },
+    {
+      "id": "log_1793075446094_jld2",
+      "actor": "Nguyễn Đồng Nghiệp",
+      "role": "tester",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-27T04:30:46.094Z"
+    },
+    {
+      "id": "log_1793075446089_ot24",
+      "actor": "Nguyễn Đồng Nghiệp",
+      "role": "tester",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-27T04:30:46.089Z"
+    },
+    {
+      "id": "log_1793075446083_ypan",
+      "actor": "Nguyễn Đồng Nghiệp",
+      "role": "tester",
+      "action": "Đăng ký tài khoản mới",
+      "created_at": "2026-10-27T04:30:46.083Z"
+    },
+    {
+      "id": "log_1793075446072_zfnw",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-10-27T04:30:46.072Z"
+    },
     {
       "id": "log_1793032057463_ebn3",
       "actor": "Thiện BBH",

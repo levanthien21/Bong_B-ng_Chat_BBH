@@ -71,9 +71,10 @@
           <span class="mono-badge" id="deepseek-badge-status" style="font-size: 9.5px; background: rgba(13, 148, 136, 0.2); color: var(--teal); border: none; margin-left: 2px;">🟢 Gemini Free</span>
         </button>
 
-        <!-- Admin Management Button -->
-        <button class="btn btn-secondary btn-icon btn-sm" id="btn-admin-manage" style="display: none;" title="Phân quyền & Quản lý thành viên">
+        <!-- Admin Management Button (Exclusively for Super Admin thienlv.bbh@gmail.com) -->
+        <button class="btn btn-secondary btn-sm" id="btn-admin-manage" style="display: none; align-items: center; gap: 6px; color: var(--accent); border-color: rgba(217, 119, 87, 0.4); background: rgba(217, 119, 87, 0.08); font-weight: 600;" title="Bảng quản trị Super Admin (thienlv.bbh@gmail.com)">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Quản trị tài khoản</span>
         </button>
 
         <!-- Theme Toggle -->
@@ -887,6 +888,166 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
 
             </div>
 
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL: SUPER ADMIN USER MANAGEMENT & RBAC (THIỆN BBH EXCLUSIVE)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="modal-admin-users">
+    <div class="modal-card" style="max-width: 960px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <div class="brand-logo" style="width: 28px; height: 28px; font-size: 15px; background: rgba(217, 119, 87, 0.15); color: var(--accent);">👑</div>
+          <div>
+            <h2 style="font-size: 14.5px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">
+              <span>Quản trị Phân quyền & Quản lý Tài khoản (Super Admin)</span>
+              <span class="auth-badge-pill" style="background: rgba(217, 119, 87, 0.2); color: var(--accent);">thienlv.bbh@gmail.com</span>
+            </h2>
+            <p style="font-size: 11px; color: var(--text-muted); margin: 2px 0 0 0;">Toàn quyền phân quyền vai trò, mở/khóa tài khoản, tạo tài khoản đồng nghiệp và sao lưu CSDL.</p>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-icon btn-sm" id="btn-close-admin-modal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Tabbed Navigation inside Admin Modal -->
+        <div class="segmented-control" id="admin-modal-tabs" style="width: fit-content; margin-bottom: 4px;">
+          <button class="seg-btn active" data-admin-tab="tab-admin-users">👥 Danh sách tài khoản (<span id="admin-user-total-badge">0</span>)</button>
+          <button class="seg-btn" data-admin-tab="tab-admin-create">➕ Thêm tài khoản mới</button>
+          <button class="seg-btn" data-admin-tab="tab-admin-backup">💾 Sao lưu & Khôi phục CSDL</button>
+        </div>
+
+        <!-- 1. TAB: DANH SÁCH TÀI KHOẢN -->
+        <div id="tab-admin-users-content">
+          <!-- Quick Filter & Summary -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; flex-wrap: wrap;">
+            <div style="position: relative; flex: 1; min-width: 240px;">
+              <input type="text" class="input input-sm" id="admin-search-users" placeholder="🔍 Tìm kiếm theo tên hoặc Gmail..." style="padding-left: 28px; width: 100%;">
+              <span style="position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 11px; opacity: 0.5;">🔍</span>
+            </div>
+            <div style="display: flex; gap: 6px; font-size: 11px;">
+              <span class="mono-badge" id="stat-badge-total" style="background: var(--bg-subtle);">Tổng: 0</span>
+              <span class="mono-badge" id="stat-badge-testers" style="background: rgba(13, 148, 136, 0.15); color: var(--teal);">Tester: 0</span>
+              <span class="mono-badge" id="stat-badge-active" style="background: rgba(5, 150, 105, 0.15); color: var(--success);">Hoạt động: 0</span>
+            </div>
+          </div>
+
+          <!-- Users Table Container -->
+          <div class="admin-table-wrapper" style="border: 1px solid var(--border-subtle); border-radius: 8px; overflow-x: auto; background: var(--bg-surface);">
+            <table class="admin-users-table" style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left; min-width: 720px;">
+              <thead>
+                <tr style="background: var(--bg-subtle); border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 11px;">
+                  <th style="padding: 9px 12px;">Thành viên</th>
+                  <th style="padding: 9px 12px;">Vai trò</th>
+                  <th style="padding: 9px 12px;">Trạng thái</th>
+                  <th style="padding: 9px 12px;">Page ID Chatbot</th>
+                  <th style="padding: 9px 12px;">Lần cuối</th>
+                  <th style="padding: 9px 12px; text-align: right;">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-tbody">
+                <tr>
+                  <td colspan="6" style="padding: 24px; text-align: center; color: var(--text-muted);">Đang tải danh sách người dùng...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2. TAB: THÊM TÀI KHOẢN MỚI -->
+        <div id="tab-admin-create-content" style="display: none;">
+          <form id="form-admin-create-user" style="display: flex; flex-direction: column; gap: 12px; max-width: 580px; margin: 0 auto; padding: 12px 0;">
+            <div style="padding: 10px 14px; background: rgba(13, 148, 136, 0.08); border: 1px solid rgba(13, 148, 136, 0.25); border-radius: 8px; font-size: 11.5px; line-height: 1.45; color: var(--text-secondary);">
+              👤 <b>Tạo tài khoản trước cho đồng nghiệp:</b> Bạn có thể tạo tài khoản và gửi thông tin đăng nhập cho đồng nghiệp vào kiểm thử ngay.
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Họ và tên đồng nghiệp:</label>
+              <input type="text" class="input" id="admin-create-name" placeholder="Ví dụ: Nguyễn Văn A" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Địa chỉ Gmail:</label>
+              <input type="email" class="input" id="admin-create-email" placeholder="dongnghiep@gmail.com" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Mật khẩu khởi tạo:</label>
+              <input type="text" class="input" id="admin-create-password" value="123456" placeholder="Mặc định: 123456" required minlength="6">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Phân quyền vai trò:</label>
+              <select class="select" id="admin-create-role">
+                <option value="tester" selected>Chuyên viên Test (Tester) — Mặc định</option>
+                <option value="leader">Trưởng nhóm QA (Leader)</option>
+                <option value="viewer">Quan sát viên (Viewer — chỉ xem)</option>
+                <option value="admin">Quản trị viên (Admin)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Page ID hoặc Mã nhúng Bong bóng chat riêng (Tùy chọn):</label>
+              <textarea class="textarea" id="admin-create-embed" rows="2" placeholder="Để trống nếu đồng nghiệp sẽ tự nhập sau..." style="font-family: var(--font-mono); font-size: 11px;"></textarea>
+              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">
+                💡 Nếu để trống, đồng nghiệp sẽ thấy giao diện độc lập và tự nhập Page ID của họ, tuyệt đối không bị dính vào bong bóng chat của Admin.
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top: 6px; padding: 10px; font-weight: 600;">
+              <span>➕ Tạo tài khoản & Cấp quyền</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- 3. TAB: SAO LƯU & KHÔI PHỤC CSDL -->
+        <div id="tab-admin-backup-content" style="display: none;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px;">
+            <!-- Backup Card -->
+            <div style="border: 1px solid var(--border-subtle); border-radius: 8px; padding: 16px; background: var(--bg-surface); display: flex; flex-direction: column; justify-content: space-between; gap: 12px;">
+              <div>
+                <div style="font-size: 18px; margin-bottom: 6px;">📥</div>
+                <h4 style="margin: 0 0 6px 0; font-size: 13.5px; font-weight: 700;">Sao lưu CSDL (Download JSON)</h4>
+                <p style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.45; margin: 0;">
+                  Xuất toàn bộ danh sách tài khoản, vai trò, lịch sử kiểm thử và cấu hình ra file <code>database.json</code> để lưu trữ an toàn trên máy tính.
+                </p>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-admin-export-db" style="width: 100%; justify-content: center; font-weight: 600;">
+                <span>📥 Tải file sao lưu CSDL (.json)</span>
+              </button>
+            </div>
+
+            <!-- Restore Card -->
+            <div style="border: 1px solid var(--border-subtle); border-radius: 8px; padding: 16px; background: var(--bg-surface); display: flex; flex-direction: column; justify-content: space-between; gap: 12px;">
+              <div>
+                <div style="font-size: 18px; margin-bottom: 6px;">📤</div>
+                <h4 style="margin: 0 0 6px 0; font-size: 13.5px; font-weight: 700;">Khôi phục CSDL (Import JSON)</h4>
+                <p style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.45; margin: 0;">
+                  Chọn file <code>database.json</code> đã sao lưu trước đó để nạp lại đầy đủ mọi tài khoản và dữ liệu ngay lập tức.
+                </p>
+              </div>
+              <div>
+                <input type="file" id="input-admin-import-file" accept=".json" style="display: none;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-admin-import-trigger" style="width: 100%; justify-content: center; font-weight: 600;">
+                  <span>📤 Chọn file JSON để khôi phục</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Persistence Info Card -->
+          <div style="margin-top: 14px; padding: 12px 14px; border-radius: 8px; background: rgba(217, 119, 87, 0.07); border: 1px solid rgba(217, 119, 87, 0.2); font-size: 11.5px; line-height: 1.5; color: var(--text-secondary);">
+            🛡️ <b>Cơ chế Tự Phục Hồi & Bảo Toàn Dữ Liệu:</b>
+            <ul style="margin: 4px 0 0 16px; padding: 0;">
+              <li>Mỗi tài khoản khi đăng ký/đăng nhập đều được cấp một <b>Mã chứng thực HMAC (Account Voucher)</b> ký số bí mật.</li>
+              <li>Nếu máy chủ Vercel hoặc server khởi động lại, tài khoản sẽ được <b>tự động tái lập (Self-healing Rehydrate)</b> mà không bao giờ bị báo "Tài khoản không tồn tại".</li>
+              <li>Tài khoản Super Admin <code>thienlv.bbh@gmail.com</code> được bảo vệ vĩnh viễn, không ai có thể xóa hay hạ quyền.</li>
+            </ul>
           </div>
         </div>
 
