@@ -411,10 +411,6 @@
     btnTranscriptPasteClip: document.getElementById('btn-transcript-paste-clip'),
     btnTranscriptSendReply: document.getElementById('btn-transcript-send-reply'),
 
-    // Custom Luxury Fluid Cursor
-    cursorFollower: document.getElementById('cursor-follower'),
-    cursorDot: document.getElementById('cursor-dot'),
-
     toastHost: document.getElementById('toast-host')
   };
 
@@ -3991,71 +3987,8 @@
     }
   }
 
-  // ==========================================================================
-  // CUSTOM LUXURY FLUID CURSOR (SMOOTH SPRING INTERPOLATION)
-  // ==========================================================================
-
-  function initCustomCursor() {
-    const dot = el.cursorDot;
-    const follower = el.cursorFollower;
-    if (!dot || !follower) return;
-
-    let mouseX = -100, mouseY = -100;
-    let followerX = -100, followerY = -100;
-    let isVisible = false;
-
-    window.addEventListener('mousemove', (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      if (!isVisible) {
-        isVisible = true;
-        dot.style.opacity = '1';
-        follower.style.opacity = '1';
-      }
-      dot.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
-    });
-
-    document.addEventListener('mouseleave', () => {
-      isVisible = false;
-      dot.style.opacity = '0';
-      follower.style.opacity = '0';
-    });
-
-    window.addEventListener('mousedown', () => {
-      follower.classList.add('clicking');
-    });
-
-    window.addEventListener('mouseup', () => {
-      follower.classList.remove('clicking');
-    });
-
-    const interactiveSelector = 'button, a, input, select, textarea, .tab-pill, .seg-btn, .qa-nav-btn, .clean-card, .user-pill, .chip-xs, .demo-chip';
-    document.addEventListener('mouseover', (e) => {
-      if (e.target.closest(interactiveSelector)) {
-        follower.classList.add('hovering');
-      }
-    });
-
-    document.addEventListener('mouseout', (e) => {
-      if (e.target.closest(interactiveSelector)) {
-        follower.classList.remove('hovering');
-      }
-    });
-
-    function renderLoop() {
-      if (isVisible) {
-        followerX += (mouseX - followerX) * 0.22;
-        followerY += (mouseY - followerY) * 0.22;
-        follower.style.transform = `translate(${followerX}px, ${followerY}px) translate(-50%, -50%)`;
-      }
-      requestAnimationFrame(renderLoop);
-    }
-    requestAnimationFrame(renderLoop);
-  }
-
   async function bootstrap() {
     initTheme();
-    initCustomCursor();
 
     try {
       const boot = await api('/api/bootstrap');

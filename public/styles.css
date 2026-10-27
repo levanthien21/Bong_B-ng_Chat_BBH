@@ -1390,69 +1390,6 @@ body.mode-zen .side-panel {
   .side-panel { display: none; }
 }
 
-/* ==========================================================================
-   CUSTOM LUXURY FLUID CURSOR & SMOOTH ANIMATIONS
-   ========================================================================== */
-
-.custom-cursor-dot {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 6px;
-  height: 6px;
-  background-color: var(--accent);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 999999;
-  transform: translate(-50%, -50%);
-  transition: opacity 0.2s ease, transform 0.08s ease-out;
-  will-change: transform;
-}
-
-.custom-cursor-follower {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 32px;
-  height: 32px;
-  border: 1.5px solid rgba(217, 119, 87, 0.45);
-  background: rgba(217, 119, 87, 0.04);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 999998;
-  transform: translate(-50%, -50%);
-  transition: width 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-              height 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-              background-color 0.24s ease,
-              border-color 0.24s ease,
-              box-shadow 0.24s ease,
-              opacity 0.2s ease;
-  backdrop-filter: blur(0.5px);
-  will-change: transform, width, height;
-}
-
-.custom-cursor-follower.hovering {
-  width: 48px;
-  height: 48px;
-  border-color: var(--accent);
-  background: rgba(217, 119, 87, 0.12);
-  box-shadow: 0 0 16px rgba(217, 119, 87, 0.25);
-}
-
-.custom-cursor-follower.clicking {
-  width: 22px;
-  height: 22px;
-  border-color: var(--accent);
-  background: rgba(217, 119, 87, 0.3);
-  transform: translate(-50%, -50%) scale(0.9);
-}
-
-@media (pointer: coarse), (max-width: 900px) {
-  .custom-cursor-dot, .custom-cursor-follower {
-    display: none !important;
-  }
-}
-
 /* Micro-animations & Interactive Elevations */
 .clean-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
