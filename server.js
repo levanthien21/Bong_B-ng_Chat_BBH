@@ -53,10 +53,13 @@ function generateAccountVoucher(user) {
     const payload = {
       id: user.id || ('usr_' + Date.now()),
       email: String(user.email).trim().toLowerCase(),
+      username: String(user.username || user.email.split('@')[0]).trim().toLowerCase(),
       name: user.name || (user.email ? user.email.split('@')[0] : 'User'),
       role: isSuperAdmin(user) ? 'admin' : (user.role || 'tester'),
       page_id: user.page_id || '',
       embed_code: user.embed_code || '',
+      embed_list: Array.isArray(user.embed_list) ? user.embed_list : [],
+      active_embed_id: user.active_embed_id || '',
       password_hash: user.password_hash,
       created_at: user.created_at || new Date().toISOString()
     };
@@ -89,30 +92,72 @@ function verifyAccountVoucher(voucherStr) {
   return null;
 }
 
-function generateToken(userId = '') {
+function generateToken(userOrId = '') {
   const ts = Date.now().toString(36);
-  const rawId = String(userId || crypto.randomBytes(8).toString('hex'));
-  const data = `${rawId}.${ts}`;
+  let rawId = '';
+  let userSnapshot = '';
+
+  if (userOrId && typeof userOrId === 'object') {
+    rawId = String(userOrId.id || 'usr_' + Date.now());
+    const minimal = {
+      id: rawId,
+      email: String(userOrId.email || '').trim().toLowerCase(),
+      username: String(userOrId.username || userOrId.email?.split('@')[0] || '').trim().toLowerCase(),
+      name: userOrId.name || 'User',
+      role: isSuperAdmin(userOrId) ? 'admin' : (userOrId.role || 'tester'),
+      page_id: userOrId.page_id || '',
+      embed_code: userOrId.embed_code || '',
+      embed_list: Array.isArray(userOrId.embed_list) ? userOrId.embed_list : [],
+      active_embed_id: userOrId.active_embed_id || '',
+      password_hash: userOrId.password_hash || '',
+      created_at: userOrId.created_at || new Date().toISOString()
+    };
+    userSnapshot = Buffer.from(JSON.stringify(minimal), 'utf8').toString('base64url');
+  } else {
+    rawId = String(userOrId || crypto.randomBytes(8).toString('hex'));
+  }
+
+  const data = userSnapshot ? `${rawId}.${ts}.${userSnapshot}` : `${rawId}.${ts}`;
   const sig = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex').slice(0, 32);
-  return `bbh_${rawId}.${ts}.${sig}`;
+  return userSnapshot ? `bbh_${rawId}.${ts}.${userSnapshot}.${sig}` : `bbh_${rawId}.${ts}.${sig}`;
 }
 
 function verifySignedToken(token) {
   if (!token || typeof token !== 'string' || !token.startsWith('bbh_')) return null;
   const parts = token.slice(4).split('.');
-  if (parts.length !== 3) return null;
-  const [userId, ts, sig] = parts;
-  const data = `${userId}.${ts}`;
-  const expectedSig = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex').slice(0, 32);
-  try {
-    if (crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
-      const issuedAt = parseInt(ts, 36);
-      if (!isNaN(issuedAt) && (Date.now() - issuedAt) < 30 * 24 * 60 * 60 * 1000) {
-        return userId;
+
+  if (parts.length === 3) {
+    const [userId, ts, sig] = parts;
+    const data = `${userId}.${ts}`;
+    const expectedSig = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex').slice(0, 32);
+    try {
+      if (crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
+        const issuedAt = parseInt(ts, 36);
+        if (!isNaN(issuedAt) && (Date.now() - issuedAt) < 30 * 24 * 60 * 60 * 1000) {
+          return { userId, snapshot: null };
+        }
       }
+    } catch (e) {
+      return null;
     }
-  } catch (e) {
-    return null;
+  } else if (parts.length === 4) {
+    const [userId, ts, userSnapshot, sig] = parts;
+    const data = `${userId}.${ts}.${userSnapshot}`;
+    const expectedSig = crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('hex').slice(0, 32);
+    try {
+      if (crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
+        const issuedAt = parseInt(ts, 36);
+        if (!isNaN(issuedAt) && (Date.now() - issuedAt) < 30 * 24 * 60 * 60 * 1000) {
+          let snapshot = null;
+          try {
+            snapshot = JSON.parse(Buffer.from(userSnapshot, 'base64url').toString('utf8'));
+          } catch (e) {}
+          return { userId, snapshot };
+        }
+      }
+    } catch (e) {
+      return null;
+    }
   }
   return null;
 }
@@ -395,6 +440,30 @@ function loadDB() {
         }
       } catch (be) {
         console.warn('[DB] Backup load notice:', be.message);
+      }
+    }
+
+    // Ensure all users have multi-embed list initialized
+    for (const u of db.users) {
+      if (!Array.isArray(u.embed_list)) {
+        u.embed_list = [];
+        if (u.embed_code || u.page_id) {
+          const pid = u.page_id || extractPageId(u.embed_code) || '';
+          const isThien = isSuperAdmin(u);
+          u.embed_list.push({
+            id: isThien ? 'emb_thien_default' : ('emb_' + (u.id || Date.now()) + '_1'),
+            name: isThien ? 'Chatbot Thiện BBH (Mặc định)' : 'Chatbot chính',
+            page_id: pid,
+            embed_code: u.embed_code || pid,
+            is_active: true,
+            created_at: u.created_at || new Date().toISOString()
+          });
+          u.active_embed_id = u.embed_list[0].id;
+        }
+      }
+      if (!u.active_embed_id && u.embed_list && u.embed_list.length > 0) {
+        u.active_embed_id = u.embed_list[0].id;
+        u.embed_list[0].is_active = true;
       }
     }
 
@@ -2103,10 +2172,18 @@ function sanitizeUser(user) {
   const roleObj = db.roles[user.role] || db.roles.tester;
   const aiCfg = getEffectiveAIConfig(user);
   const pageId = user.page_id || extractPageId(user.embed_code) || '';
+  const embedList = Array.isArray(user.embed_list) ? user.embed_list : [];
+  let activeEmbedId = user.active_embed_id || '';
+  if (!activeEmbedId && embedList.length > 0) {
+    const activeItem = embedList.find(b => b.is_active) || embedList[0];
+    activeEmbedId = activeItem.id;
+  }
   return {
     ...safe,
     page_id: pageId,
     embed_code: user.embed_code || '',
+    embed_list: embedList,
+    active_embed_id: activeEmbedId,
     has_page_id: Boolean(pageId),
     ai_model: aiCfg.model,
     ai_provider: aiCfg.provider,
@@ -2189,12 +2266,39 @@ function getAuthenticatedUser(req) {
   }
 
   // 2. Stateless cryptographic HMAC verification (survives Vercel serverless cold starts & server restarts)
-  const userIdFromToken = verifySignedToken(token);
-  if (userIdFromToken) {
+  const tokenPayload = verifySignedToken(token);
+  if (tokenPayload) {
+    const userIdFromToken = typeof tokenPayload === 'object' ? tokenPayload.userId : tokenPayload;
+    const snapshot = typeof tokenPayload === 'object' ? tokenPayload.snapshot : null;
+
     let user = db.users.find(u => u.id === userIdFromToken);
     if (!user && userIdFromToken === 'usr_thien_admin') {
       user = db.users.find(u => isSuperAdmin(u));
     }
+
+    // Self-healing: if container rebooted or cold-started, rehydrate user from signed snapshot
+    if (!user && snapshot && snapshot.id) {
+      user = {
+        id: snapshot.id,
+        email: snapshot.email,
+        username: snapshot.username || (snapshot.email ? snapshot.email.split('@')[0] : 'user'),
+        name: snapshot.name || 'User',
+        role: isSuperAdmin(snapshot) ? 'admin' : (snapshot.role || 'tester'),
+        status: 'active',
+        page_id: snapshot.page_id || '',
+        embed_code: snapshot.embed_code || '',
+        embed_list: Array.isArray(snapshot.embed_list) ? snapshot.embed_list : [],
+        active_embed_id: snapshot.active_embed_id || '',
+        avatar_color: '#0D9488',
+        password_hash: snapshot.password_hash || '',
+        created_at: snapshot.created_at || new Date().toISOString(),
+        last_login: new Date().toISOString(),
+        tests_submitted: 0
+      };
+      db.users.push(user);
+      saveDB(db);
+    }
+
     if (user && user.status === 'active') {
       if (!db.sessions) db.sessions = {};
       db.sessions[token] = { user_id: user.id, created_at: new Date().toISOString() };
@@ -2287,26 +2391,32 @@ async function handleRequest(req, res) {
       // Self-healing: If user not found in in-memory DB (cold start/reboot), check if a valid cryptographically signed voucher was provided
       if (!user && voucher) {
         const verified = verifyAccountVoucher(voucher);
-        if (verified && (verified.email.toLowerCase() === identifier || (verified.username && verified.username.toLowerCase() === identifier))) {
-          if (verified.password_hash === hashPassword(password)) {
-            user = {
-              id: verified.id || ('usr_' + Date.now()),
-              name: verified.name || identifier.split('@')[0],
-              email: verified.email.toLowerCase(),
-              username: verified.email.split('@')[0],
-              role: verified.email.toLowerCase() === SUPER_ADMIN_EMAIL ? 'admin' : (verified.role || 'tester'),
-              status: 'active',
-              page_id: verified.page_id || '',
-              embed_code: verified.embed_code || '',
-              avatar_color: '#0D9488',
-              password_hash: verified.password_hash,
-              created_at: verified.created_at || new Date().toISOString(),
-              last_login: new Date().toISOString(),
-              tests_submitted: 0
-            };
-            db.users.push(user);
-            saveDB(db);
-            addAuditLog(user.name, user.role, 'Khôi phục tài khoản tự động từ mã chứng thực bảo mật');
+        if (verified) {
+          const vEmail = String(verified.email || '').trim().toLowerCase();
+          const vUsername = String(verified.username || vEmail.split('@')[0]).trim().toLowerCase();
+          if (vEmail === identifier || vUsername === identifier) {
+            if (verified.password_hash === hashPassword(password)) {
+              user = {
+                id: verified.id || ('usr_' + Date.now()),
+                name: verified.name || identifier.split('@')[0],
+                email: vEmail,
+                username: vUsername,
+                role: vEmail === SUPER_ADMIN_EMAIL ? 'admin' : (verified.role || 'tester'),
+                status: 'active',
+                page_id: verified.page_id || '',
+                embed_code: verified.embed_code || '',
+                embed_list: Array.isArray(verified.embed_list) ? verified.embed_list : [],
+                active_embed_id: verified.active_embed_id || '',
+                avatar_color: '#0D9488',
+                password_hash: verified.password_hash,
+                created_at: verified.created_at || new Date().toISOString(),
+                last_login: new Date().toISOString(),
+                tests_submitted: 0
+              };
+              db.users.push(user);
+              saveDB(db);
+              addAuditLog(user.name, user.role, 'Khôi phục tài khoản tự động từ mã chứng thực bảo mật');
+            }
           }
         }
       }
@@ -2344,7 +2454,7 @@ async function handleRequest(req, res) {
         return sendJSON(res, 403, { ok: false, message: 'Tài khoản của bạn hiện đang bị tạm khóa. Vui lòng liên hệ Admin thienlv.bbh@gmail.com.' });
       }
 
-      const token = generateToken(user.id);
+      const token = generateToken(user);
       user.last_login = new Date().toISOString();
       db.sessions[token] = { user_id: user.id, created_at: new Date().toISOString() };
       addAuditLog(user.name, user.role, 'Đăng nhập vào hệ thống');
@@ -2378,7 +2488,7 @@ async function handleRequest(req, res) {
 
       user.password_hash = hashPassword(newPassword);
       user.last_login = new Date().toISOString();
-      const token = generateToken(user.id);
+      const token = generateToken(user);
       db.sessions[token] = { user_id: user.id, created_at: new Date().toISOString() };
       addAuditLog(user.name, user.role, 'Đặt lại mật khẩu thành công');
       saveDB(db);
@@ -2436,6 +2546,21 @@ async function handleRequest(req, res) {
       const userPageId = extractedPageId || '';
       const userEmbedCode = embedInput || '';
 
+      const embedList = [];
+      let activeEmbedId = '';
+      if (userPageId || userEmbedCode) {
+        const defaultEmbed = {
+          id: 'emb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          name: isThien ? 'Chatbot Thiện BBH (Mặc định)' : 'Chatbot chính',
+          page_id: userPageId,
+          embed_code: userEmbedCode,
+          is_active: true,
+          created_at: new Date().toISOString()
+        };
+        embedList.push(defaultEmbed);
+        activeEmbedId = defaultEmbed.id;
+      }
+
       const newUser = {
         id: isThien ? 'usr_thien_admin' : ('usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6)),
         name,
@@ -2445,6 +2570,8 @@ async function handleRequest(req, res) {
         role: isThien ? 'admin' : 'tester', // Strictly force tester for all others
         page_id: userPageId,
         embed_code: userEmbedCode,
+        embed_list: embedList,
+        active_embed_id: activeEmbedId,
         ai_model: detectedModel,
         ai_api_key: apiKey,
         gemini_api_key: geminiKey,
@@ -2469,7 +2596,7 @@ async function handleRequest(req, res) {
       };
 
       db.users.push(newUser);
-      const token = generateToken(newUser.id);
+      const token = generateToken(newUser);
       db.sessions[token] = { user_id: newUser.id, created_at: new Date().toISOString() };
       addAuditLog(newUser.name, newUser.role, 'Đăng ký tài khoản mới');
       saveDB(db);
@@ -2507,21 +2634,217 @@ async function handleRequest(req, res) {
       if (body.deepseek_api_key !== undefined) {
         auth.user.deepseek_api_key = String(body.deepseek_api_key).trim().replace(/^["']|["']$/g, '');
       }
-      if (body.embed_code !== undefined) {
-        const code = String(body.embed_code).trim();
+      const rawCode = body.embed_code !== undefined ? body.embed_code : body.embedCode;
+      const rawPageId = body.page_id !== undefined ? body.page_id : body.pageId;
+
+      if (rawCode !== undefined) {
+        const code = String(rawCode).trim();
         auth.user.embed_code = code;
         const pid = extractPageId(code);
         if (pid) auth.user.page_id = pid;
       }
-      if (body.page_id !== undefined && String(body.page_id).trim()) {
-        const pid = extractPageId(String(body.page_id).trim());
+      if (rawPageId !== undefined && String(rawPageId).trim()) {
+        const pid = extractPageId(String(rawPageId).trim());
         if (pid) auth.user.page_id = pid;
       }
+
+      // Synchronize with user's embed_list
+      if (!Array.isArray(auth.user.embed_list)) auth.user.embed_list = [];
+      const currentPid = auth.user.page_id || extractPageId(auth.user.embed_code) || '';
+      if (currentPid) {
+        let activeItem = auth.user.embed_list.find(b => b.id === auth.user.active_embed_id);
+        if (activeItem) {
+          activeItem.page_id = currentPid;
+          activeItem.embed_code = auth.user.embed_code || currentPid;
+          if (body.name) activeItem.name = String(body.name).trim();
+        } else {
+          const newItem = {
+            id: 'emb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            name: body.name || 'Chatbot chính',
+            page_id: currentPid,
+            embed_code: auth.user.embed_code || currentPid,
+            is_active: true,
+            created_at: new Date().toISOString()
+          };
+          auth.user.embed_list.forEach(b => { b.is_active = false; });
+          auth.user.embed_list.push(newItem);
+          auth.user.active_embed_id = newItem.id;
+        }
+      }
+
       saveDB(db);
       return sendJSON(res, 200, {
         ok: true,
         user: sanitizeUser(auth.user),
+        voucher: generateAccountVoucher(auth.user),
         message: 'Đã cập nhật cấu hình thành công.'
+      });
+    }
+
+    // MULTI-EMBED MANAGEMENT ROUTES
+    // 1. Get all embeds of current user
+    if (pathname === '/api/user/embeds' && req.method === 'GET') {
+      if (!Array.isArray(auth.user.embed_list)) auth.user.embed_list = [];
+      return sendJSON(res, 200, {
+        ok: true,
+        embeds: auth.user.embed_list,
+        active_id: auth.user.active_embed_id || (auth.user.embed_list[0] ? auth.user.embed_list[0].id : '')
+      });
+    }
+
+    // 2. Add a new embed
+    if (pathname === '/api/user/embeds' && req.method === 'POST') {
+      const body = await parseBody(req);
+      const name = String(body.name || '').trim();
+      const rawCode = String(body.embed_code || body.embedCode || body.page_id || body.pageId || '').trim();
+      const pageId = extractPageId(rawCode);
+
+      if (!pageId && !rawCode) {
+        return sendJSON(res, 400, { ok: false, message: 'Vui lòng nhập mã nhúng script hoặc Page ID của Chatbot.' });
+      }
+
+      if (!Array.isArray(auth.user.embed_list)) auth.user.embed_list = [];
+
+      const newId = 'emb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+      const isFirst = auth.user.embed_list.length === 0;
+      const setAsActive = body.setActive !== undefined ? Boolean(body.setActive) : isFirst;
+
+      const newEmbed = {
+        id: newId,
+        name: name || `Chatbot #${auth.user.embed_list.length + 1} (${pageId || 'Custom'})`,
+        page_id: pageId || rawCode,
+        embed_code: rawCode,
+        is_active: setAsActive,
+        created_at: new Date().toISOString()
+      };
+
+      if (setAsActive) {
+        auth.user.embed_list.forEach(b => { b.is_active = false; });
+        auth.user.active_embed_id = newId;
+        auth.user.page_id = newEmbed.page_id;
+        auth.user.embed_code = newEmbed.embed_code;
+      }
+
+      auth.user.embed_list.push(newEmbed);
+      saveDB(db);
+      addAuditLog(auth.user.name, auth.user.role, `Thêm chatbot mới: ${newEmbed.name}`);
+
+      return sendJSON(res, 201, {
+        ok: true,
+        embed: newEmbed,
+        embeds: auth.user.embed_list,
+        active_id: auth.user.active_embed_id,
+        user: sanitizeUser(auth.user),
+        voucher: generateAccountVoucher(auth.user),
+        message: `Đã thêm chatbot "${newEmbed.name}" thành công!`
+      });
+    }
+
+    // 3. Switch active embed
+    if (pathname === '/api/user/embeds/active' && req.method === 'PATCH') {
+      const body = await parseBody(req);
+      const embedId = String(body.id || body.embed_id || '').trim();
+      if (!Array.isArray(auth.user.embed_list)) auth.user.embed_list = [];
+
+      const target = auth.user.embed_list.find(b => b.id === embedId);
+      if (!target) {
+        return sendJSON(res, 404, { ok: false, message: 'Không tìm thấy chatbot được chọn.' });
+      }
+
+      auth.user.embed_list.forEach(b => { b.is_active = (b.id === embedId); });
+      auth.user.active_embed_id = target.id;
+      auth.user.page_id = target.page_id;
+      auth.user.embed_code = target.embed_code;
+
+      saveDB(db);
+      addAuditLog(auth.user.name, auth.user.role, `Chuyển sang chatbot: ${target.name}`);
+
+      return sendJSON(res, 200, {
+        ok: true,
+        active_id: target.id,
+        active_bot: target,
+        embeds: auth.user.embed_list,
+        user: sanitizeUser(auth.user),
+        voucher: generateAccountVoucher(auth.user),
+        message: `Đã kích hoạt chatbot "${target.name}".`
+      });
+    }
+
+    // 4. Update an existing embed by ID
+    if (pathname.startsWith('/api/user/embeds/') && req.method === 'PATCH' && pathname !== '/api/user/embeds/active') {
+      const embedId = pathname.replace('/api/user/embeds/', '').trim();
+      const body = await parseBody(req);
+      if (!Array.isArray(auth.user.embed_list)) auth.user.embed_list = [];
+
+      const target = auth.user.embed_list.find(b => b.id === embedId);
+      if (!target) {
+        return sendJSON(res, 404, { ok: false, message: 'Không tìm thấy chatbot.' });
+      }
+
+      if (body.name !== undefined) target.name = String(body.name).trim() || target.name;
+      const rawCode = body.embed_code !== undefined ? body.embed_code : body.embedCode;
+      if (rawCode !== undefined) {
+        target.embed_code = String(rawCode).trim();
+        const pid = extractPageId(target.embed_code);
+        if (pid) target.page_id = pid;
+      }
+      if (body.page_id !== undefined || body.pageId !== undefined) {
+        const pid = extractPageId(String(body.page_id || body.pageId).trim());
+        if (pid) target.page_id = pid;
+      }
+
+      if (auth.user.active_embed_id === target.id) {
+        auth.user.page_id = target.page_id;
+        auth.user.embed_code = target.embed_code;
+      }
+
+      saveDB(db);
+      addAuditLog(auth.user.name, auth.user.role, `Cập nhật chatbot: ${target.name}`);
+
+      return sendJSON(res, 200, {
+        ok: true,
+        embed: target,
+        embeds: auth.user.embed_list,
+        user: sanitizeUser(auth.user),
+        voucher: generateAccountVoucher(auth.user),
+        message: `Đã cập nhật chatbot "${target.name}".`
+      });
+    }
+
+    // 5. Delete an embed by ID
+    if (pathname.startsWith('/api/user/embeds/') && req.method === 'DELETE') {
+      const embedId = pathname.replace('/api/user/embeds/', '').trim();
+      if (!Array.isArray(auth.user.embed_list)) auth.user.embed_list = [];
+
+      const index = auth.user.embed_list.findIndex(b => b.id === embedId);
+      if (index === -1) {
+        return sendJSON(res, 404, { ok: false, message: 'Không tìm thấy chatbot để xóa.' });
+      }
+
+      const deleted = auth.user.embed_list.splice(index, 1)[0];
+      if (auth.user.active_embed_id === embedId) {
+        if (auth.user.embed_list.length > 0) {
+          auth.user.embed_list[0].is_active = true;
+          auth.user.active_embed_id = auth.user.embed_list[0].id;
+          auth.user.page_id = auth.user.embed_list[0].page_id;
+          auth.user.embed_code = auth.user.embed_list[0].embed_code;
+        } else {
+          auth.user.active_embed_id = '';
+          auth.user.page_id = '';
+          auth.user.embed_code = '';
+        }
+      }
+
+      saveDB(db);
+      addAuditLog(auth.user.name, auth.user.role, `Xóa chatbot: ${deleted.name}`);
+
+      return sendJSON(res, 200, {
+        ok: true,
+        embeds: auth.user.embed_list,
+        active_id: auth.user.active_embed_id,
+        user: sanitizeUser(auth.user),
+        voucher: generateAccountVoucher(auth.user),
+        message: `Đã xóa chatbot "${deleted.name}".`
       });
     }
 

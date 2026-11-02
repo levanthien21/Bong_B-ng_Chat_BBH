@@ -351,6 +351,34 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
 
       <!-- CENTER STAGE: HOÀN TOÀN TỐI GIẢN, CHỈ GIỮ LẠI BONG BÓNG CHAT -->
       <main class="center-stage">
+        <!-- HOMEPAGE CHATBOT SWITCHER & QUICK MANAGEMENT BAR -->
+        <div class="stage-embed-bar" id="stage-embed-bar">
+          <div class="embed-bar-left">
+            <span class="embed-status-dot" id="embed-status-dot"></span>
+            <span class="embed-bar-label">Chatbot đang test:</span>
+            <div class="embed-select-wrap">
+              <select id="stage-embed-select" class="stage-embed-select" title="Chọn Chatbot để nạp vào khung chat">
+                <option value="">-- Chưa chọn Chatbot --</option>
+              </select>
+            </div>
+            <div class="embed-active-pill" id="embed-active-pill" title="Page ID của Chatbot đang chọn">
+              <span>Page ID: <code id="stage-active-page-id">---</code></span>
+              <button type="button" class="btn-copy-id" id="btn-copy-active-page-id" title="Sao chép Page ID">📋</button>
+            </div>
+          </div>
+          <div class="embed-bar-right">
+            <button type="button" class="btn btn-primary btn-xs" id="btn-quick-add-embed" title="Thêm chatbot mới với mã nhúng khác">
+              <span>➕ Thêm Chatbot</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-xs" id="btn-quick-edit-embed" title="Chỉnh sửa mã nhúng hoặc tên chatbot hiện tại">
+              <span>✏️ Sửa / Đổi mã</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-xs" id="btn-open-manage-embeds" title="Quản lý danh sách toàn bộ chatbot">
+              <span>📋 Quản lý (<span id="embed-count-badge">0</span>)</span>
+            </button>
+          </div>
+        </div>
+
         <div class="stage-canvas-area">
           <!-- BONG BÓNG CHAT NHÚNG TẠI TRUNG TÂM — 100% SẠCH SẼ, KHÔNG VĂN BẢN GÂY NHIỄU -->
           <div id="BBH-EMBED-CONTAINER"></div>
@@ -362,8 +390,9 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
             </div>
             <h3 style="font-size: 14.5px; font-weight: 700; color: var(--text-primary); margin: 0;">Chưa cấu hình mã nhúng Chatbot</h3>
             <p style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
-              Mỗi thành viên sử dụng một chatbot AI riêng biệt. Vui lòng dán mã nhúng script hoặc Page ID của bạn để tải bong bóng chat.
+              Mỗi thành viên có thể cấu hình nhiều chatbot khác nhau để kiểm thử. Dán mã nhúng script hoặc Page ID của bạn để tải bong bóng chat.
             </p>
+            <input type="text" class="input input-sm" id="setup-embed-name" placeholder="Đặt tên chatbot (Ví dụ: Chatbot Tư vấn Homestay)..." style="width: 100%; font-size: 12px;">
             <textarea class="textarea" id="setup-embed-input" placeholder="Dán mã nhúng script hoặc Page ID (Ví dụ: 095817282564177)..." style="width: 100%; min-height: 70px; font-size: 11.5px; font-family: var(--font-mono);"></textarea>
             <button type="button" class="btn btn-primary btn-sm" id="btn-save-setup-embed" style="width: 100%; justify-content: center;">
               <span>💾 Lưu & Khởi tạo Khung Chat</span>
@@ -1049,6 +1078,89 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
               <li>Tài khoản Super Admin <code>thienlv.bbh@gmail.com</code> được bảo vệ vĩnh viễn, không ai có thể xóa hay hạ quyền.</li>
             </ul>
           </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL: MULTI-EMBED CHATBOT MANAGEMENT (TRANG CHỦ & CẤU HÌNH NHIỀU BOT)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="modal-manage-embeds">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <div class="brand-logo" style="width: 28px; height: 28px; font-size: 15px; background: rgba(13, 148, 136, 0.15); color: var(--teal);">🤖</div>
+          <div>
+            <h2 style="font-size: 14.5px; font-weight: 700; margin: 0;">Quản lý Danh sách Link Nhúng & Chatbot Test</h2>
+            <p style="font-size: 11px; color: var(--text-muted); margin: 0;">Thêm nhiều chatbot khác nhau, chuyển đổi nhanh trực tiếp tại Trang chủ</p>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-icon btn-sm" id="btn-close-manage-embeds">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Navigation Tabs inside Embed Modal -->
+        <div class="segmented-control" id="embed-modal-tabs" style="width: fit-content; margin-bottom: 12px;">
+          <button class="seg-btn active" data-embed-tab="tab-list-embeds">📋 Danh sách Chatbot (<span id="modal-tab-embed-count">0</span>)</button>
+          <button class="seg-btn" data-embed-tab="tab-add-embed">➕ Thêm Chatbot mới</button>
+        </div>
+
+        <!-- TAB 1: Danh sách Chatbot -->
+        <div class="embed-modal-view" id="view-list-embeds">
+          <div id="embed-list-container" class="embed-cards-list">
+            <!-- Dynamic embed cards rendered by app.js -->
+          </div>
+          <div id="embed-empty-notice" style="display: none; padding: 24px; text-align: center; color: var(--text-muted); font-size: 12px; background: var(--bg-subtle); border-radius: 8px;">
+            Chưa có chatbot nào. Bấm tab <b>"➕ Thêm Chatbot mới"</b> để thêm chatbot đầu tiên.
+          </div>
+        </div>
+
+        <!-- TAB 2: Thêm Chatbot mới -->
+        <div class="embed-modal-view" id="view-add-embed" style="display: none;">
+          <form id="form-add-embed" style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="form-group">
+              <label class="form-label">Tên Chatbot gợi nhớ:</label>
+              <input type="text" class="input" id="add-embed-name" placeholder="VD: Chatbot Tư vấn Homestay, Chatbot Spa Vũng Tàu..." required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mã nhúng script hoặc Page ID (Botbanhang):</label>
+              <textarea class="textarea" id="add-embed-code" rows="3" placeholder="Dán mã nhúng script hoặc Page ID (Ví dụ: 095817282564177)..." style="font-family: var(--font-mono); font-size: 11px;" required></textarea>
+              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">
+                💡 Hệ thống sẽ tự động trích xuất Page ID chuẩn từ mã nhúng của bạn.
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; margin-top: 2px;">
+              <input type="checkbox" id="add-embed-set-active" checked style="accent-color: var(--teal); cursor: pointer; width: 15px; height: 15px;">
+              <label for="add-embed-set-active" style="cursor: pointer; font-weight: 600; color: var(--text-primary);">Kích hoạt chatbot này vào khung test ngay sau khi lưu</label>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 6px; padding: 9px; font-weight: 600;">
+              <span>💾 Lưu & Thêm vào Danh Sách</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- SUB-VIEW: Chỉnh sửa Chatbot -->
+        <div class="embed-modal-view" id="view-edit-embed" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="font-size: 13px; font-weight: 700; margin: 0;">Chỉnh sửa thông tin Chatbot</h3>
+            <button type="button" class="btn btn-secondary btn-xs" id="btn-back-to-embed-list">← Quay lại danh sách</button>
+          </div>
+          <form id="form-edit-embed" style="display: flex; flex-direction: column; gap: 10px;">
+            <input type="hidden" id="edit-embed-id">
+            <div class="form-group">
+              <label class="form-label">Tên Chatbot:</label>
+              <input type="text" class="input" id="edit-embed-name" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mã nhúng script hoặc Page ID:</label>
+              <textarea class="textarea" id="edit-embed-code" rows="3" style="font-family: var(--font-mono); font-size: 11px;" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 6px; padding: 9px; font-weight: 600;">
+              <span>💾 Cập nhật Chatbot</span>
+            </button>
+          </form>
         </div>
 
       </div>

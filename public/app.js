@@ -337,8 +337,39 @@
     settingsEmbedCode: document.getElementById('settings-embed-code-input'),
     embedSaveFeedback: document.getElementById('embed-save-feedback'),
     embedSetupCard: document.getElementById('embed-setup-card'),
+    setupEmbedName: document.getElementById('setup-embed-name'),
     setupEmbedInput: document.getElementById('setup-embed-input'),
     btnSaveSetupEmbed: document.getElementById('btn-save-setup-embed'),
+
+    // Homepage Chatbot Switcher & Management Bar
+    stageEmbedBar: document.getElementById('stage-embed-bar'),
+    stageEmbedSelect: document.getElementById('stage-embed-select'),
+    stageActivePageId: document.getElementById('stage-active-page-id'),
+    btnCopyActivePageId: document.getElementById('btn-copy-active-page-id'),
+    btnQuickAddEmbed: document.getElementById('btn-quick-add-embed'),
+    btnQuickEditEmbed: document.getElementById('btn-quick-edit-embed'),
+    btnOpenManageEmbeds: document.getElementById('btn-open-manage-embeds'),
+    embedCountBadge: document.getElementById('embed-count-badge'),
+
+    // Multi-Embed Management Modal
+    modalManageEmbeds: document.getElementById('modal-manage-embeds'),
+    btnCloseManageEmbeds: document.getElementById('btn-close-manage-embeds'),
+    embedModalTabs: document.getElementById('embed-modal-tabs'),
+    modalTabEmbedCount: document.getElementById('modal-tab-embed-count'),
+    viewListEmbeds: document.getElementById('view-list-embeds'),
+    viewAddEmbed: document.getElementById('view-add-embed'),
+    viewEditEmbed: document.getElementById('view-edit-embed'),
+    embedListContainer: document.getElementById('embed-list-container'),
+    embedEmptyNotice: document.getElementById('embed-empty-notice'),
+    formAddEmbed: document.getElementById('form-add-embed'),
+    addEmbedName: document.getElementById('add-embed-name'),
+    addEmbedCode: document.getElementById('add-embed-code'),
+    addEmbedSetActive: document.getElementById('add-embed-set-active'),
+    btnBackToEmbedList: document.getElementById('btn-back-to-embed-list'),
+    formEditEmbed: document.getElementById('form-edit-embed'),
+    editEmbedId: document.getElementById('edit-embed-id'),
+    editEmbedName: document.getElementById('edit-embed-name'),
+    editEmbedCode: document.getElementById('edit-embed-code'),
 
     uploadFile1Input: document.getElementById('upload-file1-input'),
     btnUploadFile1: document.getElementById('btn-upload-file1'),
@@ -577,6 +608,40 @@
     });
   }
 
+  // ==========================================================================
+  // MASTER CLIENT VAULT: SECURE HMAC VOUCHER PERSISTENCE (SURVIVES SERVER RESTARTS)
+  // ==========================================================================
+  function saveAccountToVault(user, voucher) {
+    if (!voucher || !user) return;
+    try {
+      const raw = localStorage.getItem('bbh_accounts_vault') || '{}';
+      const vault = JSON.parse(raw);
+      if (user.email) {
+        vault[user.email.toLowerCase()] = voucher;
+        localStorage.setItem('bbh_voucher_' + user.email.toLowerCase(), voucher);
+      }
+      if (user.username) vault[user.username.toLowerCase()] = voucher;
+      const prefix = user.email ? user.email.split('@')[0].toLowerCase() : '';
+      if (prefix) vault[prefix] = voucher;
+      localStorage.setItem('bbh_accounts_vault', JSON.stringify(vault));
+    } catch (e) {}
+  }
+
+  function getVoucherForIdentifier(identifier) {
+    if (!identifier) return '';
+    const clean = identifier.trim().toLowerCase();
+    try {
+      const raw = localStorage.getItem('bbh_accounts_vault') || '{}';
+      const vault = JSON.parse(raw);
+      if (vault[clean]) return vault[clean];
+      const prefix = clean.includes('@') ? clean.split('@')[0] : clean;
+      if (vault[prefix]) return vault[prefix];
+      const withGmail = clean.includes('@') ? clean : (clean + '@gmail.com');
+      if (vault[withGmail]) return vault[withGmail];
+    } catch (e) {}
+    return localStorage.getItem('bbh_voucher_' + clean) || '';
+  }
+
   // Forgot Password Link Click
   if (el.linkForgotPwd) {
     el.linkForgotPwd.addEventListener('click', (e) => {
@@ -618,7 +683,7 @@
         localStorage.setItem('bbh_saved_email', email);
         localStorage.setItem('bbh_saved_password', newPassword);
         localStorage.setItem('bbh_remember_me', 'true');
-        if (data.voucher) localStorage.setItem('bbh_voucher_' + email.toLowerCase(), data.voucher);
+        if (data.voucher && data.user) saveAccountToVault(data.user, data.voucher);
         showToast(data.message, 'success');
         applyAuthState();
         loadWorkspace();
@@ -645,12 +710,12 @@
     }
 
     try {
-      const voucher = localStorage.getItem('bbh_voucher_' + identifier.toLowerCase()) || '';
+      const voucher = getVoucherForIdentifier(identifier);
       const data = await api('/api/auth/login', 'POST', { identifier, password, voucher });
       state.token = data.token;
       state.user = data.user;
       localStorage.setItem('bbh_auth_token', data.token);
-      if (data.voucher) localStorage.setItem('bbh_voucher_' + identifier.toLowerCase(), data.voucher);
+      if (data.voucher && data.user) saveAccountToVault(data.user, data.voucher);
 
       // Save password and identifier if remember me is enabled
       if (rememberMe) {
@@ -693,7 +758,7 @@
       state.token = data.token;
       state.user = data.user;
       localStorage.setItem('bbh_auth_token', data.token);
-      if (data.voucher) localStorage.setItem('bbh_voucher_' + email.toLowerCase(), data.voucher);
+      if (data.voucher && data.user) saveAccountToVault(data.user, data.voucher);
 
       // Auto save credentials on register
       localStorage.setItem('bbh_saved_email', email);
@@ -734,6 +799,7 @@
       el.authOverlay.classList.remove('hidden');
       el.btnAdminManage.style.display = 'none';
       if (el.headerUserRole) el.headerUserRole.style.display = 'none';
+      if (el.stageEmbedBar) el.stageEmbedBar.style.display = 'none';
       mountUserChatbox('');
       restoreSavedCredentials();
       return;
@@ -741,6 +807,7 @@
 
     el.authOverlay.classList.add('hidden');
     el.body.classList.remove('auth-locked');
+    if (el.stageEmbedBar) el.stageEmbedBar.style.display = 'flex';
 
     // Multi-user Session Isolation: Each user gets their own dedicated client ID for Botbanhang
     const userScopedKey = 'bbh_client_id_for_' + state.user.id;
@@ -824,6 +891,9 @@
     const pageId = userPageId || (isSuperAdminUser ? (state.config && state.config.page_id) : '') || '';
     mountUserChatbox(pageId);
 
+    // Multi-Embed Dropdown & Homepage Bar Sync
+    renderChatbotDropdown(state.user.embed_list, state.user.active_embed_id);
+
     if (el.settingsEmbedCode) {
       el.settingsEmbedCode.value = state.user.embed_code || state.user.page_id || '';
     }
@@ -847,6 +917,7 @@
       }
       if (setupCard) setupCard.style.display = 'flex';
       if (el.headerPageIdBadge) el.headerPageIdBadge.textContent = 'Chưa nạp';
+      if (el.stageActivePageId) el.stageActivePageId.textContent = 'Chưa nạp';
       currentMountedPageId = null;
       return;
     }
@@ -854,6 +925,7 @@
     if (setupCard) setupCard.style.display = 'none';
     if (container) container.style.display = 'flex';
     if (el.headerPageIdBadge) el.headerPageIdBadge.textContent = `ID: ${pageId}`;
+    if (el.stageActivePageId) el.stageActivePageId.textContent = pageId;
 
     if (currentMountedPageId === pageId && container && container.querySelector('iframe')) {
       return;
@@ -881,6 +953,327 @@
     }
   }
 
+  // ==========================================================================
+  // MULTI-EMBED CHATBOT CONTROLLER & HOMEPAGE SWITCHER
+  // ==========================================================================
+
+  function renderChatbotDropdown(embeds = [], activeId = '') {
+    const list = Array.isArray(embeds) ? embeds : [];
+    const count = list.length;
+
+    if (el.embedCountBadge) el.embedCountBadge.textContent = count;
+    if (el.modalTabEmbedCount) el.modalTabEmbedCount.textContent = count;
+
+    // 1. Populate Homepage Dropdown
+    if (el.stageEmbedSelect) {
+      el.stageEmbedSelect.innerHTML = '';
+      if (count === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '-- Chưa có Chatbot nào --';
+        el.stageEmbedSelect.appendChild(opt);
+      } else {
+        list.forEach(bot => {
+          const opt = document.createElement('option');
+          opt.value = bot.id;
+          const isCurrent = bot.id === activeId || (bot.is_active && !activeId);
+          opt.textContent = `${isCurrent ? '🤖 ' : '• '}${bot.name} (${bot.page_id || 'ID?'})`;
+          if (isCurrent) opt.selected = true;
+          el.stageEmbedSelect.appendChild(opt);
+        });
+      }
+    }
+
+    // 2. Active Page ID badge
+    const activeBot = list.find(b => b.id === activeId || b.is_active) || list[0];
+    const currentPid = (activeBot && activeBot.page_id) ? activeBot.page_id : (state.user ? state.user.page_id : '');
+    if (el.stageActivePageId) el.stageActivePageId.textContent = currentPid || 'Chưa nạp';
+    if (el.headerPageIdBadge) el.headerPageIdBadge.textContent = currentPid ? `ID: ${currentPid}` : 'Chưa nạp';
+
+    // 3. Render Modal Cards List
+    if (el.embedListContainer) {
+      el.embedListContainer.innerHTML = '';
+      if (count === 0) {
+        if (el.embedEmptyNotice) el.embedEmptyNotice.style.display = 'block';
+      } else {
+        if (el.embedEmptyNotice) el.embedEmptyNotice.style.display = 'none';
+        list.forEach(bot => {
+          const isActive = bot.id === activeId || bot.is_active;
+          const card = document.createElement('div');
+          card.className = `embed-item-card ${isActive ? 'is-active' : ''}`;
+          card.innerHTML = `
+            <div class="embed-item-meta">
+              <div class="embed-item-title">
+                <span>🤖 ${escapeHtml(bot.name)}</span>
+                ${isActive ? '<span class="badge badge-teal" style="font-size:10px;">🟢 Đang test</span>' : ''}
+              </div>
+              <div class="embed-item-pageid">
+                Page ID: <b>${escapeHtml(bot.page_id || 'Chưa rõ')}</b>
+                <span style="opacity: 0.6; font-size: 10px; margin-left: 6px;">${new Date(bot.created_at || Date.now()).toLocaleDateString('vi-VN')}</span>
+              </div>
+            </div>
+            <div class="embed-item-actions">
+              ${!isActive ? `<button type="button" class="btn btn-secondary btn-xs btn-activate-embed" data-id="${bot.id}">⚡ Kích hoạt</button>` : ''}
+              <button type="button" class="btn btn-secondary btn-xs btn-edit-embed" data-id="${bot.id}">✏️ Sửa</button>
+              <button type="button" class="btn btn-secondary btn-xs btn-delete-embed" data-id="${bot.id}" style="color:var(--danger);" title="Xóa chatbot này">🗑️</button>
+            </div>
+          `;
+          el.embedListContainer.appendChild(card);
+        });
+      }
+    }
+  }
+
+  async function switchActiveChatbot(botId) {
+    if (!botId) return;
+    try {
+      const data = await api('/api/user/embeds/active', 'PATCH', { id: botId });
+      if (data.user) {
+        state.user = data.user;
+        if (data.voucher) saveAccountToVault(state.user, data.voucher);
+      }
+      renderChatbotDropdown(state.user.embed_list, state.user.active_embed_id);
+      mountUserChatbox(state.user.page_id);
+      showToast(`🤖 Đã chuyển sang chatbot "${data.active_bot?.name || 'mới'}"!`, 'success');
+    } catch (err) {
+      showToast('Lỗi chuyển chatbot: ' + err.message, 'error');
+    }
+  }
+
+  async function addChatbot(name, embedCode, setActive = true) {
+    if (!embedCode || !embedCode.trim()) {
+      showToast('Vui lòng nhập mã nhúng script hoặc Page ID.', 'error');
+      return;
+    }
+    try {
+      const data = await api('/api/user/embeds', 'POST', { name, embedCode, setActive });
+      if (data.user) {
+        state.user = data.user;
+        if (data.voucher) saveAccountToVault(state.user, data.voucher);
+      }
+      renderChatbotDropdown(state.user.embed_list, state.user.active_embed_id);
+      if (setActive) {
+        mountUserChatbox(state.user.page_id);
+      }
+      showToast(`✅ Đã thêm chatbot "${data.embed?.name}" thành công!`, 'success');
+      return data.embed;
+    } catch (err) {
+      showToast('Lỗi thêm chatbot: ' + err.message, 'error');
+      throw err;
+    }
+  }
+
+  async function updateChatbot(id, name, embedCode) {
+    if (!id) return;
+    try {
+      const data = await api(`/api/user/embeds/${id}`, 'PATCH', { name, embedCode });
+      if (data.user) {
+        state.user = data.user;
+        if (data.voucher) saveAccountToVault(state.user, data.voucher);
+      }
+      renderChatbotDropdown(state.user.embed_list, state.user.active_embed_id);
+      if (state.user.active_embed_id === id) {
+        mountUserChatbox(state.user.page_id);
+      }
+      showToast(`✅ Đã cập nhật chatbot "${data.embed?.name || name}"!`, 'success');
+    } catch (err) {
+      showToast('Lỗi cập nhật chatbot: ' + err.message, 'error');
+      throw err;
+    }
+  }
+
+  async function deleteChatbot(id) {
+    const bot = (state.user.embed_list || []).find(b => b.id === id);
+    const botName = bot ? bot.name : 'này';
+    if (!confirm(`Bạn có chắc muốn xóa chatbot "${botName}" khỏi danh sách?`)) return;
+    try {
+      const data = await api(`/api/user/embeds/${id}`, 'DELETE');
+      if (data.user) {
+        state.user = data.user;
+        if (data.voucher) saveAccountToVault(state.user, data.voucher);
+      }
+      renderChatbotDropdown(state.user.embed_list, state.user.active_embed_id);
+      mountUserChatbox(state.user.page_id || '');
+      showToast(`Đã xóa chatbot "${botName}".`, 'info');
+    } catch (err) {
+      showToast('Lỗi xóa chatbot: ' + err.message, 'error');
+    }
+  }
+
+  function openManageEmbedsModal(defaultTab = 'tab-list-embeds') {
+    if (el.modalManageEmbeds) {
+      el.modalManageEmbeds.classList.add('open');
+      el.body.classList.add('modal-open');
+      switchEmbedTab(defaultTab);
+    }
+  }
+
+  function closeManageEmbedsModal() {
+    if (el.modalManageEmbeds) {
+      el.modalManageEmbeds.classList.remove('open');
+      el.body.classList.remove('modal-open');
+    }
+  }
+
+  function switchEmbedTab(tabName) {
+    if (!el.embedModalTabs) return;
+    el.embedModalTabs.querySelectorAll('.seg-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.embedTab === tabName);
+    });
+
+    if (el.viewListEmbeds) el.viewListEmbeds.style.display = tabName === 'tab-list-embeds' ? 'block' : 'none';
+    if (el.viewAddEmbed) el.viewAddEmbed.style.display = tabName === 'tab-add-embed' ? 'block' : 'none';
+    if (el.viewEditEmbed) el.viewEditEmbed.style.display = 'none';
+  }
+
+  function openEditForBot(botId) {
+    const bot = (state.user.embed_list || []).find(b => b.id === botId);
+    if (!bot) return;
+
+    if (el.viewListEmbeds) el.viewListEmbeds.style.display = 'none';
+    if (el.viewAddEmbed) el.viewAddEmbed.style.display = 'none';
+    if (el.viewEditEmbed) el.viewEditEmbed.style.display = 'block';
+
+    if (el.editEmbedId) el.editEmbedId.value = bot.id;
+    if (el.editEmbedName) el.editEmbedName.value = bot.name || '';
+    if (el.editEmbedCode) el.editEmbedCode.value = bot.embed_code || bot.page_id || '';
+
+    openManageEmbedsModal();
+  }
+
+  function openEditForActiveBot() {
+    const list = state.user.embed_list || [];
+    const active = list.find(b => b.id === state.user.active_embed_id || b.is_active) || list[0];
+    if (active) {
+      openEditForBot(active.id);
+    } else {
+      openManageEmbedsModal('tab-add-embed');
+    }
+  }
+
+  // Event Listeners for Homepage Embed Bar & Modal
+  if (el.stageEmbedSelect) {
+    el.stageEmbedSelect.addEventListener('change', (e) => {
+      switchActiveChatbot(e.target.value);
+    });
+  }
+
+  if (el.btnCopyActivePageId) {
+    el.btnCopyActivePageId.addEventListener('click', () => {
+      const pid = el.stageActivePageId ? el.stageActivePageId.textContent.trim() : '';
+      if (pid && pid !== 'Chưa nạp') {
+        navigator.clipboard.writeText(pid).then(() => {
+          showToast(`📋 Đã sao chép Page ID: ${pid}`, 'success');
+        });
+      } else {
+        showToast('Chưa có Page ID nào được chọn.', 'error');
+      }
+    });
+  }
+
+  if (el.btnQuickAddEmbed) {
+    el.btnQuickAddEmbed.addEventListener('click', () => {
+      openManageEmbedsModal('tab-add-embed');
+    });
+  }
+
+  if (el.btnQuickEditEmbed) {
+    el.btnQuickEditEmbed.addEventListener('click', () => {
+      openEditForActiveBot();
+    });
+  }
+
+  if (el.btnOpenManageEmbeds) {
+    el.btnOpenManageEmbeds.addEventListener('click', () => {
+      openManageEmbedsModal('tab-list-embeds');
+    });
+  }
+
+  if (el.btnCloseManageEmbeds) {
+    el.btnCloseManageEmbeds.addEventListener('click', () => {
+      closeManageEmbedsModal();
+    });
+  }
+
+  if (el.embedModalTabs) {
+    el.embedModalTabs.querySelectorAll('.seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchEmbedTab(btn.dataset.embedTab);
+      });
+    });
+  }
+
+  if (el.btnBackToEmbedList) {
+    el.btnBackToEmbedList.addEventListener('click', () => {
+      switchEmbedTab('tab-list-embeds');
+    });
+  }
+
+  if (el.formAddEmbed) {
+    el.formAddEmbed.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = el.addEmbedName ? el.addEmbedName.value.trim() : '';
+      const code = el.addEmbedCode ? el.addEmbedCode.value.trim() : '';
+      const setActive = el.addEmbedSetActive ? el.addEmbedSetActive.checked : true;
+      try {
+        await addChatbot(name, code, setActive);
+        if (el.addEmbedName) el.addEmbedName.value = '';
+        if (el.addEmbedCode) el.addEmbedCode.value = '';
+        switchEmbedTab('tab-list-embeds');
+      } catch (err) {}
+    });
+  }
+
+  if (el.formEditEmbed) {
+    el.formEditEmbed.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = el.editEmbedId ? el.editEmbedId.value : '';
+      const name = el.editEmbedName ? el.editEmbedName.value.trim() : '';
+      const code = el.editEmbedCode ? el.editEmbedCode.value.trim() : '';
+      try {
+        await updateChatbot(id, name, code);
+        switchEmbedTab('tab-list-embeds');
+      } catch (err) {}
+    });
+  }
+
+  if (el.embedListContainer) {
+    el.embedListContainer.addEventListener('click', (e) => {
+      const activateBtn = e.target.closest('.btn-activate-embed');
+      if (activateBtn) {
+        switchActiveChatbot(activateBtn.dataset.id);
+        return;
+      }
+      const editBtn = e.target.closest('.btn-edit-embed');
+      if (editBtn) {
+        openEditForBot(editBtn.dataset.id);
+        return;
+      }
+      const delBtn = e.target.closest('.btn-delete-embed');
+      if (delBtn) {
+        deleteChatbot(delBtn.dataset.id);
+        return;
+      }
+    });
+  }
+
+  // Setup Card submission (empty state)
+  if (el.btnSaveSetupEmbed) {
+    el.btnSaveSetupEmbed.addEventListener('click', async () => {
+      const name = el.setupEmbedName ? el.setupEmbedName.value.trim() : 'Chatbot chính';
+      const code = el.setupEmbedInput ? el.setupEmbedInput.value.trim() : '';
+      if (!code) {
+        showToast('Vui lòng dán mã nhúng script hoặc Page ID.', 'error');
+        return;
+      }
+      try {
+        await addChatbot(name, code, true);
+        if (el.setupEmbedName) el.setupEmbedName.value = '';
+        if (el.setupEmbedInput) el.setupEmbedInput.value = '';
+      } catch (err) {}
+    });
+  }
+
   async function saveUserEmbedCode(rawInput) {
     if (!rawInput || !rawInput.trim()) {
       showToast('Vui lòng dán mã nhúng script hoặc Page ID.', 'error');
@@ -889,10 +1282,10 @@
     try {
       const data = await api('/api/user/config', 'PATCH', { embedCode: rawInput.trim() });
       if (data.user) {
-        state.user.embed_code = data.user.embed_code;
-        state.user.page_id = data.user.page_id;
-        state.user.has_page_id = data.user.has_page_id;
+        state.user = data.user;
+        if (data.voucher) saveAccountToVault(state.user, data.voucher);
       }
+      renderChatbotDropdown(state.user.embed_list, state.user.active_embed_id);
       mountUserChatbox(state.user.page_id);
       showToast('✅ Đã lưu mã nhúng và tải lại Bong bóng chat thành công!', 'success');
       if (el.settingsEmbedCode) el.settingsEmbedCode.value = state.user.embed_code || state.user.page_id;
@@ -904,13 +1297,6 @@
     } catch (err) {
       showToast('Lỗi lưu mã nhúng: ' + err.message, 'error');
     }
-  }
-
-  if (el.btnSaveSetupEmbed) {
-    el.btnSaveSetupEmbed.addEventListener('click', () => {
-      const val = el.setupEmbedInput ? el.setupEmbedInput.value : '';
-      saveUserEmbedCode(val);
-    });
   }
 
   if (el.formEmbedConfigSave) {
@@ -3974,7 +4360,6 @@
       state.chatSessions = data.chat_sessions || [];
       state.users = data.users;
 
-      if (el.headerPageIdBadge) el.headerPageIdBadge.textContent = 'Chưa nạp';
       applyAuthState();
       syncRunnerPreferences();
       updateManualQuestionCount();

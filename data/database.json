@@ -113,59 +113,18 @@
       },
       "created_at": "2026-10-25T08:20:08.743Z",
       "last_login": "2026-10-27T04:30:46.072Z",
-      "tests_submitted": 23
-    },
-    {
-      "id": "usr_colleague_demo",
-      "name": "Đồng nghiệp BBH",
-      "email": "colleague@gmail.com",
-      "username": "colleague",
-      "role": "tester",
-      "status": "active",
-      "avatar_color": "#0D9488",
-      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
-      "page_id": "",
-      "embed_code": "",
-      "deepseek_api_key": "",
-      "productKnowledge": {
-        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
-        "content": "",
-        "updated_at": "2026-10-25T08:34:42.258Z"
-      },
-      "promptRules": {
-        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
-        "content": "",
-        "updated_at": "2026-10-25T08:34:42.258Z"
-      },
-      "created_at": "2026-10-25T08:34:42.258Z",
-      "last_login": null,
-      "tests_submitted": 0
-    },
-    {
-      "id": "usr_colleague2_demo",
-      "name": "Tester Đồng nghiệp",
-      "email": "test_colleague2@gmail.com",
-      "username": "test_colleague2",
-      "role": "tester",
-      "status": "active",
-      "avatar_color": "#4F46E5",
-      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
-      "page_id": "",
-      "embed_code": "",
-      "deepseek_api_key": "",
-      "productKnowledge": {
-        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
-        "content": "",
-        "updated_at": "2026-10-25T10:39:24.051Z"
-      },
-      "promptRules": {
-        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
-        "content": "",
-        "updated_at": "2026-10-25T10:39:24.051Z"
-      },
-      "created_at": "2026-10-25T10:39:24.051Z",
-      "last_login": null,
-      "tests_submitted": 0
+      "tests_submitted": 23,
+      "embed_list": [
+        {
+          "id": "emb_thien_default",
+          "name": "Chatbot Thiện BBH (Mặc định)",
+          "page_id": "095817282564177",
+          "embed_code": "095817282564177",
+          "is_active": true,
+          "created_at": "2026-10-25T08:20:08.743Z"
+        }
+      ],
+      "active_embed_id": "emb_thien_default"
     }
   ],
   "sessions": {
@@ -332,6 +291,18 @@
     "bbh_usr_1793075446082_lkvn.mvq6towe.2be4e5157ab10437e1ee2a7544482bd1": {
       "user_id": "usr_1793075446082_lkvn",
       "created_at": "2026-10-27T04:30:46.094Z"
+    },
+    "bbh_usr_1793637926537_ti4e.mvzhpll6.eyJpZCI6InVzcl8xNzkzNjM3OTI2NTM3X3RpNGUiLCJlbWFpbCI6InRlc3RfY29sbGVhZ3VlXzE3OTM2Mzc5MjY0OTRAZ21haWwuY29tIiwidXNlcm5hbWUiOiJ0ZXN0X2NvbGxlYWd1ZV8xNzkzNjM3OTI2NDk0IiwibmFtZSI6InRlc3RfY29sbGVhZ3VlXzE3OTM2Mzc5MjY0OTQiLCJyb2xlIjoidGVzdGVyIiwicGFnZV9pZCI6Ijk5ODg3NzY2NTU0NCIsImVtYmVkX2NvZGUiOiI5OTg4Nzc2NjU1NDQiLCJlbWJlZF9saXN0IjpbeyJpZCI6ImVtYl8xNzkzNjM3OTI2NTM3XzRzcWUiLCJuYW1lIjoiQ2hhdGJvdCBjaMOtbmgiLCJwYWdlX2lkIjoiOTk4ODc3NjY1NTQ0IiwiZW1iZWRfY29kZSI6Ijk5ODg3NzY2NTU0NCIsImlzX2FjdGl2ZSI6dHJ1ZSwiY3JlYXRlZF9hdCI6IjIwMjYtMTEtMDJUMTY6NDU6MjYuNTM3WiJ9XSwiYWN0aXZlX2VtYmVkX2lkIjoiZW1iXzE3OTM2Mzc5MjY1MzdfNHNxZSIsInBhc3N3b3JkX2hhc2giOiI3ZjA0ZTIxMDAxMGMzNjI4ZDViNDE1NzRhODcwNGQ3ZjY4Y2Y4MTBjNTU2ZWU1N2ZkNTY2YmNjMzQxYjVjYTY0NjRhMjBkYjNkNDAxYTViN2NhZjI0MTk2NmUwZjkwNmRhMDNjYzQyOTRhYzQ4MTBhMDNjNTdjNzU4MzRmYjhhNCIsImNyZWF0ZWRfYXQiOiIyMDI2LTExLTAyVDE2OjQ1OjI2LjUzOFoifQ.99e0fb81ca967647276058b452b8dbc8": {
+      "user_id": "usr_1793637926537_ti4e",
+      "created_at": "2026-11-02T16:45:26.540Z"
+    },
+    "bbh_usr_1793637926537_ti4e.mvzhplli.eyJpZCI6InVzcl8xNzkzNjM3OTI2NTM3X3RpNGUiLCJlbWFpbCI6InRlc3RfY29sbGVhZ3VlXzE3OTM2Mzc5MjY0OTRAZ21haWwuY29tIiwidXNlcm5hbWUiOiJ0ZXN0X2NvbGxlYWd1ZV8xNzkzNjM3OTI2NDk0IiwibmFtZSI6InRlc3RfY29sbGVhZ3VlXzE3OTM2Mzc5MjY0OTQiLCJyb2xlIjoidGVzdGVyIiwicGFnZV9pZCI6Ijk5ODg3NzY2NTU0NCIsImVtYmVkX2NvZGUiOiI5OTg4Nzc2NjU1NDQiLCJlbWJlZF9saXN0IjpbeyJpZCI6ImVtYl8xNzkzNjM3OTI2NTM3XzRzcWUiLCJuYW1lIjoiQ2hhdGJvdCBjaMOtbmgiLCJwYWdlX2lkIjoiOTk4ODc3NjY1NTQ0IiwiZW1iZWRfY29kZSI6Ijk5ODg3NzY2NTU0NCIsImlzX2FjdGl2ZSI6dHJ1ZSwiY3JlYXRlZF9hdCI6IjIwMjYtMTEtMDJUMTY6NDU6MjYuNTM3WiJ9XSwiYWN0aXZlX2VtYmVkX2lkIjoiZW1iXzE3OTM2Mzc5MjY1MzdfNHNxZSIsInBhc3N3b3JkX2hhc2giOiI3ZjA0ZTIxMDAxMGMzNjI4ZDViNDE1NzRhODcwNGQ3ZjY4Y2Y4MTBjNTU2ZWU1N2ZkNTY2YmNjMzQxYjVjYTY0NjRhMjBkYjNkNDAxYTViN2NhZjI0MTk2NmUwZjkwNmRhMDNjYzQyOTRhYzQ4MTBhMDNjNTdjNzU4MzRmYjhhNCIsImNyZWF0ZWRfYXQiOiIyMDI2LTExLTAyVDE2OjQ1OjI2LjUzOFoifQ.30c67075e4ed2c956e098682292df655": {
+      "user_id": "usr_1793637926537_ti4e",
+      "created_at": "2026-11-02T16:45:26.550Z"
+    },
+    "bbh_usr_1793637926537_ti4e.mvzhplln.eyJpZCI6InVzcl8xNzkzNjM3OTI2NTM3X3RpNGUiLCJlbWFpbCI6InRlc3RfY29sbGVhZ3VlXzE3OTM2Mzc5MjY0OTRAZ21haWwuY29tIiwidXNlcm5hbWUiOiJ0ZXN0X2NvbGxlYWd1ZV8xNzkzNjM3OTI2NDk0IiwibmFtZSI6InRlc3RfY29sbGVhZ3VlXzE3OTM2Mzc5MjY0OTQiLCJyb2xlIjoidGVzdGVyIiwicGFnZV9pZCI6Ijk5ODg3NzY2NTU0NCIsImVtYmVkX2NvZGUiOiI5OTg4Nzc2NjU1NDQiLCJlbWJlZF9saXN0IjpbeyJpZCI6ImVtYl8xNzkzNjM3OTI2NTM3XzRzcWUiLCJuYW1lIjoiQ2hhdGJvdCBjaMOtbmgiLCJwYWdlX2lkIjoiOTk4ODc3NjY1NTQ0IiwiZW1iZWRfY29kZSI6Ijk5ODg3NzY2NTU0NCIsImlzX2FjdGl2ZSI6dHJ1ZSwiY3JlYXRlZF9hdCI6IjIwMjYtMTEtMDJUMTY6NDU6MjYuNTM3WiJ9XSwiYWN0aXZlX2VtYmVkX2lkIjoiZW1iXzE3OTM2Mzc5MjY1MzdfNHNxZSIsInBhc3N3b3JkX2hhc2giOiI3ZjA0ZTIxMDAxMGMzNjI4ZDViNDE1NzRhODcwNGQ3ZjY4Y2Y4MTBjNTU2ZWU1N2ZkNTY2YmNjMzQxYjVjYTY0NjRhMjBkYjNkNDAxYTViN2NhZjI0MTk2NmUwZjkwNmRhMDNjYzQyOTRhYzQ4MTBhMDNjNTdjNzU4MzRmYjhhNCIsImNyZWF0ZWRfYXQiOiIyMDI2LTExLTAyVDE2OjQ1OjI2LjUzOFoifQ.f814ac7523c6b9099883b25b693a57a6": {
+      "user_id": "usr_1793637926537_ti4e",
+      "created_at": "2026-11-02T16:45:26.555Z"
     }
   },
   "evaluations": [
@@ -671,6 +642,48 @@
   ],
   "chat_sessions": [],
   "logs": [
+    {
+      "id": "log_1793637926571_8zgw",
+      "actor": "test_colleague_1793637926494",
+      "role": "tester",
+      "action": "Cập nhật chatbot: Chatbot Spa Vũng Tàu (Đã đổi tên)",
+      "created_at": "2026-11-02T16:45:26.571Z"
+    },
+    {
+      "id": "log_1793637926567_tfkl",
+      "actor": "test_colleague_1793637926494",
+      "role": "tester",
+      "action": "Chuyển sang chatbot: Chatbot chính",
+      "created_at": "2026-11-02T16:45:26.567Z"
+    },
+    {
+      "id": "log_1793637926564_u2df",
+      "actor": "test_colleague_1793637926494",
+      "role": "tester",
+      "action": "Thêm chatbot mới: Chatbot Spa Vũng Tàu",
+      "created_at": "2026-11-02T16:45:26.564Z"
+    },
+    {
+      "id": "log_1793637926555_r6a5",
+      "actor": "test_colleague_1793637926494",
+      "role": "tester",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-11-02T16:45:26.555Z"
+    },
+    {
+      "id": "log_1793637926550_vt63",
+      "actor": "test_colleague_1793637926494",
+      "role": "tester",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-11-02T16:45:26.550Z"
+    },
+    {
+      "id": "log_1793637926540_y34j",
+      "actor": "test_colleague_1793637926494",
+      "role": "tester",
+      "action": "Đăng ký tài khoản mới",
+      "created_at": "2026-11-02T16:45:26.540Z"
+    },
     {
       "id": "log_1793075446102_co00",
       "actor": "Thiện BBH",
