@@ -949,6 +949,7 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
           <button class="seg-btn active" data-admin-tab="tab-admin-users">👥 Danh sách tài khoản (<span id="admin-user-total-badge">0</span>)</button>
           <button class="seg-btn" data-admin-tab="tab-admin-create">➕ Thêm tài khoản mới</button>
           <button class="seg-btn" data-admin-tab="tab-admin-backup">💾 Sao lưu & Khôi phục CSDL</button>
+          <button class="seg-btn" data-admin-tab="tab-admin-cloud">☁️ CSDL Đám Mây (Cloud DB)</button>
         </div>
 
         <!-- 1. TAB: DANH SÁCH TÀI KHOẢN -->
@@ -1078,6 +1079,84 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
               <li>Tài khoản Super Admin <code>thienlv.bbh@gmail.com</code> được bảo vệ vĩnh viễn, không ai có thể xóa hay hạ quyền.</li>
             </ul>
           </div>
+        </div>
+
+        <!-- 4. TAB: CẤU HÌNH CSDL ĐÁM MÂY (CLOUD DATABASE DÙNG CHUNG CHO NHIỀU KHÁCH HÀNG & ĐỒNG NGHIỆP) -->
+        <div id="tab-admin-cloud-content" style="display: none;">
+          <!-- Live Status Card -->
+          <div style="border: 1px solid var(--border-subtle); border-radius: 8px; padding: 14px 16px; background: var(--bg-surface); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(13, 148, 136, 0.15); color: var(--teal); display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                ☁️
+              </div>
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <h4 style="margin: 0; font-size: 13.5px; font-weight: 700;">Trạng thái CSDL Đám Mây:</h4>
+                  <span id="cloud-status-badge" class="badge badge-secondary" style="font-size: 11px;">Đang kiểm tra...</span>
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;" id="cloud-status-desc">
+                  Kiểm tra khả năng lưu trữ vĩnh viễn trên mây cho nhiều người dùng.
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary btn-xs" id="btn-cloud-sync-up" title="Đẩy CSDL hiện tại lên Cloud">
+                <span>📤 Đẩy lên Cloud</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btn-cloud-sync-down" title="Tải CSDL từ Cloud về lại máy">
+                <span>📥 Tải về máy</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Free Setup Guide Alert -->
+          <div style="padding: 12px 14px; background: rgba(217, 119, 87, 0.08); border: 1px solid rgba(217, 119, 87, 0.25); border-radius: 8px; font-size: 11.5px; line-height: 1.5; color: var(--text-secondary); margin-bottom: 12px;">
+            🌟 <b>Hướng dẫn tạo CSDL Đám Mây Miễn Phí (0đ - Lưu trữ vĩnh viễn không giới hạn đồng nghiệp):</b>
+            <ol style="margin: 6px 0 0 18px; padding: 0;">
+              <li>Đăng ký tài khoản miễn phí tại <a href="https://console.upstash.com" target="_blank" style="color: var(--accent); font-weight: 700; text-decoration: underline;">console.upstash.com</a> (hoặc tab <b>Storage</b> trên Vercel Dashboard).</li>
+              <li>Tạo 1 Database (chọn <b>Redis</b> - Gói <b>Free 0đ</b>, 10.000 lệnh/ngày vĩnh viễn, không cần nhập thẻ Visa).</li>
+              <li>Kéo xuống mục <b>REST API</b>, sao chép <b>UPSTASH_REDIS_REST_URL</b> và <b>UPSTASH_REDIS_REST_TOKEN</b> dán vào bên dưới rồi bấm <b>"Kết nối & Đồng bộ ngay"</b>!</li>
+            </ol>
+            <div style="margin-top: 6px; font-size: 11px; color: var(--teal); font-weight: 600;">
+              ✨ Sau khi kết nối, dữ liệu của mọi khách hàng, đồng nghiệp và danh sách Chatbot sẽ lưu trực tiếp trên Cloud, hoàn toàn không bao giờ bị mất khi khởi động lại!
+            </div>
+          </div>
+
+          <!-- Cloud DB Settings Form -->
+          <form id="form-admin-cloud-db" style="display: flex; flex-direction: column; gap: 11px;">
+            <div class="form-group">
+              <label class="form-label">Loại CSDL Đám Mây (Cloud Provider):</label>
+              <select class="select input-sm" id="cloud-db-provider" style="width: 100%;">
+                <option value="upstash" selected>⚡ Upstash Redis REST / Vercel KV (Khuyên dùng - 0đ Miễn phí trọn đời)</option>
+                <option value="supabase">🐘 Supabase / PostgreSQL Cloud REST</option>
+                <option value="custom">🌐 REST Webhook / Cloud Storage Endpoint Tùy chỉnh</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Cloud REST URL (UPSTASH_REDIS_REST_URL):</label>
+              <input type="url" class="input" id="cloud-db-url" placeholder="https://flowing-swan-12345.upstash.io" required style="font-family: var(--font-mono); font-size: 11.5px;">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Cloud REST Token / API Key (UPSTASH_REDIS_REST_TOKEN):</label>
+              <div style="position: relative; display: flex; align-items: center;">
+                <input type="password" class="input" id="cloud-db-token" placeholder="Dán token bí mật tại đây (AX2vAAIjcDF...)" required style="font-family: var(--font-mono); font-size: 11.5px; padding-right: 36px; width: 100%;">
+                <button type="button" id="btn-toggle-cloud-token" class="btn-icon" style="position: absolute; right: 6px; background: transparent; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; font-size: 14px;" title="Hiện / Ẩn token">👁️</button>
+              </div>
+            </div>
+
+            <div id="cloud-feedback" style="display: none; padding: 10px 14px; border-radius: 7px; font-size: 11.5px; line-height: 1.45;"></div>
+
+            <div style="display: flex; gap: 10px; margin-top: 4px;">
+              <button type="submit" class="btn btn-primary" id="btn-save-cloud-db" style="flex: 1; padding: 10px; font-weight: 600;">
+                <span>🔗 Kiểm tra & Kết nối CSDL Đám Mây</span>
+              </button>
+              <button type="button" class="btn btn-secondary" id="btn-disconnect-cloud-db" style="display: none; color: var(--danger); padding: 10px 14px;">
+                <span>🔌 Ngắt kết nối Cloud</span>
+              </button>
+            </div>
+          </form>
         </div>
 
       </div>

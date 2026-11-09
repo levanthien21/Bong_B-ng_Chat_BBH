@@ -202,6 +202,18 @@
     btnAdminExportDb: document.getElementById('btn-admin-export-db'),
     btnAdminImportTrigger: document.getElementById('btn-admin-import-trigger'),
     inputAdminImportFile: document.getElementById('input-admin-import-file'),
+    btnCloudSyncUp: document.getElementById('btn-cloud-sync-up'),
+    btnCloudSyncDown: document.getElementById('btn-cloud-sync-down'),
+    formAdminCloudDb: document.getElementById('form-admin-cloud-db'),
+    cloudDbProvider: document.getElementById('cloud-db-provider'),
+    cloudDbUrl: document.getElementById('cloud-db-url'),
+    cloudDbToken: document.getElementById('cloud-db-token'),
+    btnToggleCloudToken: document.getElementById('btn-toggle-cloud-token'),
+    cloudFeedback: document.getElementById('cloud-feedback'),
+    btnSaveCloudDb: document.getElementById('btn-save-cloud-db'),
+    btnDisconnectCloudDb: document.getElementById('btn-disconnect-cloud-db'),
+    cloudStatusBadge: document.getElementById('cloud-status-badge'),
+    cloudStatusDesc: document.getElementById('cloud-status-desc'),
     btnThemeToggle: document.getElementById('btn-theme-toggle'),
     themeIcon: document.getElementById('theme-icon'),
     btnLogout: document.getElementById('btn-logout'),
@@ -642,6 +654,46 @@
     return localStorage.getItem('bbh_voucher_' + clean) || '';
   }
 
+  // ==========================================================================
+  // MASTER CLIENT VAULT: CHATBOT EMBEDS PERSISTENCE (SURVIVES SERVER RESTARTS)
+  // ==========================================================================
+  function saveEmbedsToLocalVault(email, embeds, activeEmbedId) {
+    if (!email || !Array.isArray(embeds)) return;
+    try {
+      const clean = email.toLowerCase().trim();
+      const payload = {
+        embeds: embeds,
+        active_embed_id: activeEmbedId || null,
+        updated_at: new Date().toISOString()
+      };
+      localStorage.setItem('bbh_embeds_' + clean, JSON.stringify(payload));
+      const prefix = clean.includes('@') ? clean.split('@')[0] : '';
+      if (prefix) localStorage.setItem('bbh_embeds_' + prefix, JSON.stringify(payload));
+    } catch (e) {
+      console.warn('[VAULT] Could not cache embeds to local vault:', e);
+    }
+  }
+
+  function getEmbedsFromLocalVault(identifier) {
+    if (!identifier) return { embeds: [], active_embed_id: null };
+    const clean = identifier.toLowerCase().trim();
+    try {
+      let raw = localStorage.getItem('bbh_embeds_' + clean);
+      if (!raw && clean.includes('@')) {
+        const prefix = clean.split('@')[0];
+        raw = localStorage.getItem('bbh_embeds_' + prefix);
+      }
+      if (!raw && !clean.includes('@')) {
+        raw = localStorage.getItem('bbh_embeds_' + clean + '@gmail.com');
+      }
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.embeds)) return parsed;
+      }
+    } catch (e) {}
+    return { embeds: [], active_embed_id: null };
+  }
+
   // Forgot Password Link Click
   if (el.linkForgotPwd) {
     el.linkForgotPwd.addEventListener('click', (e) => {
@@ -684,6 +736,9 @@
         localStorage.setItem('bbh_saved_password', newPassword);
         localStorage.setItem('bbh_remember_me', 'true');
         if (data.voucher && data.user) saveAccountToVault(data.user, data.voucher);
+        if (data.user && Array.isArray(data.user.embed_list)) {
+          saveEmbedsToLocalVault(data.user.email, data.user.embed_list, data.user.active_embed_id);
+        }
         showToast(data.message, 'success');
         applyAuthState();
         loadWorkspace();
@@ -711,11 +766,21 @@
 
     try {
       const voucher = getVoucherForIdentifier(identifier);
-      const data = await api('/api/auth/login', 'POST', { identifier, password, voucher });
+      const localVault = getEmbedsFromLocalVault(identifier);
+      const data = await api('/api/auth/login', 'POST', {
+        identifier,
+        password,
+        voucher,
+        client_embeds: localVault.embeds || [],
+        active_embed_id: localVault.active_embed_id || null
+      });
       state.token = data.token;
       state.user = data.user;
       localStorage.setItem('bbh_auth_token', data.token);
       if (data.voucher && data.user) saveAccountToVault(data.user, data.voucher);
+      if (data.user && Array.isArray(data.user.embed_list)) {
+        saveEmbedsToLocalVault(data.user.email, data.user.embed_list, data.user.active_embed_id);
+      }
 
       // Save password and identifier if remember me is enabled
       if (rememberMe) {
@@ -759,6 +824,9 @@
       state.user = data.user;
       localStorage.setItem('bbh_auth_token', data.token);
       if (data.voucher && data.user) saveAccountToVault(data.user, data.voucher);
+      if (data.user && Array.isArray(data.user.embed_list)) {
+        saveEmbedsToLocalVault(data.user.email, data.user.embed_list, data.user.active_embed_id);
+      }
 
       // Auto save credentials on register
       localStorage.setItem('bbh_saved_email', email);
@@ -1031,6 +1099,9 @@
       if (data.user) {
         state.user = data.user;
         if (data.voucher) saveAccountToVault(state.user, data.voucher);
+        if (state.user.email && Array.isArray(state.user.embed_list)) {
+          saveEmbedsToLocalVault(state.user.email, state.user.embed_list, state.user.active_embed_id);
+        }
       }
       renderChatbotDropdown(state.user.embed_list, state.user.active_embed_id);
       mountUserChatbox(state.user.page_id);
@@ -1050,6 +1121,9 @@
       if (data.user) {
         state.user = data.user;
         if (data.voucher) saveAccountToVault(state.user, data.voucher);
+        if (state.user.email && Array.isArray(state.user.embed_list)) {
+          saveEmbedsToLocalVault(state.user.email, state.user.embed_list, state.user.active_embed_id);
+        }
       }
       renderChatbotDropdown(state.user.embed_list, state.user.active_embed_id);
       if (setActive) {
@@ -1070,6 +1144,9 @@
       if (data.user) {
         state.user = data.user;
         if (data.voucher) saveAccountToVault(state.user, data.voucher);
+        if (state.user.email && Array.isArray(state.user.embed_list)) {
+          saveEmbedsToLocalVault(state.user.email, state.user.embed_list, state.user.active_embed_id);
+        }
       }
       renderChatbotDropdown(state.user.embed_list, state.user.active_embed_id);
       if (state.user.active_embed_id === id) {
@@ -1091,6 +1168,9 @@
       if (data.user) {
         state.user = data.user;
         if (data.voucher) saveAccountToVault(state.user, data.voucher);
+        if (state.user.email && Array.isArray(state.user.embed_list)) {
+          saveEmbedsToLocalVault(state.user.email, state.user.embed_list, state.user.active_embed_id);
+        }
       }
       renderChatbotDropdown(state.user.embed_list, state.user.active_embed_id);
       mountUserChatbox(state.user.page_id || '');
@@ -1284,6 +1364,9 @@
       if (data.user) {
         state.user = data.user;
         if (data.voucher) saveAccountToVault(state.user, data.voucher);
+        if (state.user.email && Array.isArray(state.user.embed_list)) {
+          saveEmbedsToLocalVault(state.user.email, state.user.embed_list, state.user.active_embed_id);
+        }
       }
       renderChatbotDropdown(state.user.embed_list, state.user.active_embed_id);
       mountUserChatbox(state.user.page_id);
@@ -1657,13 +1740,17 @@
       const contentList = document.getElementById('tab-admin-users-content');
       const contentCreate = document.getElementById('tab-admin-create-content');
       const contentBackup = document.getElementById('tab-admin-backup-content');
+      const contentCloud = document.getElementById('tab-admin-cloud-content');
 
       if (contentList) contentList.style.display = targetTab === 'tab-admin-users' ? 'block' : 'none';
       if (contentCreate) contentCreate.style.display = targetTab === 'tab-admin-create' ? 'block' : 'none';
       if (contentBackup) contentBackup.style.display = targetTab === 'tab-admin-backup' ? 'block' : 'none';
+      if (contentCloud) contentCloud.style.display = targetTab === 'tab-admin-cloud' ? 'block' : 'none';
 
       if (targetTab === 'tab-admin-users') {
         loadAdminUsers();
+      } else if (targetTab === 'tab-admin-cloud') {
+        loadCloudDBStatus();
       }
     });
   }
@@ -1939,6 +2026,160 @@
         }
       };
       reader.readAsText(file, 'utf8');
+    });
+  }
+
+  // ==========================================================================
+  // CLOUD DATABASE CONTROLLER (UPSTASH REDIS / VERCEL KV / SUPABASE REST)
+  // Ensures multi-user persistence across all serverless restarts & deployments
+  // ==========================================================================
+  async function loadCloudDBStatus() {
+    if (!el.cloudStatusBadge) return;
+    el.cloudStatusBadge.className = 'badge badge-secondary';
+    el.cloudStatusBadge.style.background = 'rgba(255, 255, 255, 0.15)';
+    el.cloudStatusBadge.style.color = 'var(--text-secondary)';
+    el.cloudStatusBadge.textContent = '⏳ Đang kiểm tra...';
+
+    try {
+      const data = await api('/api/admin/cloud-db');
+      if (data.enabled) {
+        el.cloudStatusBadge.className = 'badge badge-teal';
+        el.cloudStatusBadge.style.background = 'rgba(13, 148, 136, 0.2)';
+        el.cloudStatusBadge.style.color = 'var(--teal)';
+        el.cloudStatusBadge.textContent = '🟢 Đã kết nối Cloud DB';
+
+        if (el.cloudStatusDesc) {
+          const syncTime = data.last_sync ? new Date(data.last_sync).toLocaleString('vi-VN') : 'Vừa kết nối';
+          const uCount = data.stats?.users_count ?? 0;
+          el.cloudStatusDesc.innerHTML = `Đang kết nối: <b style="font-family:var(--font-mono);">${escapeHtml(data.masked_url || data.url)}</b> (${(data.provider || 'redis').toUpperCase()}) • Lưu <b>${uCount}</b> tài khoản • Lần đồng bộ: <i>${syncTime}</i>`;
+        }
+
+        if (el.cloudDbProvider) el.cloudDbProvider.value = data.provider || 'upstash';
+        if (el.cloudDbUrl && data.url) el.cloudDbUrl.value = data.url;
+        if (el.cloudDbToken && data.has_token) el.cloudDbToken.placeholder = '•••••••••••••••• (Đã bảo mật trên máy chủ)';
+        if (el.btnDisconnectCloudDb) el.btnDisconnectCloudDb.style.display = 'inline-flex';
+      } else {
+        el.cloudStatusBadge.className = 'badge badge-secondary';
+        el.cloudStatusBadge.style.background = 'rgba(255, 255, 255, 0.15)';
+        el.cloudStatusBadge.style.color = 'var(--text-secondary)';
+        el.cloudStatusBadge.textContent = '⚪ Đang dùng CSDL Cục Bộ';
+
+        if (el.cloudStatusDesc) {
+          el.cloudStatusDesc.textContent = 'Dữ liệu hiện đang lưu trên máy chủ /tmp. Hãy kết nối Cloud DB bên dưới để bảo toàn cho mọi khách hàng & đồng nghiệp!';
+        }
+        if (el.btnDisconnectCloudDb) el.btnDisconnectCloudDb.style.display = 'none';
+      }
+    } catch (err) {
+      el.cloudStatusBadge.className = 'badge badge-danger';
+      el.cloudStatusBadge.style.background = 'var(--danger-soft)';
+      el.cloudStatusBadge.style.color = 'var(--danger)';
+      el.cloudStatusBadge.textContent = '⚠️ Lỗi kiểm tra';
+      if (el.cloudStatusDesc) el.cloudStatusDesc.textContent = `Không thể truy vấn trạng thái Cloud DB: ${err.message}`;
+    }
+  }
+
+  if (el.formAdminCloudDb) {
+    el.formAdminCloudDb.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const provider = el.cloudDbProvider ? el.cloudDbProvider.value : 'upstash';
+      const url = el.cloudDbUrl ? el.cloudDbUrl.value.trim() : '';
+      const token = el.cloudDbToken ? el.cloudDbToken.value.trim() : '';
+
+      if (!url) {
+        showToast('Vui lòng nhập Cloud REST URL.', 'error');
+        return;
+      }
+
+      if (el.cloudFeedback) {
+        el.cloudFeedback.style.display = 'block';
+        el.cloudFeedback.style.background = 'rgba(217, 119, 87, 0.12)';
+        el.cloudFeedback.style.color = 'var(--accent)';
+        el.cloudFeedback.textContent = '⏳ Đang kiểm tra kết nối tới Cloud Database và đồng bộ CSDL...';
+      }
+
+      if (el.btnSaveCloudDb) el.btnSaveCloudDb.disabled = true;
+
+      try {
+        const res = await api('/api/admin/cloud-db', 'POST', { provider, url, token });
+        if (el.cloudFeedback) {
+          el.cloudFeedback.style.background = 'rgba(13, 148, 136, 0.18)';
+          el.cloudFeedback.style.color = 'var(--teal)';
+          el.cloudFeedback.textContent = `✅ ${res.message}`;
+        }
+        showToast(res.message, 'success');
+        await loadCloudDBStatus();
+        await loadAdminUsers();
+        await loadWorkspace();
+      } catch (err) {
+        if (el.cloudFeedback) {
+          el.cloudFeedback.style.background = 'var(--danger-soft)';
+          el.cloudFeedback.style.color = 'var(--danger)';
+          el.cloudFeedback.textContent = `⚠️ Lỗi kết nối Cloud: ${err.message}`;
+        }
+        showToast('Lỗi kết nối Cloud: ' + err.message, 'error');
+      } finally {
+        if (el.btnSaveCloudDb) el.btnSaveCloudDb.disabled = false;
+      }
+    });
+  }
+
+  if (el.btnCloudSyncUp) {
+    el.btnCloudSyncUp.addEventListener('click', async () => {
+      try {
+        el.btnCloudSyncUp.disabled = true;
+        const res = await api('/api/admin/cloud-db/sync', 'POST', { direction: 'upload' });
+        showToast(res.message || 'Đã đẩy dữ liệu CSDL lên Cloud thành công!', 'success');
+        loadCloudDBStatus();
+      } catch (err) {
+        showToast('Lỗi đẩy dữ liệu lên Cloud: ' + err.message, 'error');
+      } finally {
+        el.btnCloudSyncUp.disabled = false;
+      }
+    });
+  }
+
+  if (el.btnCloudSyncDown) {
+    el.btnCloudSyncDown.addEventListener('click', async () => {
+      try {
+        el.btnCloudSyncDown.disabled = true;
+        const res = await api('/api/admin/cloud-db/sync', 'POST', { direction: 'download' });
+        showToast(res.message || 'Đã kéo và hợp nhất CSDL từ Cloud về máy!', 'success');
+        await loadCloudDBStatus();
+        await loadAdminUsers();
+        await loadWorkspace();
+      } catch (err) {
+        showToast('Lỗi kéo dữ liệu từ Cloud: ' + err.message, 'error');
+      } finally {
+        el.btnCloudSyncDown.disabled = false;
+      }
+    });
+  }
+
+  if (el.btnDisconnectCloudDb) {
+    el.btnDisconnectCloudDb.addEventListener('click', async () => {
+      if (!confirm('Bạn có chắc muốn ngắt kết nối CSDL đám mây? Hệ thống sẽ quay về chế độ lưu trữ cục bộ.')) return;
+      try {
+        const res = await api('/api/admin/cloud-db', 'DELETE');
+        showToast(res.message, 'info');
+        if (el.cloudFeedback) el.cloudFeedback.style.display = 'none';
+        if (el.cloudDbUrl) el.cloudDbUrl.value = '';
+        if (el.cloudDbToken) {
+          el.cloudDbToken.value = '';
+          el.cloudDbToken.placeholder = 'Dán token bí mật tại đây...';
+        }
+        loadCloudDBStatus();
+      } catch (err) {
+        showToast('Lỗi ngắt kết nối Cloud: ' + err.message, 'error');
+      }
+    });
+  }
+
+  if (el.btnToggleCloudToken) {
+    el.btnToggleCloudToken.addEventListener('click', () => {
+      if (!el.cloudDbToken) return;
+      const isPassword = el.cloudDbToken.type === 'password';
+      el.cloudDbToken.type = isPassword ? 'text' : 'password';
+      el.btnToggleCloudToken.textContent = isPassword ? '🔒' : '👁️';
     });
   }
 
@@ -4360,6 +4601,35 @@
       state.chatSessions = data.chat_sessions || [];
       state.users = data.users;
 
+      // Master Vault reconciliation for Chatbots
+      if (state.user && state.user.email) {
+        const localVault = getEmbedsFromLocalVault(state.user.email);
+        const serverEmbeds = state.user.embed_list || [];
+        const mergedMap = new Map();
+        serverEmbeds.forEach(b => {
+          if (b && (b.id || b.page_id)) mergedMap.set(b.id || b.page_id, b);
+        });
+        let hasNewFromClient = false;
+        (localVault.embeds || []).forEach(b => {
+          if (b && (b.id || b.page_id)) {
+            const key = b.id || b.page_id;
+            if (!mergedMap.has(key)) {
+              mergedMap.set(key, b);
+              hasNewFromClient = true;
+            }
+          }
+        });
+        const reconciledList = Array.from(mergedMap.values());
+        if (hasNewFromClient && reconciledList.length > serverEmbeds.length) {
+          state.user.embed_list = reconciledList;
+          saveEmbedsToLocalVault(state.user.email, reconciledList, state.user.active_embed_id);
+          // Sync merged list to server in background
+          api('/api/user/config', 'PATCH', { embed_list: reconciledList }).catch(e => console.warn('[SYNC] Auto-sync embeds failed:', e));
+        } else {
+          saveEmbedsToLocalVault(state.user.email, state.user.embed_list, state.user.active_embed_id);
+        }
+      }
+
       applyAuthState();
       syncRunnerPreferences();
       updateManualQuestionCount();
@@ -4392,6 +4662,9 @@
 
       if (boot.currentUser) {
         state.user = boot.currentUser;
+        if (state.user && Array.isArray(state.user.embed_list)) {
+          saveEmbedsToLocalVault(state.user.email, state.user.embed_list, state.user.active_embed_id);
+        }
         await loadWorkspace();
         setTimeout(() => { toggleChatbox(true); }, 750);
       } else {

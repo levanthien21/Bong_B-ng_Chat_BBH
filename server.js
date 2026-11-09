@@ -92,6 +92,262 @@ function verifyAccountVoucher(voucherStr) {
   return null;
 }
 
+function mergeEmbedLists(existing = [], incoming = []) {
+  const result = Array.isArray(existing) ? existing.map(e => ({ ...e })) : [];
+  if (!Array.isArray(incoming)) return result;
+
+  for (const item of incoming) {
+    if (!item) continue;
+    const itemId = String(item.id || '').trim();
+    const itemPid = String(item.page_id || extractPageId(item.embed_code) || '').trim();
+    if (!itemId && !itemPid) continue;
+
+    const existingIndex = result.findIndex(e => 
+      (itemId && String(e.id || '').trim() === itemId) || 
+      (itemPid && (String(e.page_id || '').trim() === itemPid || extractPageId(e.embed_code) === itemPid))
+    );
+
+    if (existingIndex === -1) {
+      result.push({
+        id: itemId || ('emb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
+        name: item.name || (itemPid ? `Chatbot (${itemPid})` : 'Chatbot chính'),
+        page_id: itemPid,
+        embed_code: item.embed_code || itemPid,
+        is_active: Boolean(item.is_active),
+        created_at: item.created_at || new Date().toISOString(),
+        updated_at: item.updated_at || new Date().toISOString()
+      });
+    } else {
+      result[existingIndex] = {
+        ...result[existingIndex],
+        name: item.name || result[existingIndex].name,
+        page_id: itemPid || result[existingIndex].page_id,
+        embed_code: item.embed_code || result[existingIndex].embed_code,
+        is_active: (item.is_active !== undefined) ? Boolean(item.is_active) : result[existingIndex].is_active,
+        updated_at: item.updated_at || new Date().toISOString()
+      };
+    }
+  }
+  return result;
+}
+
+// ==========================================================================
+// UNIVERSAL CLOUD DATABASE ADAPTER (UPSTASH REDIS REST / VERCEL KV)
+// 100% Native HTTPS - Zero NPM dependencies - Survives Vercel restarts & redeploys
+// ==========================================================================
+
+const CLOUD_STORAGE_KEY = 'bbh_database_master';
+
+function getCloudConfig() {
+  const envUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || '';
+  const envToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || '';
+
+  const cfgUrl = (typeof db !== 'undefined' && db?.config?.cloud_db_url) || envUrl;
+  const cfgToken = (typeof db !== 'undefined' && db?.config?.cloud_db_token) || envToken;
+  const cfgProvider = (typeof db !== 'undefined' && db?.config?.cloud_db_provider) || 'upstash';
+
+  return {
+    url: String(cfgUrl).trim().replace(/\/$/, ''),
+    token: String(cfgToken).trim(),
+    provider: cfgProvider,
+    isEnabled: Boolean(cfgUrl && cfgToken),
+    isConfiguredFromEnv: Boolean(envUrl && envToken)
+  };
+}
+
+function httpsRequest(urlStr, options = {}, bodyData = null) {
+  return new Promise((resolve, reject) => {
+    try {
+      const parsed = new URL(urlStr);
+      const isHttps = parsed.protocol === 'https:';
+      const transport = isHttps ? https : http;
+
+      const reqOptions = {
+        hostname: parsed.hostname,
+        port: parsed.port || (isHttps ? 443 : 80),
+        path: parsed.pathname + parsed.search,
+        method: options.method || 'GET',
+        headers: options.headers || {}
+      };
+
+      const req = transport.request(reqOptions, (res) => {
+        let chunks = '';
+        res.on('data', chunk => chunks += chunk);
+        res.on('end', () => {
+          try {
+            resolve({ statusCode: res.statusCode, data: JSON.parse(chunks), raw: chunks });
+          } catch (e) {
+            resolve({ statusCode: res.statusCode, raw: chunks });
+          }
+        });
+      });
+
+      req.on('error', reject);
+      req.setTimeout(10000, () => {
+        req.destroy();
+        reject(new Error('Cloud DB request timeout'));
+      });
+
+      if (bodyData) {
+        req.write(typeof bodyData === 'string' ? bodyData : JSON.stringify(bodyData));
+      }
+      req.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+async function fetchFromCloudDB() {
+  const cfg = getCloudConfig();
+  if (!cfg.isEnabled) return null;
+
+  try {
+    if (cfg.provider === 'upstash' || cfg.url.includes('upstash.io')) {
+      const getUrl = `${cfg.url}/get/${CLOUD_STORAGE_KEY}`;
+      const res = await httpsRequest(getUrl, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${cfg.token}` }
+      });
+      if (res.statusCode === 200 && res.data && res.data.result) {
+        const raw = res.data.result;
+        return typeof raw === 'string' ? JSON.parse(raw) : raw;
+      }
+    } else {
+      // Generic REST
+      const res = await httpsRequest(cfg.url, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${cfg.token}`, 'apikey': cfg.token }
+      });
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        return res.data;
+      }
+    }
+  } catch (err) {
+    console.warn('[CLOUD_DB] Fetch error:', err.message);
+  }
+  return null;
+}
+
+let isSyncingCloud = false;
+let pendingCloudSync = false;
+
+async function syncToCloudDB(dbData) {
+  const cfg = getCloudConfig();
+  if (!cfg.isEnabled || !dbData) return false;
+
+  if (isSyncingCloud) {
+    pendingCloudSync = true;
+    return false;
+  }
+
+  isSyncingCloud = true;
+  try {
+    if (cfg.provider === 'upstash' || cfg.url.includes('upstash.io')) {
+      const setUrl = `${cfg.url}/set/${CLOUD_STORAGE_KEY}`;
+      const payload = JSON.stringify(dbData);
+      const res = await httpsRequest(setUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${cfg.token}`,
+          'Content-Type': 'application/json'
+        }
+      }, payload);
+
+      if (res.statusCode === 200) {
+        if (typeof db !== 'undefined' && db?.config) {
+          db.config.cloud_db_last_synced = new Date().toISOString();
+        }
+        return true;
+      }
+    } else {
+      // Generic REST
+      const payload = JSON.stringify(dbData);
+      const res = await httpsRequest(cfg.url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${cfg.token}`,
+          'apikey': cfg.token,
+          'Content-Type': 'application/json'
+        }
+      }, payload);
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        if (typeof db !== 'undefined' && db?.config) {
+          db.config.cloud_db_last_synced = new Date().toISOString();
+        }
+        return true;
+      }
+    }
+  } catch (err) {
+    console.warn('[CLOUD_DB] Sync error:', err.message);
+  } finally {
+    isSyncingCloud = false;
+    if (pendingCloudSync) {
+      pendingCloudSync = false;
+      setTimeout(() => syncToCloudDB(db), 1000);
+    }
+  }
+  return false;
+}
+
+function mergeCloudDBIntoLocal(cloudData) {
+  if (!cloudData || typeof cloudData !== 'object' || typeof db === 'undefined') return;
+
+  if (Array.isArray(cloudData.users)) {
+    for (const cUser of cloudData.users) {
+      if (!cUser || !cUser.email) continue;
+      const localUser = db.users.find(u => u.email.toLowerCase() === cUser.email.toLowerCase());
+      if (localUser) {
+        localUser.embed_list = mergeEmbedLists(localUser.embed_list, cUser.embed_list || []);
+        if (cUser.active_embed_id) localUser.active_embed_id = cUser.active_embed_id;
+        if (cUser.page_id) localUser.page_id = cUser.page_id;
+        if (cUser.embed_code) localUser.embed_code = cUser.embed_code;
+        if (cUser.password_hash) localUser.password_hash = cUser.password_hash;
+        if (cUser.role && !isSuperAdmin(localUser)) localUser.role = cUser.role;
+        if (cUser.status) localUser.status = cUser.status;
+        if (cUser.productKnowledge?.content && !localUser.productKnowledge?.content) localUser.productKnowledge = cUser.productKnowledge;
+        if (cUser.promptRules?.content && !localUser.promptRules?.content) localUser.promptRules = cUser.promptRules;
+      } else {
+        db.users.push(cUser);
+      }
+    }
+  }
+
+  if (Array.isArray(cloudData.evaluations) && cloudData.evaluations.length > db.evaluations.length) {
+    db.evaluations = cloudData.evaluations;
+  }
+  if (Array.isArray(cloudData.chat_sessions) && cloudData.chat_sessions.length > db.chat_sessions.length) {
+    db.chat_sessions = cloudData.chat_sessions;
+  }
+  if (cloudData.config) {
+    const { cloud_db_url, cloud_db_token, ...safeConfig } = cloudData.config;
+    db.config = { ...db.config, ...safeConfig };
+  }
+  saveDB(db, false);
+}
+
+let cloudInitialized = false;
+
+async function ensureCloudDBLoaded() {
+  if (cloudInitialized) return;
+  const cfg = getCloudConfig();
+  if (!cfg.isEnabled) {
+    cloudInitialized = true;
+    return;
+  }
+  try {
+    const cloudData = await fetchFromCloudDB();
+    if (cloudData && Array.isArray(cloudData.users)) {
+      console.log(`[CLOUD_DB] Initialized from Cloud DB! Loaded ${cloudData.users.length} users.`);
+      mergeCloudDBIntoLocal(cloudData);
+    }
+  } catch (e) {
+    console.warn('[CLOUD_DB] Auto load notice:', e.message);
+  } finally {
+    cloudInitialized = true;
+  }
+}
+
 function generateToken(userOrId = '') {
   const ts = Date.now().toString(36);
   let rawId = '';
@@ -493,7 +749,7 @@ function loadDB() {
   }
 }
 
-function saveDB(db) {
+function saveDB(db, syncCloud = true) {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf8');
     // Save redundant backup of users to protect against container wipe
@@ -508,6 +764,9 @@ function saveDB(db) {
       try {
         fs.writeFileSync(localDbPath, JSON.stringify(db, null, 2), 'utf8');
       } catch (e) {}
+    }
+    if (syncCloud) {
+      syncToCloudDB(db).catch(e => console.warn('[CLOUD_DB] Auto sync notice:', e.message));
     }
   } catch (err) {
     console.error('[DB] Error saving DB:', err);
@@ -2300,6 +2559,12 @@ function getAuthenticatedUser(req) {
     }
 
     if (user && user.status === 'active') {
+      if (snapshot && Array.isArray(snapshot.embed_list) && snapshot.embed_list.length > 0) {
+        user.embed_list = mergeEmbedLists(user.embed_list, snapshot.embed_list);
+        if (snapshot.active_embed_id && user.embed_list.some(b => b.id === snapshot.active_embed_id)) {
+          user.active_embed_id = snapshot.active_embed_id;
+        }
+      }
       if (!db.sessions) db.sessions = {};
       db.sessions[token] = { user_id: user.id, created_at: new Date().toISOString() };
       const isSuper = isSuperAdmin(user);
@@ -2331,6 +2596,10 @@ const MIME_TYPES = {
 
 async function handleRequest(req, res) {
   if (req.method === 'OPTIONS') return sendJSON(res, 200, { ok: true });
+
+  if (!cloudInitialized) {
+    await ensureCloudDBLoaded();
+  }
 
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = parsedUrl.pathname;
@@ -2452,6 +2721,31 @@ async function handleRequest(req, res) {
 
       if (user.status !== 'active') {
         return sendJSON(res, 403, { ok: false, message: 'Tài khoản của bạn hiện đang bị tạm khóa. Vui lòng liên hệ Admin thienlv.bbh@gmail.com.' });
+      }
+
+      // Merge chatbots from verified voucher and client payload so bots are NEVER lost
+      if (voucher) {
+        const verifiedVoucher = verifyAccountVoucher(voucher);
+        if (verifiedVoucher && Array.isArray(verifiedVoucher.embed_list) && verifiedVoucher.embed_list.length > 0) {
+          user.embed_list = mergeEmbedLists(user.embed_list, verifiedVoucher.embed_list);
+          if (verifiedVoucher.active_embed_id) user.active_embed_id = verifiedVoucher.active_embed_id;
+        }
+      }
+      if (Array.isArray(body.client_embeds) && body.client_embeds.length > 0) {
+        user.embed_list = mergeEmbedLists(user.embed_list, body.client_embeds);
+      }
+      if (body.active_embed_id) {
+        user.active_embed_id = body.active_embed_id;
+      }
+      if (user.embed_list && user.embed_list.length > 0) {
+        let activeBot = user.embed_list.find(b => b.id === user.active_embed_id);
+        if (!activeBot) {
+          activeBot = user.embed_list.find(b => b.is_active) || user.embed_list[0];
+          user.active_embed_id = activeBot.id;
+        }
+        user.embed_list.forEach(b => { b.is_active = (b.id === user.active_embed_id); });
+        user.page_id = activeBot.page_id || user.page_id;
+        user.embed_code = activeBot.embed_code || user.embed_code;
       }
 
       const token = generateToken(user);
@@ -2646,6 +2940,11 @@ async function handleRequest(req, res) {
       if (rawPageId !== undefined && String(rawPageId).trim()) {
         const pid = extractPageId(String(rawPageId).trim());
         if (pid) auth.user.page_id = pid;
+      }
+
+      // Merge incoming embed_list if sent from client vault
+      if (Array.isArray(body.embed_list) && body.embed_list.length > 0) {
+        auth.user.embed_list = mergeEmbedLists(auth.user.embed_list, body.embed_list);
       }
 
       // Synchronize with user's embed_list
@@ -3990,6 +4289,158 @@ CHỈ TRẢ VỀ JSON HỢP LỆ:
       saveDB(db);
       addAuditLog(auth.user.name, auth.user.role, `Khôi phục/Đồng bộ ${count} tài khoản từ file sao lưu`);
       return sendJSON(res, 200, { ok: true, message: `Đã khôi phục/đồng bộ thành công ${count} tài khoản!`, total_users: db.users.length });
+    }
+
+    // Admin Cloud Database Management (Upstash Redis / Vercel KV / Supabase)
+    if (pathname === '/api/admin/cloud-db' && req.method === 'GET') {
+      if (!isSuperAdmin(auth.user)) return sendJSON(res, 403, { ok: false, message: 'Forbidden' });
+      const cfg = getCloudConfig();
+      let totalEmbeds = 0;
+      db.users.forEach(u => { totalEmbeds += (Array.isArray(u.embed_list) ? u.embed_list.length : 0); });
+      return sendJSON(res, 200, {
+        ok: true,
+        enabled: cfg.isEnabled,
+        isEnabled: cfg.isEnabled,
+        provider: cfg.provider,
+        url: cfg.url,
+        masked_url: cfg.url ? (cfg.url.slice(0, 16) + '...' + cfg.url.slice(-8)) : '',
+        rawUrl: cfg.url,
+        has_token: Boolean(cfg.token),
+        hasToken: Boolean(cfg.token),
+        isConfiguredFromEnv: cfg.isConfiguredFromEnv,
+        last_sync: db.config.cloud_db_last_synced || null,
+        lastSynced: db.config.cloud_db_last_synced || null,
+        stats: {
+          users_count: db.users.length,
+          embeds_count: totalEmbeds
+        },
+        totalUsers: db.users.length,
+        totalEmbeds
+      });
+    }
+
+    if (pathname === '/api/admin/cloud-db' && req.method === 'POST') {
+      if (!isSuperAdmin(auth.user)) return sendJSON(res, 403, { ok: false, message: 'Forbidden' });
+      const body = await parseBody(req);
+      const provider = String(body.provider || 'upstash').trim();
+      const rawUrl = String(body.url || '').trim().replace(/\/$/, '');
+      const rawToken = String(body.token || '').trim();
+
+      if (!rawUrl || !rawToken) {
+        return sendJSON(res, 400, { ok: false, message: 'Vui lòng nhập đầy đủ Cloud REST URL và Token.' });
+      }
+
+      // Test live HTTPS connection
+      try {
+        let testSuccess = false;
+        let testLatency = 0;
+        const startTime = Date.now();
+
+        if (provider === 'upstash' || rawUrl.includes('upstash.io')) {
+          const pingRes = await httpsRequest(`${rawUrl}/ping`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${rawToken}` }
+          });
+          testLatency = Date.now() - startTime;
+          if (pingRes.statusCode === 200 && (pingRes.data?.result === 'PONG' || String(pingRes.raw || '').includes('PONG'))) {
+            testSuccess = true;
+          } else {
+            // Also try GET bbh_database_master in case ping is restricted
+            const getRes = await httpsRequest(`${rawUrl}/get/bbh_database_master`, {
+              method: 'GET',
+              headers: { 'Authorization': `Bearer ${rawToken}` }
+            });
+            testLatency = Date.now() - startTime;
+            if (getRes.statusCode === 200) testSuccess = true;
+            else throw new Error(`Cloud DB phản hồi mã HTTP ${pingRes.statusCode || getRes.statusCode}: ${pingRes.raw || getRes.raw}`);
+          }
+        } else {
+          // Custom / Supabase test
+          const getRes = await httpsRequest(rawUrl, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${rawToken}`, 'apikey': rawToken }
+          });
+          testLatency = Date.now() - startTime;
+          if (getRes.statusCode >= 200 && getRes.statusCode < 300) {
+            testSuccess = true;
+          } else {
+            throw new Error(`Cloud DB phản hồi mã HTTP ${getRes.statusCode}`);
+          }
+        }
+
+        if (testSuccess) {
+          db.config.cloud_db_provider = provider;
+          db.config.cloud_db_url = rawUrl;
+          db.config.cloud_db_token = rawToken;
+          db.config.cloud_db_last_synced = new Date().toISOString();
+
+          // Upload current database immediately
+          const uploadOk = await syncToCloudDB(db);
+          saveDB(db, false);
+
+          let totalEmbeds = 0;
+          db.users.forEach(u => { totalEmbeds += (Array.isArray(u.embed_list) ? u.embed_list.length : 0); });
+
+          addAuditLog(auth.user.name, auth.user.role, `Kết nối thành công CSDL Đám mây (${provider})`);
+
+          return sendJSON(res, 200, {
+            ok: true,
+            latencyMs: testLatency,
+            uploaded: uploadOk,
+            message: `Kết nối CSDL Đám mây thành công (Độ trễ: ${testLatency}ms)! Đã đồng bộ ${db.users.length} tài khoản và ${totalEmbeds} chatbot lên Cloud an toàn.`
+          });
+        }
+      } catch (err) {
+        return sendJSON(res, 400, {
+          ok: false,
+          message: `Không thể kết nối đến Cloud DB: ${err.message}. Vui lòng kiểm tra lại URL và Token.`
+        });
+      }
+    }
+
+    if (pathname === '/api/admin/cloud-db/sync' && req.method === 'POST') {
+      if (!isSuperAdmin(auth.user)) return sendJSON(res, 403, { ok: false, message: 'Forbidden' });
+      const body = await parseBody(req);
+      const action = body.direction || body.action || 'upload';
+
+      if (action === 'upload') {
+        const ok = await syncToCloudDB(db);
+        if (ok) {
+          db.config.cloud_db_last_synced = new Date().toISOString();
+          saveDB(db, false);
+          return sendJSON(res, 200, { ok: true, message: 'Đã đẩy dữ liệu CSDL lên Cloud thành công!' });
+        } else {
+          return sendJSON(res, 500, { ok: false, message: 'Không thể đồng bộ lên Cloud DB. Vui lòng kiểm tra kết nối.' });
+        }
+      } else if (action === 'download') {
+        const cloudData = await fetchFromCloudDB();
+        if (cloudData && Array.isArray(cloudData.users)) {
+          mergeCloudDBIntoLocal(cloudData);
+          db.config.cloud_db_last_synced = new Date().toISOString();
+          saveDB(db, false);
+          let totalEmbeds = 0;
+          db.users.forEach(u => { totalEmbeds += (Array.isArray(u.embed_list) ? u.embed_list.length : 0); });
+          return sendJSON(res, 200, {
+            ok: true,
+            message: `Đã tải và hợp nhất thành công ${cloudData.users.length} tài khoản và ${totalEmbeds} chatbot từ Cloud về máy!`,
+            usersCount: db.users.length,
+            embedsCount: totalEmbeds
+          });
+        } else {
+          return sendJSON(res, 404, { ok: false, message: 'Chưa tìm thấy bản dữ liệu nào trên Cloud DB để tải về.' });
+        }
+      }
+    }
+
+    if (pathname === '/api/admin/cloud-db' && req.method === 'DELETE') {
+      if (!isSuperAdmin(auth.user)) return sendJSON(res, 403, { ok: false, message: 'Forbidden' });
+      delete db.config.cloud_db_url;
+      delete db.config.cloud_db_token;
+      delete db.config.cloud_db_provider;
+      delete db.config.cloud_db_last_synced;
+      saveDB(db, false);
+      addAuditLog(auth.user.name, auth.user.role, 'Ngắt kết nối CSDL Đám mây');
+      return sendJSON(res, 200, { ok: true, message: 'Đã ngắt kết nối Cloud DB và chuyển về chế độ CSDL cục bộ.' });
     }
 
     // 8. General Config Update
