@@ -100,7 +100,7 @@
       "role": "admin",
       "status": "active",
       "avatar_color": "#D97757",
-      "password_hash": "eba763bd1a0d65b8df4d96dd64fc9984244384d2d8b30cf0195681327529a0f8653597536b37b42709a3e8ac4c2a45100628e68fcc874d2bc310ef0ff28ed771",
+      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
       "page_id": "095817282564177",
       "embed_code": "095817282564177",
       "deepseek_api_key": "",
@@ -115,7 +115,7 @@
         "updated_at": "2026-10-26T08:07:15.234Z"
       },
       "created_at": "2026-10-25T08:20:08.743Z",
-      "last_login": "2026-11-09T08:32:07.540Z",
+      "last_login": "2026-11-09T09:31:26.184Z",
       "tests_submitted": 23,
       "embed_list": [
         {
@@ -125,10 +125,17 @@
           "embed_code": "095817282564177",
           "is_active": true,
           "created_at": "2026-10-25T08:20:08.743Z",
-          "updated_at": "2026-11-09T08:32:07.535Z"
+          "updated_at": "2026-11-09T09:31:26.179Z"
         }
       ],
-      "active_embed_id": "emb_thien_default"
+      "active_embed_id": "emb_thien_default",
+      "checklist_cases": [],
+      "checklist_settings": {
+        "enabled": false,
+        "noteMode": "auto",
+        "autoReset": true,
+        "sendNoteToChat": false
+      }
     },
     {
       "id": "usr_colleague_demo",
@@ -510,6 +517,10 @@
     "bbh_usr_thien_admin.mw9065ir.eyJpZCI6InVzcl90aGllbl9hZG1pbiIsImVtYWlsIjoidGhpZW5sdi5iYmhAZ21haWwuY29tIiwidXNlcm5hbWUiOiJ0aGllbmx2LmJiaCIsIm5hbWUiOiJUaGnhu4duIEJCSCIsInJvbGUiOiJhZG1pbiIsInBhZ2VfaWQiOiIwOTU4MTcyODI1NjQxNzciLCJlbWJlZF9jb2RlIjoiMDk1ODE3MjgyNTY0MTc3IiwiZW1iZWRfbGlzdCI6W3siaWQiOiJlbWJfdGhpZW5fZGVmYXVsdCIsIm5hbWUiOiJDaGF0Ym90IFRoaeG7h24gQkJIIChN4bq3YyDEkeG7i25oKSIsInBhZ2VfaWQiOiIwOTU4MTcyODI1NjQxNzciLCJlbWJlZF9jb2RlIjoiMDk1ODE3MjgyNTY0MTc3IiwiaXNfYWN0aXZlIjp0cnVlLCJjcmVhdGVkX2F0IjoiMjAyNi0xMC0yNVQwODoyMDowOC43NDNaIiwidXBkYXRlZF9hdCI6IjIwMjYtMTEtMDlUMDg6MzI6MDcuNTM1WiJ9XSwiYWN0aXZlX2VtYmVkX2lkIjoiZW1iX3RoaWVuX2RlZmF1bHQiLCJwYXNzd29yZF9oYXNoIjoiZWJhNzYzYmQxYTBkNjViOGRmNGQ5NmRkNjRmYzk5ODQyNDQzODRkMmQ4YjMwY2YwMTk1NjgxMzI3NTI5YTBmODY1MzU5NzUzNmIzN2I0MjcwOWEzZThhYzRjMmE0NTEwMDYyOGU2OGZjYzg3NGQyYmMzMTBlZjBmZjI4ZWQ3NzEiLCJjcmVhdGVkX2F0IjoiMjAyNi0xMC0yNVQwODoyMDowOC43NDNaIn0.2e4c7688aa10aa8ab9c4f583d2bef3ae": {
       "user_id": "usr_thien_admin",
       "created_at": "2026-11-09T08:32:07.540Z"
+    },
+    "bbh_usr_thien_admin.mw92afe0.eyJpZCI6InVzcl90aGllbl9hZG1pbiIsImVtYWlsIjoidGhpZW5sdi5iYmhAZ21haWwuY29tIiwidXNlcm5hbWUiOiJ0aGllbmx2LmJiaCIsIm5hbWUiOiJUaGnhu4duIEJCSCIsInJvbGUiOiJhZG1pbiIsInBhZ2VfaWQiOiIwOTU4MTcyODI1NjQxNzciLCJlbWJlZF9jb2RlIjoiMDk1ODE3MjgyNTY0MTc3IiwiZW1iZWRfbGlzdCI6W3siaWQiOiJlbWJfdGhpZW5fZGVmYXVsdCIsIm5hbWUiOiJDaGF0Ym90IFRoaeG7h24gQkJIIChN4bq3YyDEkeG7i25oKSIsInBhZ2VfaWQiOiIwOTU4MTcyODI1NjQxNzciLCJlbWJlZF9jb2RlIjoiMDk1ODE3MjgyNTY0MTc3IiwiaXNfYWN0aXZlIjp0cnVlLCJjcmVhdGVkX2F0IjoiMjAyNi0xMC0yNVQwODoyMDowOC43NDNaIiwidXBkYXRlZF9hdCI6IjIwMjYtMTEtMDlUMDk6MzE6MjYuMTc5WiJ9XSwiYWN0aXZlX2VtYmVkX2lkIjoiZW1iX3RoaWVuX2RlZmF1bHQiLCJwYXNzd29yZF9oYXNoIjoiZGRmZjYyNWFhODRlN2NmYjkzYjE4YzI2MDlhMWU2MTE2NzAwMWQyNTJhYjI0NTQyODczZmRjNTM2OTliNjQwNThiMGI3NTAxOTQ3MDYwNzVjYzQ1NDljOGM1MWUwYzE4NjUzYmJhNDEyYWQxNDQzY2QyMmQ4NmU0YzRhN2JmOWIiLCJjcmVhdGVkX2F0IjoiMjAyNi0xMC0yNVQwODoyMDowOC43NDNaIn0.354b101b6b1a79adb2f0907f43b13d0a": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-11-09T09:31:26.184Z"
     }
   },
   "evaluations": [
@@ -849,6 +860,13 @@
   ],
   "chat_sessions": [],
   "logs": [
+    {
+      "id": "log_1794216686184_ziv3",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-11-09T09:31:26.184Z"
+    },
     {
       "id": "log_1794213127540_wnb5",
       "actor": "Thiện BBH",

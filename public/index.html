@@ -115,9 +115,32 @@
         </div>
 
         <div class="panel-body">
-          <!-- CÁCH 1: TỰ SOẠN CÂU HỎI THỦ CÔNG (KHÔNG GIỚI HẠN SỐ LƯỢNG) -->
+          <!-- CÁCH 1: TỰ SOẠN CÂU HỎI THỦ CÔNG (CÓ TÍNH NĂNG BẬT/TẮT TEST ĐA LUỒNG & CHECKLIST HẬU KIỂM) -->
           <div id="view-manual-qa" class="qa-view-pane active">
-            <div class="clean-card">
+            <!-- BẬT / TẮT CHẾ ĐỘ TEST ĐA LUỒNG & CHECKLIST HẬU KIỂM -->
+            <div class="clean-card multiflow-toggle-card" id="multiflow-toggle-card">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 7px; min-width: 0;">
+                  <span style="font-size: 16px;">🗂️</span>
+                  <div style="min-width: 0;">
+                    <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                      <span>Test Đa Luồng & Checklist</span>
+                      <span id="mf-mode-status-badge" class="badge-pill-xs off">Đang tắt</span>
+                    </div>
+                    <div style="font-size: 10.5px; color: var(--text-secondary); line-height: 1.35; margin-top: 2px;">
+                      Test từng trường hợp ➔ <code>/reset</code> ➔ Đánh giá & Ghi chú hậu kiểm ➔ Test tiếp
+                    </div>
+                  </div>
+                </div>
+                <label class="switch-toggle" title="Bật / Tắt chế độ Test Đa Luồng theo Checklist có /reset và ghi chú hậu kiểm">
+                  <input type="checkbox" id="toggle-multiflow-mode">
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- CHẾ ĐỘ 1A (KHI TẮT ĐA LUỒNG): SOẠN DANH SÁCH CÂU HỎI ĐƠN LUỒNG MẶC ĐỊNH -->
+            <div class="clean-card" id="singleflow-editor-card">
               <!-- Row 1: Card Header Title + Count & Quick Utilities -->
               <div class="clean-card-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px;">
                 <div class="clean-card-title" style="white-space: nowrap; display: flex; align-items: center; gap: 6px;">
@@ -125,6 +148,7 @@
                   <span class="count-pill" id="manual-q-count">8 câu</span>
                 </div>
                 <div style="display: flex; gap: 4px; align-items: center;">
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-convert-to-checklist" title="Chuyển danh sách câu hỏi này sang Checklist Đa Luồng (có /reset & ghi chú)" style="padding: 2px 6px; font-size: 10.5px; color: var(--teal);">🗂️ Sang Checklist</button>
                   <button type="button" class="btn btn-secondary btn-xs" id="btn-clean-qa-text" title="Tự động lọc bỏ đáp án và số thứ tự nếu lỡ dán kèm đáp án" style="padding: 2px 7px; font-size: 11px;">🧹 Lọc</button>
                   <button type="button" class="btn btn-secondary btn-xs" id="btn-clear-manual-text" title="Xóa trắng danh sách câu hỏi" style="padding: 2px 7px; font-size: 11px; color: var(--danger);">🗑️ Xóa</button>
                 </div>
@@ -150,6 +174,80 @@ Resort bên mình có sân golf và trực thăng đưa đón không?
 Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sao?" style="min-height: 140px; font-size: 11.5px; line-height: 1.5;"></textarea>
 
               <div class="subtle-tip">💡 Hệ thống sẽ gửi tuần tự từng dòng câu hỏi vào bong bóng chat.</div>
+            </div>
+
+            <!-- CHẾ ĐỘ 1B (KHI BẬT ĐA LUỒNG): CHECKLIST NHIỀU TRƯỜNG HỢP + /RESET + GHI CHÚ HẬU KIỂM -->
+            <div class="clean-card" id="multiflow-editor-card" style="display: none;">
+              <div class="clean-card-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 4px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                  <span style="font-weight: 700; font-size: 12.5px;">📋 Checklist Trường Hợp</span>
+                  <span class="count-pill" id="mf-cases-count-badge" style="background: rgba(13, 148, 136, 0.14); color: var(--teal);">4 luồng</span>
+                  <span class="mono-badge" id="mf-done-count-badge" style="font-size: 9.5px;">0/4 đã test</span>
+                </div>
+                <div style="display: flex; gap: 3px; align-items: center;">
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-mf-open-audit-view" title="Mở Sổ Hậu Kiểm bên phải để xem toàn bộ hội thoại & ghi chú đã test" style="padding: 2px 6px; font-size: 10.5px; color: var(--teal); font-weight: 700;">🔍 Hậu kiểm</button>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-mf-reset-statuses" title="Đặt lại trạng thái toàn bộ trường hợp về Chờ test" style="padding: 2px 6px; font-size: 10.5px;">🔄 Đặt lại</button>
+                </div>
+              </div>
+
+              <!-- Smart Toolbar for Multi-Flow Checklist -->
+              <div style="display: grid; grid-template-columns: 1.15fr 0.85fr 0.85fr 0.8fr; gap: 4px; margin-bottom: 6px;">
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-mf-generate-files" style="justify-content: center; font-weight: 700; color: var(--accent); border-color: rgba(217, 119, 87, 0.4); background: rgba(217, 119, 87, 0.05); padding: 4px 4px; font-size: 10.5px;" title="Tự động đọc File 1 & File 2 để dựng Checklist nhiều trường hợp kiểm thử">
+                  <span>✨ Từ 2 File</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-mf-load-sample" style="justify-content: center; font-weight: 600; padding: 4px 4px; font-size: 10.5px;" title="Nạp bộ Checklist 4 trường hợp mẫu chuẩn">
+                  <span>📋 Mẫu chuẩn</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-mf-add-case" style="justify-content: center; font-weight: 600; color: var(--teal); padding: 4px 4px; font-size: 10.5px;" title="Thêm 1 trường hợp / luồng test mới vào Checklist">
+                  <span>➕ Thêm TH</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-mf-toggle-raw" style="justify-content: center; padding: 4px 4px; font-size: 10.5px;" title="Chuyển sang chế độ dán / sửa nhanh bằng văn bản">
+                  <span>📝 Sửa Text</span>
+                </button>
+              </div>
+
+              <!-- Visual Checklist Cards List -->
+              <div id="mf-cases-list" class="mf-cases-list">
+                <!-- Dynamic Test Case Cards rendered by app.js -->
+              </div>
+
+              <!-- Bulk Raw Text Editor (Toggled via Sửa Text) -->
+              <div id="mf-raw-editor-box" style="display: none; flex-direction: column; gap: 6px; margin: 6px 0; padding: 8px; background: var(--bg-panel); border-radius: 8px; border: 1px dashed var(--border-strong);">
+                <div style="font-size: 10.5px; color: var(--text-secondary); line-height: 1.35;">
+                  💡 <b>Cú pháp soạn nhanh:</b> Bắt đầu mỗi trường hợp bằng <code># Tên trường hợp</code> (hoặc ngăn cách bằng dòng <code>/reset</code>). Ghi chú bắt đầu bằng <code>@Ghi chú: ...</code>
+                </div>
+                <textarea class="textarea" id="mf-raw-textarea" style="min-height: 145px; font-size: 11px; line-height: 1.45; font-family: var(--font-mono);" placeholder="# Trường hợp 1: Test tư vấn & Báo giá
+Chào bạn, bên mình còn phòng trống cuối tuần này không?
+Mức giá này đã bao gồm ăn sáng buffet chưa bạn?
+@Ghi chú: Kiểm tra AI báo giá chuẩn File 1
+
+# Trường hợp 2: Test chính sách thú cưng
+Bên mình có cho mang theo một bé cún Poodle nhỏ không?
+@Ghi chú: Kiểm tra AI từ chối lịch sự theo File 2"></textarea>
+                <div style="display: flex; gap: 5px;">
+                  <button type="button" class="btn btn-primary btn-xs" id="btn-mf-apply-raw" style="flex: 1; justify-content: center; font-weight: 700;">✅ Lưu vào Checklist</button>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-mf-cancel-raw">Đóng</button>
+                </div>
+              </div>
+
+              <!-- Multi-Flow Workflow Options (/reset & Post-Audit Note Mode) -->
+              <div style="background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 7px 9px; margin-top: 4px; display: flex; flex-direction: column; gap: 5px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                  <span style="font-size: 10.5px; font-weight: 700; color: var(--text-secondary);">Khi xong mỗi trường hợp:</span>
+                  <select class="select select-xs" id="mf-note-mode-select" style="font-size: 10.5px; font-weight: 600; max-width: 195px; padding: 2px 6px;">
+                    <option value="auto" selected>⚡ Tự đánh giá, ghi chú -> /reset & chạy tiếp</option>
+                    <option value="pause">✍️ Dừng chờ nhập ghi chú -> /reset & chạy tiếp</option>
+                  </select>
+                </div>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 10.5px; cursor: pointer; color: var(--text-primary);">
+                  <input type="checkbox" id="mf-auto-reset-checkbox" checked style="accent-color: var(--teal);">
+                  <span>Tự động gửi lệnh <b>/reset</b> làm mới hội thoại sau mỗi trường hợp</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 10.5px; cursor: pointer; color: var(--text-primary);" title="Gửi kèm 1 dòng ghi chú đánh giá trường hợp vừa test vào bong bóng chat rồi /reset để người hậu kiểm xem trực tiếp trên khung chat cũng thấy rõ">
+                  <input type="checkbox" id="mf-send-note-chat-checkbox" style="accent-color: var(--accent);">
+                  <span>Gửi kèm dòng <b>[Ghi chú trường hợp đã test]</b> vào khung chat</span>
+                </label>
+              </div>
             </div>
 
             <!-- Cài đặt thời gian chạy -->
@@ -179,7 +277,7 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
               <div style="display: flex; gap: 6px; margin-top: 2px;">
                 <button class="btn btn-primary btn-sm" id="btn-start-manual-runner" style="flex: 1; justify-content: center; font-size: 11.5px; white-space: nowrap;">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                  <span>Bắt đầu Chạy Kịch Bản</span>
+                  <span id="btn-start-manual-runner-text">Bắt đầu Chạy Kịch Bản</span>
                 </button>
                 <button type="button" class="btn btn-secondary btn-sm" id="btn-restart-manual-runner" title="Đặt lại từ câu 1 và chạy lại kịch bản với danh sách câu hỏi mới" style="display: none; flex: 1; justify-content: center; padding: 6px 10px; font-size: 11.5px; font-weight: 600; white-space: nowrap;">
                   <span>🔄 Chạy lại từ đầu</span>
@@ -188,6 +286,12 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
 
               <!-- In-flight Running Status Box with Real-Time Digital Countdown -->
               <div id="manual-running-box" style="display: none; flex-direction: column; gap: 7px; margin-top: 6px; padding: 10px 12px; border-radius: 10px; background: rgba(217, 119, 87, 0.05); border: 1px solid rgba(217, 119, 87, 0.35);">
+                <!-- Active Multi-Flow Case Banner (Only visible when Multi-Flow mode is ON) -->
+                <div id="mf-running-case-banner" style="display: none; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 8px; border-radius: 6px; background: rgba(13, 148, 136, 0.12); border: 1px solid rgba(13, 148, 136, 0.3); font-size: 10.5px; font-weight: 700; color: var(--teal);">
+                  <span id="mf-running-case-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🗂️ Luồng 1/4: Test tư vấn</span>
+                  <span id="mf-running-case-step" class="mono-badge" style="font-size: 9.5px; background: var(--bg-surface); color: var(--teal);">Câu 1/2</span>
+                </div>
+
                 <!-- Row 1: Question step & Prominent Digital Clock Badge -->
                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                   <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
@@ -207,6 +311,22 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
                 <!-- Live Dynamic Countdown Progress Bar -->
                 <div style="height: 5px; border-radius: 99px; background: rgba(217, 119, 87, 0.15); overflow: hidden;">
                   <div id="manual-countdown-bar" style="height: 100%; width: 100%; background: var(--accent); transition: width 0.95s linear, background-color 0.3s ease;"></div>
+                </div>
+
+                <!-- Interactive Post-Case Evaluation & Note Box (Shown after finishing a Case before/after /reset) -->
+                <div id="mf-pause-note-box" style="display: none; flex-direction: column; gap: 6px; padding: 8px; border-radius: 8px; background: var(--bg-surface); border: 1.5px solid var(--teal);">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                    <span style="font-size: 11px; font-weight: 700; color: var(--teal);" id="mf-pause-note-title">📝 Ghi chú kết quả Trường hợp #1:</span>
+                    <select id="mf-pause-verdict-select" class="select select-xs" style="font-size: 10.5px; font-weight: 700; padding: 1px 6px; width: auto;">
+                      <option value="pass">✅ ĐẠT YÊU CẦU</option>
+                      <option value="warning">⚠️ CẦN LƯU Ý / SỬA</option>
+                      <option value="fail">❌ LỖI / SAI KIẾN THỨC</option>
+                    </select>
+                  </div>
+                  <textarea id="mf-pause-note-input" class="textarea" style="min-height: 52px; font-size: 11px; line-height: 1.4;" placeholder="Nhập đánh giá & ghi chú cho trường hợp vừa test (để người hậu kiểm vào xem)..."></textarea>
+                  <button type="button" class="btn btn-primary btn-xs" id="btn-mf-confirm-note-next" style="width: 100%; justify-content: center; font-weight: 700; padding: 6px; background: var(--teal); border-color: var(--teal);">
+                    <span>💾 Lưu Ghi Chú ➔ /reset & Test Trường Hợp Tiếp Theo</span>
+                  </button>
                 </div>
 
                 <!-- Action Button Grid (No overflow!) -->
@@ -442,7 +562,7 @@ Nhận phòng sớm lúc 8h sáng thì có phòng luôn không và tính phí sa
         <!-- Right Panel View Tabs -->
         <div class="right-tabs-nav">
           <button type="button" class="tab-pill active" id="rtab-eval" data-tab="eval">🎯 Đánh Giá</button>
-          <button type="button" class="tab-pill" id="rtab-transcript" data-tab="transcript">💬 Luồng Agent</button>
+          <button type="button" class="tab-pill" id="rtab-transcript" data-tab="transcript">💬 Luồng & Hậu Kiểm</button>
           <button type="button" class="tab-pill" id="rtab-history" data-tab="history">📋 Lịch Sử</button>
         </div>
 

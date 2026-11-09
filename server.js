@@ -325,6 +325,8 @@ function mergeCloudDBIntoLocal(cloudData) {
         if (cUser.status) localUser.status = cUser.status;
         if (cUser.productKnowledge?.content && !localUser.productKnowledge?.content) localUser.productKnowledge = cUser.productKnowledge;
         if (cUser.promptRules?.content && !localUser.promptRules?.content) localUser.promptRules = cUser.promptRules;
+        if (Array.isArray(cUser.checklist_cases) && cUser.checklist_cases.length > 0) localUser.checklist_cases = cUser.checklist_cases;
+        if (cUser.checklist_settings) localUser.checklist_settings = cUser.checklist_settings;
       } else {
         db.users.push(cUser);
       }
@@ -2965,6 +2967,14 @@ async function handleRequest(req, res) {
         auth.user.embed_list = mergeEmbedLists(auth.user.embed_list, body.embed_list);
       }
 
+      // Persist multi-flow checklist cases & settings for post-audit review
+      if (Array.isArray(body.checklist_cases)) {
+        auth.user.checklist_cases = body.checklist_cases;
+      }
+      if (body.checklist_settings && typeof body.checklist_settings === 'object') {
+        auth.user.checklist_settings = { ...(auth.user.checklist_settings || {}), ...body.checklist_settings };
+      }
+
       // Synchronize with user's embed_list
       if (!Array.isArray(auth.user.embed_list)) auth.user.embed_list = [];
       const currentPid = auth.user.page_id || extractPageId(auth.user.embed_code) || '';
@@ -4094,6 +4104,10 @@ CHỈ TRẢ VỀ JSON HỢP LỆ:
         type: body.type || 'agent',
         persona: body.persona || 'Khách hàng',
         turns: Array.isArray(body.turns) ? body.turns : [],
+        cases: Array.isArray(body.cases) ? body.cases : undefined,
+        is_checklist: Boolean(body.isChecklist || body.is_checklist || Array.isArray(body.cases)),
+        reviewer_note: body.reviewerNote || body.reviewer_note || '',
+        audit_status: body.auditStatus || body.audit_status || 'completed',
         turn_count: Array.isArray(body.turns) ? body.turns.length : 0,
         verdict_summary: body.verdictSummary || 'pass',
         average_score: typeof body.averageScore === 'number' ? body.averageScore : 5,
@@ -4104,13 +4118,38 @@ CHỈ TRẢ VỀ JSON HỢP LỆ:
       db.chat_sessions = db.chat_sessions || [];
       const existingIdx = db.chat_sessions.findIndex(s => s.id === session.id);
       if (existingIdx >= 0) {
-        db.chat_sessions[existingIdx] = session;
+        db.chat_sessions[existingIdx] = { ...db.chat_sessions[existingIdx], ...session };
       } else {
         db.chat_sessions.unshift(session);
       }
       saveDB(db);
 
       return sendJSON(res, 200, { ok: true, session });
+    }
+
+    if (pathname.startsWith('/api/chat-sessions/') && req.method === 'PATCH') {
+      const id = pathname.split('/').pop();
+      const body = await parseBody(req);
+      db.chat_sessions = db.chat_sessions || [];
+      const sess = db.chat_sessions.find(s => s.id === id);
+      if (!sess) return sendJSON(res, 404, { ok: false, message: 'Không tìm thấy phiên hội thoại.' });
+      if (body.title !== undefined) sess.title = body.title;
+      if (Array.isArray(body.turns)) {
+        sess.turns = body.turns;
+        sess.turn_count = body.turns.length;
+      }
+      if (Array.isArray(body.cases)) sess.cases = body.cases;
+      if (body.reviewerNote !== undefined || body.reviewer_note !== undefined) {
+        sess.reviewer_note = body.reviewerNote !== undefined ? body.reviewerNote : body.reviewer_note;
+      }
+      if (body.auditStatus !== undefined || body.audit_status !== undefined) {
+        sess.audit_status = body.auditStatus !== undefined ? body.auditStatus : body.audit_status;
+      }
+      if (body.verdictSummary !== undefined) sess.verdict_summary = body.verdictSummary;
+      if (typeof body.averageScore === 'number') sess.average_score = body.averageScore;
+      sess.updated_at = new Date().toISOString();
+      saveDB(db);
+      return sendJSON(res, 200, { ok: true, session: sess });
     }
 
     if (pathname.startsWith('/api/chat-sessions/') && req.method === 'DELETE') {

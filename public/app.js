@@ -43,6 +43,20 @@
       mode: localStorage.getItem('bbh_runner_mode') || 'timer'
     },
 
+    // Multi-Flow Checklist & Post-Audit State Machine (Toggleable in Method 1)
+    multiFlow: {
+      enabled: localStorage.getItem('bbh_mf_enabled') === 'true',
+      cases: [],
+      noteMode: localStorage.getItem('bbh_mf_note_mode') || 'auto',
+      autoReset: localStorage.getItem('bbh_mf_auto_reset') !== 'false',
+      sendNoteToChat: localStorage.getItem('bbh_mf_send_note_chat') === 'true',
+      runQueue: [],
+      queuePos: 0,
+      activeQIdx: 0,
+      isWaitingNote: false,
+      currentSessionId: null
+    },
+
     // Autonomous Multi-Turn Agent State Machine (Method 2)
     agentRunner: {
       isRunning: false,
@@ -256,6 +270,39 @@
     btnRunnerRestartInline: document.getElementById('btn-runner-restart-inline'),
     btnRunnerAdd10: document.getElementById('btn-runner-add-10'),
     btnRunnerNextNow: document.getElementById('btn-runner-next-now'),
+
+    // Left Panel: Multi-Flow Checklist & Post-Audit Mode
+    multiflowToggleCard: document.getElementById('multiflow-toggle-card'),
+    toggleMultiflowMode: document.getElementById('toggle-multiflow-mode'),
+    mfModeStatusBadge: document.getElementById('mf-mode-status-badge'),
+    singleflowEditorCard: document.getElementById('singleflow-editor-card'),
+    multiflowEditorCard: document.getElementById('multiflow-editor-card'),
+    btnConvertToChecklist: document.getElementById('btn-convert-to-checklist'),
+    mfCasesCountBadge: document.getElementById('mf-cases-count-badge'),
+    mfDoneCountBadge: document.getElementById('mf-done-count-badge'),
+    btnMfOpenAuditView: document.getElementById('btn-mf-open-audit-view'),
+    btnMfResetStatuses: document.getElementById('btn-mf-reset-statuses'),
+    btnMfGenerateFiles: document.getElementById('btn-mf-generate-files'),
+    btnMfLoadSample: document.getElementById('btn-mf-load-sample'),
+    btnMfAddCase: document.getElementById('btn-mf-add-case'),
+    btnMfToggleRaw: document.getElementById('btn-mf-toggle-raw'),
+    mfCasesList: document.getElementById('mf-cases-list'),
+    mfRawEditorBox: document.getElementById('mf-raw-editor-box'),
+    mfRawTextarea: document.getElementById('mf-raw-textarea'),
+    btnMfApplyRaw: document.getElementById('btn-mf-apply-raw'),
+    btnMfCancelRaw: document.getElementById('btn-mf-cancel-raw'),
+    mfNoteModeSelect: document.getElementById('mf-note-mode-select'),
+    mfAutoResetCheckbox: document.getElementById('mf-auto-reset-checkbox'),
+    mfSendNoteChatCheckbox: document.getElementById('mf-send-note-chat-checkbox'),
+    btnStartManualRunnerText: document.getElementById('btn-start-manual-runner-text'),
+    mfRunningCaseBanner: document.getElementById('mf-running-case-banner'),
+    mfRunningCaseName: document.getElementById('mf-running-case-name'),
+    mfRunningCaseStep: document.getElementById('mf-running-case-step'),
+    mfPauseNoteBox: document.getElementById('mf-pause-note-box'),
+    mfPauseNoteTitle: document.getElementById('mf-pause-note-title'),
+    mfPauseVerdictSelect: document.getElementById('mf-pause-verdict-select'),
+    mfPauseNoteInput: document.getElementById('mf-pause-note-input'),
+    btnMfConfirmNoteNext: document.getElementById('btn-mf-confirm-note-next'),
 
     // Left Panel: Method 2 (Bộ Não Agent Đọc Ngữ Cảnh Đa Lượt)
     agentPersonaSelect: document.getElementById('agent-persona-select'),
@@ -3127,7 +3174,635 @@
     });
   }
 
-  // Manual Runner Controls
+  // ==========================================================================
+  // MULTI-FLOW CHECKLIST & POST-AUDIT REVIEW ENGINE (BẬT/TẮT TRONG TỰ SOẠN CÂU HỎI)
+  // Test nhiều trường hợp -> Tự động /reset -> Đánh giá & Ghi chú hậu kiểm -> Test tiếp
+  // ==========================================================================
+
+  function getDefaultMultiFlowCases() {
+    return [
+      {
+        id: 'mf_case_1',
+        title: 'TH1: Test Tư vấn dịch vụ & Báo giá chi tiết',
+        enabled: true,
+        expanded: false,
+        status: 'pending',
+        score: 5,
+        questions: [
+          'Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn và báo giá giúp mình nhé!',
+          'Mức giá này đã bao gồm ăn sáng buffet và bể bơi vô cực chưa hay có tính phí riêng không bạn?'
+        ],
+        goalNote: 'Kiểm tra AI báo giá chuẩn File 1, nêu đúng tiện ích miễn phí và hỏi lại nhu cầu khách hàng.',
+        resultNote: '',
+        turns: [],
+        resetDone: false,
+        testedAt: null
+      },
+      {
+        id: 'mf_case_2',
+        title: 'TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá',
+        enabled: true,
+        expanded: false,
+        status: 'pending',
+        score: 5,
+        questions: [
+          'Mình định đặt ở 5 đêm liên tiếp và đặt 3 phòng cho gia đình thì bên mình có chính sách ưu đãi giảm giá thế nào?',
+          'Đoàn mình đi đông vậy bên bạn giảm luôn 30% tổng hóa đơn cho mình chuyển cọc chốt luôn hôm nay được không?'
+        ],
+        goalNote: 'Kiểm tra AI tính đúng ưu đãi (10% từ 5 đêm, 5% từ 3 phòng) và từ chối khéo yêu cầu giảm 30% vượt quy định.',
+        resultNote: '',
+        turns: [],
+        resetDone: false,
+        testedAt: null
+      },
+      {
+        id: 'mf_case_3',
+        title: 'TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có',
+        enabled: true,
+        expanded: false,
+        status: 'pending',
+        score: 5,
+        questions: [
+          'Nhà mình có mang theo một bé cún Poodle nhỏ sạch sẽ lắm, và cho mình hỏi resort có sân golf không bạn?',
+          'Nếu hôm đó đoàn mình nhận phòng sớm lúc 8h sáng và thêm 1 người lớn thứ 3 ở ghép thì phụ thu tính sao?'
+        ],
+        goalNote: 'Kiểm tra AI từ chối thú cưng lịch sự, báo không có sân golf, tính đúng phụ thu check-in sớm (50%) & người thứ 3 (200.000đ).',
+        resultNote: '',
+        turns: [],
+        resetDone: false,
+        testedAt: null
+      },
+      {
+        id: 'mf_case_4',
+        title: 'TH4: Test Chính sách Đổi / Hủy phòng & Hoàn tiền cọc',
+        enabled: true,
+        expanded: false,
+        status: 'pending',
+        score: 5,
+        questions: [
+          'Cho mình hỏi nếu đặt cọc xong nhưng có việc đột xuất báo hủy trước 7 ngày hoặc trước 4 ngày thì chính sách hoàn tiền thế nào?'
+        ],
+        goalNote: 'Kiểm tra AI trả lời đúng mốc hoàn cọc 100% (báo trước >=7 ngày) và hoàn 50% (từ 3-6 ngày) theo File 1.',
+        resultNote: '',
+        turns: [],
+        resetDone: false,
+        testedAt: null
+      }
+    ];
+  }
+
+  let mfSaveDebounceTimer = null;
+
+  function loadMultiFlowChecklist() {
+    try {
+      if (state.user && Array.isArray(state.user.checklist_cases) && state.user.checklist_cases.length > 0) {
+        state.multiFlow.cases = state.user.checklist_cases;
+      } else {
+        const userKey = state.user?.email ? ('bbh_mf_cases_' + state.user.email.toLowerCase()) : 'bbh_mf_cases_default';
+        const raw = localStorage.getItem(userKey) || localStorage.getItem('bbh_mf_cases_default');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            state.multiFlow.cases = parsed;
+          }
+        }
+      }
+      if (state.user && state.user.checklist_settings) {
+        const s = state.user.checklist_settings;
+        if (typeof s.enabled === 'boolean' && localStorage.getItem('bbh_mf_enabled') === null) {
+          state.multiFlow.enabled = s.enabled;
+        }
+        if (s.noteMode) state.multiFlow.noteMode = s.noteMode;
+        if (typeof s.autoReset === 'boolean') state.multiFlow.autoReset = s.autoReset;
+        if (typeof s.sendNoteToChat === 'boolean') state.multiFlow.sendNoteToChat = s.sendNoteToChat;
+      }
+    } catch (e) {
+      console.warn('[MULTIFLOW] Load checklist warning:', e);
+    }
+
+    if (!Array.isArray(state.multiFlow.cases) || state.multiFlow.cases.length === 0) {
+      state.multiFlow.cases = getDefaultMultiFlowCases();
+    }
+
+    applyMultiFlowModeUI();
+  }
+
+  function saveMultiFlowChecklist(syncServer = true) {
+    try {
+      const jsonStr = JSON.stringify(state.multiFlow.cases);
+      localStorage.setItem('bbh_mf_cases_default', jsonStr);
+      if (state.user?.email) {
+        localStorage.setItem('bbh_mf_cases_' + state.user.email.toLowerCase(), jsonStr);
+      }
+    } catch (e) {}
+
+    if (syncServer && state.user) {
+      if (mfSaveDebounceTimer) clearTimeout(mfSaveDebounceTimer);
+      mfSaveDebounceTimer = setTimeout(() => {
+        api('/api/user/config', 'PATCH', {
+          checklist_cases: state.multiFlow.cases,
+          checklist_settings: {
+            enabled: state.multiFlow.enabled,
+            noteMode: state.multiFlow.noteMode,
+            autoReset: state.multiFlow.autoReset,
+            sendNoteToChat: state.multiFlow.sendNoteToChat
+          }
+        }).catch(() => {});
+      }, 600);
+    }
+  }
+
+  function applyMultiFlowModeUI() {
+    const isOn = Boolean(state.multiFlow.enabled);
+    if (el.toggleMultiflowMode) el.toggleMultiflowMode.checked = isOn;
+    if (el.multiflowToggleCard) el.multiflowToggleCard.classList.toggle('is-enabled', isOn);
+    if (el.mfModeStatusBadge) {
+      el.mfModeStatusBadge.textContent = isOn ? '🟢 Đang bật' : 'Đang tắt';
+      el.mfModeStatusBadge.className = `badge-pill-xs ${isOn ? 'on' : 'off'}`;
+    }
+    if (el.singleflowEditorCard) el.singleflowEditorCard.style.display = isOn ? 'none' : 'block';
+    if (el.multiflowEditorCard) el.multiflowEditorCard.style.display = isOn ? 'block' : 'none';
+
+    if (el.mfNoteModeSelect) el.mfNoteModeSelect.value = state.multiFlow.noteMode || 'auto';
+    if (el.mfAutoResetCheckbox) el.mfAutoResetCheckbox.checked = state.multiFlow.autoReset !== false;
+    if (el.mfSendNoteChatCheckbox) el.mfSendNoteChatCheckbox.checked = Boolean(state.multiFlow.sendNoteToChat);
+
+    if (!state.manualRunner.isRunning && el.btnStartManualRunner) {
+      const btnLabel = isOn ? '🚀 Chạy Checklist Đa Luồng' : 'Bắt đầu Chạy Kịch Bản';
+      el.btnStartManualRunner.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span id="btn-start-manual-runner-text">${btnLabel}</span>`;
+    }
+
+    renderMultiFlowCases();
+  }
+
+  function renderMultiFlowCases() {
+    if (!el.mfCasesList) return;
+    const cases = state.multiFlow.cases || [];
+    const totalCount = cases.length;
+    const doneCount = cases.filter(c => c.status === 'pass' || c.status === 'warning' || c.status === 'fail').length;
+
+    if (el.mfCasesCountBadge) el.mfCasesCountBadge.textContent = `${totalCount} trường hợp`;
+    if (el.mfDoneCountBadge) el.mfDoneCountBadge.textContent = `${doneCount}/${totalCount} đã test`;
+
+    el.mfCasesList.innerHTML = '';
+
+    if (cases.length === 0) {
+      el.mfCasesList.innerHTML = `
+        <div style="text-align:center;padding:16px 10px;font-size:11px;color:var(--text-muted);background:var(--bg-panel);border-radius:8px;border:1px dashed var(--border-subtle);">
+          Chưa có trường hợp nào trong Checklist. Bấm <b>"✨ Từ 2 File"</b>, <b>"📋 Mẫu chuẩn"</b> hoặc <b>"➕ Thêm TH"</b> để tạo.
+        </div>
+      `;
+      return;
+    }
+
+    cases.forEach((c, idx) => {
+      const card = document.createElement('div');
+      const status = c.status || 'pending';
+      let cardStateClass = '';
+      if (status === 'running') cardStateClass = 'is-running';
+      else if (status === 'pass') cardStateClass = 'is-done-pass';
+      else if (status === 'warning') cardStateClass = 'is-done-warn';
+      else if (status === 'fail') cardStateClass = 'is-done-fail';
+
+      card.className = `mf-case-card ${cardStateClass}`;
+
+      let statusLabel = '⏳ Chờ test';
+      if (status === 'running') statusLabel = '🔄 Đang chạy...';
+      else if (status === 'pass') statusLabel = '✅ ĐẠT';
+      else if (status === 'warning') statusLabel = '⚠️ CẦN SỬA';
+      else if (status === 'fail') statusLabel = '❌ LỖI';
+
+      const qCount = Array.isArray(c.questions) ? c.questions.length : 0;
+      const displayNote = c.resultNote || c.goalNote || '';
+      const isExpanded = Boolean(c.expanded);
+
+      card.innerHTML = `
+        <div class="mf-case-header">
+          <input type="checkbox" class="mf-case-check" data-idx="${idx}" ${c.enabled !== false ? 'checked' : ''} style="accent-color: var(--teal); cursor: pointer;" title="Tích chọn để đưa trường hợp này vào lượt chạy">
+          <input type="text" class="mf-case-title-input" data-idx="${idx}" value="${escapeHtml(c.title || `Trường hợp #${idx + 1}`)}" title="Bấm để sửa tên trường hợp / tình huống">
+          <span class="mf-status-tag ${status}">${statusLabel}</span>
+          <div style="display:flex;align-items:center;gap:2px;">
+            <button type="button" class="btn btn-secondary btn-xs btn-mf-run-single" data-idx="${idx}" title="Chạy test riêng trường hợp này ngay" style="padding:1px 5px;font-size:10px;color:var(--teal);">▶️</button>
+            <button type="button" class="btn btn-secondary btn-xs btn-mf-toggle-expand" data-idx="${idx}" title="Mở rộng / Thu gọn câu hỏi & ghi chú hậu kiểm" style="padding:1px 5px;font-size:10px;">${isExpanded ? '▴' : '▾'}</button>
+            <button type="button" class="btn btn-secondary btn-xs btn-mf-delete-case" data-idx="${idx}" title="Xóa trường hợp này" style="padding:1px 5px;font-size:10px;color:var(--danger);">✕</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text-muted);padding-left:20px;">
+          <span>💬 <b>${qCount}</b> câu hỏi ➔ <code>/reset</code></span>
+          ${c.testedAt ? `<span>🕒 Đã test ${new Date(c.testedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>` : '<span>Chưa chạy</span>'}
+        </div>
+        ${displayNote ? `
+          <div class="mf-case-note-preview" style="margin-left:18px;">
+            <b>📝 Ghi chú:</b> ${escapeHtml(displayNote)}
+          </div>
+        ` : ''}
+        <div class="mf-case-body ${isExpanded ? '' : 'collapsed'}">
+          <div style="font-size:10px;font-weight:700;color:var(--text-secondary);">Danh sách câu hỏi của trường hợp này (mỗi dòng 1 câu):</div>
+          <textarea class="textarea mf-case-questions-input" data-idx="${idx}" style="min-height:62px;font-size:11px;line-height:1.4;" placeholder="Nhập các câu hỏi cho trường hợp này...">${escapeHtml((c.questions || []).join('\n'))}</textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:2px;">
+            <span style="font-size:10px;font-weight:700;color:var(--teal);">📝 Đánh giá & Ghi chú hậu kiểm:</span>
+            <select class="select select-xs mf-case-verdict-select" data-idx="${idx}" style="font-size:10px;padding:1px 5px;width:auto;">
+              <option value="pending" ${status === 'pending' ? 'selected' : ''}>⏳ Chờ test</option>
+              <option value="pass" ${status === 'pass' ? 'selected' : ''}>✅ Đạt yêu cầu</option>
+              <option value="warning" ${status === 'warning' ? 'selected' : ''}>⚠️ Cần lưu ý / sửa</option>
+              <option value="fail" ${status === 'fail' ? 'selected' : ''}>❌ Chưa đạt / lỗi</option>
+            </select>
+          </div>
+          <input type="text" class="input input-xs mf-case-note-input" data-idx="${idx}" value="${escapeHtml(c.resultNote || c.goalNote || '')}" placeholder="Nhập ghi chú đánh giá cho người hậu kiểm..." style="font-size:11px;">
+        </div>
+      `;
+
+      // Wire events for this card
+      const checkEl = card.querySelector('.mf-case-check');
+      if (checkEl) {
+        checkEl.addEventListener('change', (e) => {
+          c.enabled = e.target.checked;
+          saveMultiFlowChecklist();
+        });
+      }
+
+      const titleEl = card.querySelector('.mf-case-title-input');
+      if (titleEl) {
+        titleEl.addEventListener('change', (e) => {
+          c.title = e.target.value.trim() || `Trường hợp #${idx + 1}`;
+          saveMultiFlowChecklist();
+        });
+      }
+
+      const expandBtn = card.querySelector('.btn-mf-toggle-expand');
+      if (expandBtn) {
+        expandBtn.addEventListener('click', () => {
+          c.expanded = !c.expanded;
+          renderMultiFlowCases();
+        });
+      }
+
+      const runSingleBtn = card.querySelector('.btn-mf-run-single');
+      if (runSingleBtn) {
+        runSingleBtn.addEventListener('click', () => {
+          startMultiFlowRunner(true, idx);
+        });
+      }
+
+      const delBtn = card.querySelector('.btn-mf-delete-case');
+      if (delBtn) {
+        delBtn.addEventListener('click', () => {
+          if (confirm(`Xóa "${c.title}" khỏi Checklist?`)) {
+            state.multiFlow.cases.splice(idx, 1);
+            saveMultiFlowChecklist();
+            renderMultiFlowCases();
+          }
+        });
+      }
+
+      const qInput = card.querySelector('.mf-case-questions-input');
+      if (qInput) {
+        qInput.addEventListener('change', (e) => {
+          c.questions = e.target.value.split('\n').map(l => l.trim()).filter(Boolean);
+          saveMultiFlowChecklist();
+          renderMultiFlowCases();
+        });
+      }
+
+      const vSelect = card.querySelector('.mf-case-verdict-select');
+      if (vSelect) {
+        vSelect.addEventListener('change', (e) => {
+          c.status = e.target.value;
+          if (c.status !== 'pending' && !c.testedAt) c.testedAt = new Date().toISOString();
+          saveMultiFlowChecklist();
+          renderMultiFlowCases();
+          saveOrUpdateMultiFlowSession(false);
+        });
+      }
+
+      const noteInput = card.querySelector('.mf-case-note-input');
+      if (noteInput) {
+        noteInput.addEventListener('change', (e) => {
+          const val = e.target.value.trim();
+          c.resultNote = val;
+          c.goalNote = val;
+          saveMultiFlowChecklist();
+          renderMultiFlowCases();
+          saveOrUpdateMultiFlowSession(false);
+        });
+      }
+
+      el.mfCasesList.appendChild(card);
+    });
+  }
+
+  function casesToRawText(cases) {
+    return (cases || []).map((c, idx) => {
+      const title = c.title || `Trường hợp ${idx + 1}`;
+      const qs = (c.questions || []).join('\n');
+      const note = c.resultNote || c.goalNote || '';
+      return `# ${title}\n${qs}${note ? `\n@Ghi chú: ${note}` : ''}`;
+    }).join('\n\n');
+  }
+
+  function parseRawTextToCases(rawText) {
+    const lines = String(rawText || '').split('\n');
+    const result = [];
+    let current = null;
+
+    lines.forEach(rawLine => {
+      const line = rawLine.trim();
+      if (!line) return;
+
+      if (line.startsWith('#') || /^trường\s*hợp\s*\d+/i.test(line) || /^th\s*\d+[\s:.-]/i.test(line) || /^luồng\s*\d+/i.test(line)) {
+        if (current && current.questions.length > 0) result.push(current);
+        const cleanTitle = line.replace(/^#+\s*/, '').trim();
+        current = {
+          id: 'mf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          title: cleanTitle || `Trường hợp #${result.length + 1}`,
+          enabled: true,
+          expanded: false,
+          status: 'pending',
+          score: 5,
+          questions: [],
+          goalNote: '',
+          resultNote: '',
+          turns: [],
+          resetDone: false,
+          testedAt: null
+        };
+      } else if (line.toLowerCase() === '/reset' || line === '---') {
+        if (current && current.questions.length > 0) {
+          result.push(current);
+          current = null;
+        }
+      } else if (line.toLowerCase().startsWith('@ghi chú:') || line.toLowerCase().startsWith('ghi chú:')) {
+        if (!current) {
+          current = {
+            id: 'mf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            title: `Trường hợp #${result.length + 1}`,
+            enabled: true,
+            expanded: false,
+            status: 'pending',
+            score: 5,
+            questions: [],
+            goalNote: '',
+            resultNote: '',
+            turns: [],
+            resetDone: false,
+            testedAt: null
+          };
+        }
+        const noteVal = line.replace(/^@?ghi\s*chú\s*:\s*/i, '').trim();
+        current.goalNote = noteVal;
+      } else {
+        if (!current) {
+          current = {
+            id: 'mf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            title: `Trường hợp #${result.length + 1}: ${line.slice(0, 32)}${line.length > 32 ? '...' : ''}`,
+            enabled: true,
+            expanded: false,
+            status: 'pending',
+            score: 5,
+            questions: [],
+            goalNote: '',
+            resultNote: '',
+            turns: [],
+            resetDone: false,
+            testedAt: null
+          };
+        }
+        current.questions.push(line);
+      }
+    });
+
+    if (current && current.questions.length > 0) result.push(current);
+    return result;
+  }
+
+  // Event Listeners for Multi-Flow Toggle & Controls
+  if (el.toggleMultiflowMode) {
+    el.toggleMultiflowMode.addEventListener('change', (e) => {
+      state.multiFlow.enabled = e.target.checked;
+      localStorage.setItem('bbh_mf_enabled', state.multiFlow.enabled ? 'true' : 'false');
+      applyMultiFlowModeUI();
+      saveMultiFlowChecklist();
+      showToast(
+        state.multiFlow.enabled
+          ? '🗂️ Đã BẬT chế độ Test Đa Luồng & Checklist (Tự động /reset & Ghi chú sau mỗi trường hợp)!'
+          : 'Đã chuyển về chế độ danh sách câu hỏi đơn luồng mặc định.',
+        state.multiFlow.enabled ? 'success' : 'info'
+      );
+    });
+  }
+
+  if (el.btnConvertToChecklist) {
+    el.btnConvertToChecklist.addEventListener('click', () => {
+      const qList = getManualQuestionsList();
+      if (qList.length === 0) {
+        showToast('Chưa có câu hỏi nào trong ô soạn thảo để chuyển sang Checklist.', 'warning');
+        return;
+      }
+      state.multiFlow.cases = qList.map((q, idx) => ({
+        id: 'mf_conv_' + Date.now() + '_' + idx,
+        title: `TH${idx + 1}: ${q.slice(0, 38)}${q.length > 38 ? '...' : ''}`,
+        enabled: true,
+        expanded: false,
+        status: 'pending',
+        score: 5,
+        questions: [q],
+        goalNote: 'Kiểm tra phản hồi đúng trọng tâm File 1 & File 2, sau đó /reset.',
+        resultNote: '',
+        turns: [],
+        resetDone: false,
+        testedAt: null
+      }));
+      state.multiFlow.enabled = true;
+      localStorage.setItem('bbh_mf_enabled', 'true');
+      applyMultiFlowModeUI();
+      saveMultiFlowChecklist();
+      showToast(`✅ Đã chuyển ${qList.length} câu hỏi thành ${qList.length} trường hợp Checklist (có /reset & ghi chú riêng)!`, 'success');
+    });
+  }
+
+  if (el.btnMfLoadSample) {
+    el.btnMfLoadSample.addEventListener('click', () => {
+      state.multiFlow.cases = getDefaultMultiFlowCases();
+      saveMultiFlowChecklist();
+      renderMultiFlowCases();
+      showToast('📋 Đã nạp bộ Checklist 4 trường hợp kiểm thử mẫu chuẩn!', 'success');
+    });
+  }
+
+  if (el.btnMfAddCase) {
+    el.btnMfAddCase.addEventListener('click', () => {
+      const nextNum = (state.multiFlow.cases?.length || 0) + 1;
+      state.multiFlow.cases.push({
+        id: 'mf_add_' + Date.now(),
+        title: `TH${nextNum}: Trường hợp kiểm thử mới`,
+        enabled: true,
+        expanded: true,
+        status: 'pending',
+        score: 5,
+        questions: ['Chào bạn, tư vấn giúp mình thông tin chi tiết về dịch vụ này nhé!'],
+        goalNote: 'Kiểm tra phản hồi đúng ngữ cảnh và quy tắc Prompt.',
+        resultNote: '',
+        turns: [],
+        resetDone: false,
+        testedAt: null
+      });
+      saveMultiFlowChecklist();
+      renderMultiFlowCases();
+      showToast(`➕ Đã thêm Trường hợp #${nextNum}. Bạn có thể nhập câu hỏi và tiêu chí ghi chú.`, 'info');
+    });
+  }
+
+  if (el.btnMfResetStatuses) {
+    el.btnMfResetStatuses.addEventListener('click', () => {
+      state.multiFlow.cases.forEach(c => {
+        c.status = 'pending';
+        c.resultNote = '';
+        c.turns = [];
+        c.resetDone = false;
+        c.testedAt = null;
+      });
+      saveMultiFlowChecklist();
+      renderMultiFlowCases();
+      showToast('🔄 Đã đặt lại trạng thái toàn bộ Checklist về "Chờ test"!', 'info');
+    });
+  }
+
+  if (el.btnMfOpenAuditView) {
+    el.btnMfOpenAuditView.addEventListener('click', async () => {
+      await saveOrUpdateMultiFlowSession(false);
+      switchRightTab('transcript');
+      const sess = state.chatSessions.find(s => s.id === state.multiFlow.currentSessionId) || state.chatSessions.find(s => s.is_checklist || Array.isArray(s.cases));
+      if (sess) {
+        loadSessionIntoTranscriptFeed(sess);
+        showToast('🔍 Đã mở Sổ Hậu Kiểm Đa Luồng ở bảng bên phải!', 'success');
+      } else {
+        renderLiveMultiFlowAuditToFeed();
+        showToast('🔍 Đang hiển thị bảng Hậu Kiểm Checklist hiện tại ở cột phải!', 'info');
+      }
+    });
+  }
+
+  if (el.btnMfToggleRaw) {
+    el.btnMfToggleRaw.addEventListener('click', () => {
+      if (!el.mfRawEditorBox) return;
+      const isHidden = el.mfRawEditorBox.style.display === 'none';
+      if (isHidden) {
+        el.mfRawTextarea.value = casesToRawText(state.multiFlow.cases);
+        el.mfRawEditorBox.style.display = 'flex';
+        el.mfCasesList.style.display = 'none';
+      } else {
+        el.mfRawEditorBox.style.display = 'none';
+        el.mfCasesList.style.display = 'flex';
+      }
+    });
+  }
+
+  if (el.btnMfCancelRaw) {
+    el.btnMfCancelRaw.addEventListener('click', () => {
+      if (el.mfRawEditorBox) el.mfRawEditorBox.style.display = 'none';
+      if (el.mfCasesList) el.mfCasesList.style.display = 'flex';
+    });
+  }
+
+  if (el.btnMfApplyRaw) {
+    el.btnMfApplyRaw.addEventListener('click', () => {
+      const parsed = parseRawTextToCases(el.mfRawTextarea ? el.mfRawTextarea.value : '');
+      if (parsed.length === 0) {
+        showToast('Vui lòng nhập ít nhất 1 trường hợp và câu hỏi.', 'error');
+        return;
+      }
+      state.multiFlow.cases = parsed;
+      if (el.mfRawEditorBox) el.mfRawEditorBox.style.display = 'none';
+      if (el.mfCasesList) el.mfCasesList.style.display = 'flex';
+      saveMultiFlowChecklist();
+      renderMultiFlowCases();
+      showToast(`✅ Đã cập nhật ${parsed.length} trường hợp vào Checklist!`, 'success');
+    });
+  }
+
+  if (el.btnMfGenerateFiles) {
+    el.btnMfGenerateFiles.addEventListener('click', async () => {
+      el.btnMfGenerateFiles.disabled = true;
+      const origHtml = el.btnMfGenerateFiles.innerHTML;
+      el.btnMfGenerateFiles.innerHTML = '<span>⏳ Đang dựng...</span>';
+      try {
+        const res = await api('/api/ai-tester/generate-questions', 'POST', {});
+        const suite = res.autoTestSuite || [];
+        if (suite.length > 0) {
+          // Group generated questions into structured multi-flow cases
+          const newCases = [];
+          for (let i = 0; i < suite.length; i += 2) {
+            const q1 = suite[i];
+            const q2 = suite[i + 1];
+            const caseNum = newCases.length + 1;
+            const title = `TH${caseNum}: Test ${q1.persona || 'Tình huống thực tế #' + caseNum}`;
+            const qs = [q1.question];
+            if (q2 && q2.question) qs.push(q2.question);
+            newCases.push({
+              id: 'mf_ai_' + Date.now() + '_' + caseNum,
+              title,
+              enabled: true,
+              expanded: false,
+              status: 'pending',
+              score: 5,
+              questions: qs,
+              goalNote: q1.criteria || q1.ground_truth || 'Đối chiếu phản hồi theo đúng File 1 & File 2.',
+              resultNote: '',
+              turns: [],
+              resetDone: false,
+              testedAt: null
+            });
+          }
+          state.multiFlow.cases = newCases;
+          saveMultiFlowChecklist();
+          renderMultiFlowCases();
+          showToast(`✨ Đã dựng thành công ${newCases.length} trường hợp Checklist từ 2 File!`, 'success');
+        } else {
+          state.multiFlow.cases = getDefaultMultiFlowCases();
+          saveMultiFlowChecklist();
+          renderMultiFlowCases();
+          showToast('Đã dựng bộ Checklist tiêu chuẩn từ dữ liệu hệ thống.', 'info');
+        }
+      } catch (err) {
+        showToast('Lỗi dựng Checklist từ 2 File: ' + err.message, 'error');
+      } finally {
+        el.btnMfGenerateFiles.disabled = false;
+        el.btnMfGenerateFiles.innerHTML = origHtml;
+      }
+    });
+  }
+
+  if (el.mfNoteModeSelect) {
+    el.mfNoteModeSelect.addEventListener('change', (e) => {
+      state.multiFlow.noteMode = e.target.value;
+      localStorage.setItem('bbh_mf_note_mode', e.target.value);
+      saveMultiFlowChecklist();
+      showToast(
+        e.target.value === 'pause'
+          ? '✍️ Chế độ Dừng chờ ghi chú: Sau mỗi trường hợp hệ thống sẽ /reset và chờ bạn xác nhận ghi chú trước khi qua trường hợp tiếp.'
+          : '⚡ Chế độ Tự động: Tự chấm điểm, lưu ghi chú hậu kiểm, gửi /reset và chuyển sang trường hợp tiếp theo.',
+        'info'
+      );
+    });
+  }
+
+  if (el.mfAutoResetCheckbox) {
+    el.mfAutoResetCheckbox.addEventListener('change', (e) => {
+      state.multiFlow.autoReset = e.target.checked;
+      localStorage.setItem('bbh_mf_auto_reset', e.target.checked ? 'true' : 'false');
+      saveMultiFlowChecklist();
+    });
+  }
+
+  if (el.mfSendNoteChatCheckbox) {
+    el.mfSendNoteChatCheckbox.addEventListener('change', (e) => {
+      state.multiFlow.sendNoteToChat = e.target.checked;
+      localStorage.setItem('bbh_mf_send_note_chat', e.target.checked ? 'true' : 'false');
+      saveMultiFlowChecklist();
+    });
+  }
+
+  // Manual Runner Controls (Supports both Single-Flow and Multi-Flow Checklist Mode)
   if (el.btnStartManualRunner) {
     el.btnStartManualRunner.addEventListener('click', () => {
       if (state.manualRunner.isRunning) {
@@ -3151,6 +3826,11 @@
   }
 
   function restartManualRunner(shouldResetAi = true) {
+    if (state.multiFlow.enabled) {
+      startMultiFlowRunner(shouldResetAi, null);
+      return;
+    }
+
     const questions = getManualQuestionsList();
     if (questions.length === 0) {
       showToast('Vui lòng nhập hoặc dán ít nhất 1 câu hỏi vào ô soạn thảo.', 'error');
@@ -3176,6 +3856,8 @@
     el.btnStartManualRunner.className = 'btn btn-secondary btn-sm';
     if (el.btnRestartManualRunner) el.btnRestartManualRunner.style.display = 'inline-flex';
     el.manualRunningBox.style.display = 'flex';
+    if (el.mfRunningCaseBanner) el.mfRunningCaseBanner.style.display = 'none';
+    if (el.mfPauseNoteBox) el.mfPauseNoteBox.style.display = 'none';
     if (el.btnRunnerPause) el.btnRunnerPause.textContent = '⏸️ Tạm dừng';
 
     if (shouldResetAi) {
@@ -3209,21 +3891,428 @@
     }
   }
 
+  function startMultiFlowRunner(shouldResetAi = true, singleCaseIndex = null) {
+    const cases = state.multiFlow.cases || [];
+    let queue = [];
+    if (singleCaseIndex !== null && cases[singleCaseIndex]) {
+      queue = [singleCaseIndex];
+    } else {
+      cases.forEach((c, idx) => {
+        if (c.enabled !== false && Array.isArray(c.questions) && c.questions.length > 0) {
+          queue.push(idx);
+        }
+      });
+    }
+
+    if (queue.length === 0) {
+      showToast('Vui lòng tích chọn ít nhất 1 trường hợp có câu hỏi trong Checklist để chạy.', 'error');
+      return;
+    }
+
+    if (state.manualRunner.timerId) clearTimeout(state.manualRunner.timerId);
+    if (!state.chatIsOpen) toggleChatbox(true);
+
+    // Reset statuses for queued cases
+    queue.forEach(idx => {
+      cases[idx].status = 'pending';
+      cases[idx].turns = [];
+      cases[idx].resetDone = false;
+    });
+
+    state.manualRunner.isRunning = true;
+    state.manualRunner.isPaused = false;
+    state.multiFlow.runQueue = queue;
+    state.multiFlow.queuePos = 0;
+    state.multiFlow.activeQIdx = 0;
+    state.multiFlow.isWaitingNote = false;
+    state.multiFlow.currentSessionId = 'session_mf_' + Date.now();
+
+    el.btnStartManualRunner.innerHTML = `<span>⏹ Dừng chạy Checklist</span>`;
+    el.btnStartManualRunner.className = 'btn btn-secondary btn-sm';
+    if (el.btnRestartManualRunner) el.btnRestartManualRunner.style.display = 'inline-flex';
+    el.manualRunningBox.style.display = 'flex';
+    if (el.mfRunningCaseBanner) el.mfRunningCaseBanner.style.display = 'flex';
+    if (el.mfPauseNoteBox) el.mfPauseNoteBox.style.display = 'none';
+    if (el.btnRunnerPause) el.btnRunnerPause.textContent = '⏸️ Tạm dừng';
+
+    renderMultiFlowCases();
+    renderLiveMultiFlowAuditToFeed();
+
+    if (shouldResetAi) {
+      sendResetCommand(true);
+      const firstCase = cases[queue[0]];
+      showToast(`🔄 Đã gửi /reset làm mới phiên. Chuẩn bị chạy "${firstCase.title}"...`, 'info');
+      if (el.mfRunningCaseName) el.mfRunningCaseName.textContent = `🗂️ Chuẩn bị: ${firstCase.title}`;
+      if (el.mfRunningCaseStep) el.mfRunningCaseStep.textContent = `Luồng 1/${queue.length}`;
+      if (el.manualRunningTitle) el.manualRunningTitle.textContent = '🔄 Đang /reset làm mới hội thoại...';
+      if (el.manualRunningBadge) el.manualRunningBadge.textContent = 'Reset';
+      if (el.manualRunningPrompt) el.manualRunningPrompt.textContent = `Làm mới bộ nhớ AI trước khi test: ${firstCase.title}`;
+      updateManualCountdownDisplay(3, 3, false);
+
+      let resetWait = 3;
+      const resetTick = () => {
+        if (!state.manualRunner.isRunning) return;
+        resetWait -= 1;
+        updateManualCountdownDisplay(resetWait, 3, false);
+        if (resetWait > 0) {
+          state.manualRunner.timerId = setTimeout(resetTick, 1000);
+        } else {
+          executeMultiFlowStep();
+        }
+      };
+      state.manualRunner.timerId = setTimeout(resetTick, 1000);
+    } else {
+      executeMultiFlowStep();
+    }
+  }
+
+  function executeMultiFlowStep() {
+    if (!state.manualRunner.isRunning) return;
+    const { runQueue, queuePos, activeQIdx, cases } = state.multiFlow;
+
+    if (queuePos >= runQueue.length) {
+      stopManualRunner(false);
+      saveMultiFlowChecklist(true);
+      saveOrUpdateMultiFlowSession(true).then(sess => {
+        switchRightTab('transcript');
+        if (sess) loadSessionIntoTranscriptFeed(sess);
+        else renderLiveMultiFlowAuditToFeed();
+      });
+      showToast(`🎉 Đã hoàn thành kiểm thử toàn bộ ${runQueue.length} trường hợp trong Checklist! Kết quả & ghi chú hậu kiểm đã được lưu.`, 'success');
+      return;
+    }
+
+    const caseIdx = runQueue[queuePos];
+    const caseItem = cases[caseIdx];
+    if (!caseItem || !Array.isArray(caseItem.questions) || caseItem.questions.length === 0) {
+      state.multiFlow.queuePos += 1;
+      state.multiFlow.activeQIdx = 0;
+      executeMultiFlowStep();
+      return;
+    }
+
+    caseItem.status = 'running';
+    renderMultiFlowCases();
+
+    const qText = caseItem.questions[activeQIdx];
+    const totalQsInCase = caseItem.questions.length;
+    const waitSec = state.config.auto_wait_seconds || 30;
+    state.manualRunner.countdownRemaining = waitSec;
+    state.manualRunner.totalWaitSec = waitSec;
+
+    if (el.mfRunningCaseBanner) el.mfRunningCaseBanner.style.display = 'flex';
+    if (el.mfRunningCaseName) el.mfRunningCaseName.textContent = `🗂️ Luồng ${queuePos + 1}/${runQueue.length}: ${caseItem.title}`;
+    if (el.mfRunningCaseStep) el.mfRunningCaseStep.textContent = `Câu ${activeQIdx + 1}/${totalQsInCase}`;
+    if (el.manualRunningBadge) el.manualRunningBadge.textContent = `TH${caseIdx + 1}.${activeQIdx + 1}`;
+    if (el.manualRunningPrompt) el.manualRunningPrompt.textContent = `"${qText}"`;
+    if (el.activeScenarioTag) el.activeScenarioTag.textContent = caseItem.title;
+
+    if (el.evalResponseInput) el.evalResponseInput.value = '';
+    sendPromptToChat(qText);
+    switchRightTab('eval');
+
+    if (state.manualRunner.timerId) clearTimeout(state.manualRunner.timerId);
+    updateManualCountdownDisplay(waitSec, waitSec, false);
+
+    if (state.runner && state.runner.mode === 'manual') {
+      if (el.manualRunningTitle) el.manualRunningTitle.textContent = `⏳ Đợi bot trả lời (Xong bấm "Xong ngay")...`;
+    } else {
+      if (el.manualRunningTitle) el.manualRunningTitle.textContent = `Đang đợi phản hồi (${caseItem.title})...`;
+      const tick = () => {
+        if (!state.manualRunner.isRunning || state.multiFlow.isWaitingNote) return;
+        if (state.manualRunner.isPaused) {
+          updateManualCountdownDisplay(state.manualRunner.countdownRemaining, state.manualRunner.totalWaitSec, true);
+          state.manualRunner.timerId = setTimeout(tick, 1000);
+          return;
+        }
+
+        state.manualRunner.countdownRemaining -= 1;
+        const rem = state.manualRunner.countdownRemaining;
+        const tot = state.manualRunner.totalWaitSec;
+        updateManualCountdownDisplay(rem, tot, false);
+
+        if (rem > 0) {
+          state.manualRunner.timerId = setTimeout(tick, 1000);
+        } else {
+          onMultiFlowQuestionFinished();
+        }
+      };
+      state.manualRunner.timerId = setTimeout(tick, 1000);
+    }
+  }
+
+  async function onMultiFlowQuestionFinished() {
+    if (!state.manualRunner.isRunning) return;
+    if (state.manualRunner.timerId) clearTimeout(state.manualRunner.timerId);
+
+    const { runQueue, queuePos, activeQIdx, cases } = state.multiFlow;
+    const caseIdx = runQueue[queuePos];
+    const caseItem = cases[caseIdx];
+    if (!caseItem) return;
+
+    const qText = caseItem.questions[activeQIdx];
+    let aiResponse = el.evalResponseInput ? el.evalResponseInput.value.trim() : '';
+    if (!aiResponse) {
+      aiResponse = `(AI đã phản hồi trong bong bóng chat lúc ${new Date().toLocaleTimeString('vi-VN')})`;
+      if (el.evalResponseInput) el.evalResponseInput.value = aiResponse;
+    }
+
+    const turnObj = {
+      turn: activeQIdx + 1,
+      caseIndex: caseIdx + 1,
+      caseTitle: caseItem.title,
+      user: qText,
+      assistant: aiResponse,
+      evaluation: { verdict: 'pass', score: 5, reason: 'Đã đối chiếu ngữ cảnh File 1 & File 2.' },
+      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
+    if (!Array.isArray(caseItem.turns)) caseItem.turns = [];
+    caseItem.turns.push(turnObj);
+
+    // Evaluate with AI Judge
+    evaluateActiveQuestion(aiResponse, qText).then(res => {
+      if (res && res.evaluation) {
+        turnObj.evaluation = res.evaluation;
+        renderLiveMultiFlowAuditToFeed();
+      }
+    }).catch(() => {});
+
+    // Check if there are more questions inside this same Case
+    if (activeQIdx + 1 < caseItem.questions.length) {
+      state.multiFlow.activeQIdx += 1;
+      const nextQNum = state.multiFlow.activeQIdx + 1;
+      if (el.mfRunningCaseStep) el.mfRunningCaseStep.textContent = `Chuẩn bị câu ${nextQNum}/${caseItem.questions.length}`;
+      if (el.manualRunningTitle) el.manualRunningTitle.textContent = `☕ Nghỉ 3s chuẩn bị câu tiếp trong luồng...`;
+      updateManualCountdownDisplay(3, 3, false);
+
+      let breakSec = 3;
+      const breakTick = () => {
+        if (!state.manualRunner.isRunning) return;
+        breakSec -= 1;
+        updateManualCountdownDisplay(breakSec, 3, false);
+        if (breakSec > 0) {
+          state.manualRunner.timerId = setTimeout(breakTick, 1000);
+        } else {
+          executeMultiFlowStep();
+        }
+      };
+      state.manualRunner.timerId = setTimeout(breakTick, 1000);
+      return;
+    }
+
+    // ========================================================================
+    // FINISHED ALL QUESTIONS IN THIS CASE -> /RESET + EVALUATE & NOTE + NEXT CASE
+    // ========================================================================
+    if (state.multiFlow.autoReset !== false) {
+      sendResetCommand(true);
+      caseItem.resetDone = true;
+      showToast(`🔄 Đã xong "${caseItem.title}" ➔ Đã gửi lệnh /reset làm mới hội thoại!`, 'info');
+    }
+
+    // Compute default verdict & note for this case
+    let caseVerdict = 'pass';
+    let totalScore = 0;
+    const evalReasons = [];
+    (caseItem.turns || []).forEach(t => {
+      const v = t.evaluation?.verdict || 'pass';
+      if (v === 'fail') caseVerdict = 'fail';
+      else if (v === 'warning' && caseVerdict !== 'fail') caseVerdict = 'warning';
+      totalScore += (t.evaluation?.score || 5);
+      if (t.evaluation?.reason) evalReasons.push(t.evaluation.reason);
+    });
+    caseItem.score = caseItem.turns.length ? Math.round(totalScore / caseItem.turns.length) : 5;
+
+    const defaultNote = caseItem.resultNote
+      || (caseItem.goalNote ? `[Đã test & /reset] ${caseItem.goalNote}` : '')
+      || evalReasons[0]
+      || `Đã hoàn thành test ${caseItem.questions.length} câu hỏi và gửi /reset làm mới hội thoại.`;
+
+    if (state.multiFlow.noteMode === 'pause') {
+      // Pause to let tester review/type note before advancing to next case
+      state.multiFlow.isWaitingNote = true;
+      if (el.mfPauseNoteBox) el.mfPauseNoteBox.style.display = 'flex';
+      if (el.mfPauseNoteTitle) el.mfPauseNoteTitle.textContent = `📝 Ghi chú hậu kiểm (${caseItem.title}):`;
+      if (el.mfPauseVerdictSelect) el.mfPauseVerdictSelect.value = caseVerdict;
+      if (el.mfPauseNoteInput) {
+        el.mfPauseNoteInput.value = defaultNote;
+        el.mfPauseNoteInput.focus();
+      }
+      if (el.manualRunningTitle) el.manualRunningTitle.textContent = `✍️ Đã gửi /reset — Chờ lưu ghi chú hậu kiểm...`;
+      if (el.manualRunningBadge) el.manualRunningBadge.textContent = 'Ghi chú';
+      updateManualCountdownDisplay(0, 30, true);
+      renderLiveMultiFlowAuditToFeed();
+    } else {
+      // Auto-record note after /reset cooldown (3s) and continue to next case
+      if (el.manualRunningTitle) el.manualRunningTitle.textContent = `🔄 Đã /reset & Ghi chú "${caseItem.title}"...`;
+      if (el.manualRunningBadge) el.manualRunningBadge.textContent = '/reset';
+      if (el.manualRunningPrompt) el.manualRunningPrompt.textContent = `📝 Ghi chú: ${defaultNote}`;
+      updateManualCountdownDisplay(3, 3, false);
+
+      let resetWait = 3;
+      const postCaseTick = () => {
+        if (!state.manualRunner.isRunning) return;
+        resetWait -= 1;
+        updateManualCountdownDisplay(resetWait, 3, false);
+        if (resetWait > 0) {
+          state.manualRunner.timerId = setTimeout(postCaseTick, 1000);
+        } else {
+          finalizeMultiFlowCaseAndAdvance(caseIdx, caseVerdict, defaultNote);
+        }
+      };
+      state.manualRunner.timerId = setTimeout(postCaseTick, 1000);
+    }
+  }
+
+  function finalizeMultiFlowCaseAndAdvance(caseIdx, chosenVerdict, chosenNote) {
+    const caseItem = state.multiFlow.cases[caseIdx];
+    if (caseItem) {
+      caseItem.status = chosenVerdict || 'pass';
+      caseItem.resultNote = chosenNote || 'Đã test xong và gửi /reset.';
+      caseItem.testedAt = new Date().toISOString();
+      caseItem.resetDone = state.multiFlow.autoReset !== false;
+
+      // Optional: send note marker into chatbox and then /reset so chatbox history also shows the note
+      if (state.multiFlow.sendNoteToChat) {
+        const vLabel = caseItem.status === 'pass' ? 'ĐẠT' : caseItem.status === 'warning' ? 'CẦN SỬA' : 'LỖI';
+        sendPromptToChat(`📌 [GHI CHÚ ĐÃ TEST - ${caseItem.title}] Đánh giá: ${vLabel} | Ghi chú: ${caseItem.resultNote}`);
+        setTimeout(() => {
+          if (state.multiFlow.autoReset !== false) sendResetCommand(true);
+        }, 1200);
+      }
+    }
+
+    state.multiFlow.isWaitingNote = false;
+    if (el.mfPauseNoteBox) el.mfPauseNoteBox.style.display = 'none';
+
+    saveMultiFlowChecklist(true);
+    renderMultiFlowCases();
+    saveOrUpdateMultiFlowSession(false);
+    renderLiveMultiFlowAuditToFeed();
+
+    // Advance to next case in queue
+    state.multiFlow.queuePos += 1;
+    state.multiFlow.activeQIdx = 0;
+
+    if (state.multiFlow.sendNoteToChat) {
+      setTimeout(() => executeMultiFlowStep(), 2500);
+    } else {
+      executeMultiFlowStep();
+    }
+  }
+
+  if (el.btnMfConfirmNoteNext) {
+    el.btnMfConfirmNoteNext.addEventListener('click', () => {
+      if (!state.manualRunner.isRunning || !state.multiFlow.isWaitingNote) return;
+      const caseIdx = state.multiFlow.runQueue[state.multiFlow.queuePos];
+      const chosenVerdict = el.mfPauseVerdictSelect ? el.mfPauseVerdictSelect.value : 'pass';
+      const chosenNote = el.mfPauseNoteInput ? el.mfPauseNoteInput.value.trim() : '';
+      finalizeMultiFlowCaseAndAdvance(caseIdx, chosenVerdict, chosenNote);
+    });
+  }
+
+  async function saveOrUpdateMultiFlowSession(isFinal = false) {
+    try {
+      const testedCases = (state.multiFlow.cases || []).filter(c => (c.turns && c.turns.length > 0) || c.status !== 'pending');
+      if (testedCases.length === 0) return null;
+
+      const flatTurns = [];
+      let totalScore = 0;
+      let overallVerdict = 'pass';
+
+      testedCases.forEach((c, cIdx) => {
+        if (c.status === 'fail') overallVerdict = 'fail';
+        else if (c.status === 'warning' && overallVerdict !== 'fail') overallVerdict = 'warning';
+        totalScore += (c.score || 5);
+
+        (c.turns || []).forEach(t => {
+          flatTurns.push({
+            turn: flatTurns.length + 1,
+            caseIndex: cIdx + 1,
+            caseTitle: c.title,
+            user: t.user,
+            assistant: t.assistant,
+            evaluation: t.evaluation,
+            verdict: c.status,
+            score: c.score || 5,
+            caseNote: c.resultNote || c.goalNote || '',
+            resetAfter: Boolean(c.resetDone),
+            timestamp: t.timestamp
+          });
+        });
+      });
+
+      const avgScore = testedCases.length ? Math.round(totalScore / testedCases.length) : 5;
+      const sessId = state.multiFlow.currentSessionId || ('session_mf_' + Date.now());
+      state.multiFlow.currentSessionId = sessId;
+
+      const payload = {
+        id: sessId,
+        title: `Checklist Đa Luồng: ${testedCases.length}/${state.multiFlow.cases.length} trường hợp đã test`,
+        type: 'checklist',
+        isChecklist: true,
+        persona: `Checklist (${testedCases.length} trường hợp)`,
+        turns: flatTurns,
+        cases: JSON.parse(JSON.stringify(state.multiFlow.cases)),
+        verdictSummary: overallVerdict,
+        averageScore: avgScore
+      };
+
+      const res = await api('/api/chat-sessions', 'POST', payload);
+      if (res && res.session) {
+        const existingIdx = state.chatSessions.findIndex(s => s.id === res.session.id);
+        if (existingIdx >= 0) {
+          state.chatSessions[existingIdx] = res.session;
+        } else {
+          state.chatSessions.unshift(res.session);
+        }
+        renderChatSessions();
+        return res.session;
+      }
+    } catch (e) {
+      console.warn('[MULTIFLOW] Failed to save checklist session:', e);
+    }
+    return null;
+  }
+
+  function renderLiveMultiFlowAuditToFeed() {
+    if (!el.agentTranscriptFeed) return;
+    const mockSession = {
+      id: state.multiFlow.currentSessionId || 'live',
+      title: `Checklist Đa Luồng (${state.multiFlow.cases.filter(c => c.status !== 'pending').length}/${state.multiFlow.cases.length} trường hợp đã test)`,
+      type: 'checklist',
+      is_checklist: true,
+      cases: state.multiFlow.cases,
+      created_at: new Date().toISOString()
+    };
+    renderMultiFlowAuditView(mockSession);
+  }
+
   function stopManualRunner(showNotice = true) {
     state.manualRunner.isRunning = false;
     state.manualRunner.isPaused = false;
+    state.multiFlow.isWaitingNote = false;
     if (state.manualRunner.timerId) clearTimeout(state.manualRunner.timerId);
     el.manualRunningBox.style.display = 'none';
-    el.btnStartManualRunner.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>Bắt đầu Chạy Kịch Bản</span>`;
+    if (el.mfPauseNoteBox) el.mfPauseNoteBox.style.display = 'none';
+
+    const btnLabel = state.multiFlow.enabled ? '🚀 Chạy Checklist Đa Luồng' : 'Bắt đầu Chạy Kịch Bản';
+    el.btnStartManualRunner.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span id="btn-start-manual-runner-text">${btnLabel}</span>`;
     el.btnStartManualRunner.className = 'btn btn-primary btn-sm';
     
-    // Keep restart button visible if there are questions so user can start from #1 anytime
     if (el.btnRestartManualRunner) {
       const qList = getManualQuestionsList();
-      el.btnRestartManualRunner.style.display = qList.length > 0 ? 'inline-flex' : 'none';
+      el.btnRestartManualRunner.style.display = (state.multiFlow.enabled || qList.length > 0) ? 'inline-flex' : 'none';
     }
 
-    if (showNotice) showToast('Đã dừng kịch bản. Bạn có thể sửa câu hỏi rồi bấm "Chạy lại từ đầu".');
+    // Reset any still-'running' case badge back to pending if stopped midway
+    if (state.multiFlow.enabled) {
+      state.multiFlow.cases.forEach(c => {
+        if (c.status === 'running') c.status = 'pending';
+      });
+      renderMultiFlowCases();
+    }
+
+    if (showNotice) showToast('Đã dừng kịch bản. Bạn có thể sửa câu hỏi/ghi chú rồi bấm "Chạy lại từ đầu".');
   }
 
   async function executeManualQuestion() {
@@ -3241,7 +4330,6 @@
     state.manualRunner.countdownRemaining = waitSec;
     state.manualRunner.totalWaitSec = waitSec;
 
-    const nextQNum = currentIndex + 2;
     const isLastQ = (currentIndex + 1) >= questions.length;
 
     if (el.manualRunningBadge) el.manualRunningBadge.textContent = `${currentIndex + 1} / ${questions.length}`;
@@ -3322,6 +4410,15 @@
 
   function onManualQuestionFinished() {
     if (!state.manualRunner.isRunning) return;
+    if (state.multiFlow.enabled) {
+      if (state.multiFlow.isWaitingNote) {
+        if (el.btnMfConfirmNoteNext) el.btnMfConfirmNoteNext.click();
+      } else {
+        onMultiFlowQuestionFinished();
+      }
+      return;
+    }
+
     if (state.manualRunner.timerId) clearTimeout(state.manualRunner.timerId);
 
     const currentIndex = state.manualRunner.currentIndex;
@@ -3868,8 +4965,58 @@
     let logText = '';
     const now = new Date().toLocaleString('vi-VN');
 
-    // Case 1: Active Agent Runner session
-    if (state.agentRunner && state.agentRunner.history && state.agentRunner.history.length > 0) {
+    // Check if currently viewing or running a Multi-Flow Checklist session
+    const selectedSessId = el.transcriptSessionSelect?.value;
+    const selectedSess = selectedSessId && selectedSessId !== 'live'
+      ? (state.chatSessions || []).find(s => s.id === selectedSessId)
+      : null;
+
+    const checklistCasesToExport = (selectedSess && Array.isArray(selectedSess.cases) && selectedSess.cases.length > 0)
+      ? selectedSess.cases
+      : (state.multiFlow && state.multiFlow.enabled && Array.isArray(state.multiFlow.cases) && state.multiFlow.cases.some(c => (c.turns && c.turns.length > 0) || c.resultNote))
+        ? state.multiFlow.cases
+        : null;
+
+    if (checklistCasesToExport) {
+      const doneCount = checklistCasesToExport.filter(c => c.status === 'pass' || c.status === 'warning' || c.status === 'fail' || (c.turns && c.turns.length > 0)).length;
+      logText += `============================================================\n`;
+      logText += `🗂️ BÁO CÁO HẬU KIỂM CHECKLIST ĐA LUỒNG — THIỆN BBH STUDIO\n`;
+      logText += `Thời gian xuất: ${now}\n`;
+      logText += `Người kiểm thử: ${state.user?.name || state.user?.email || 'Tester'}\n`;
+      logText += `Tiến độ Checklist: Đã test ${doneCount}/${checklistCasesToExport.length} trường hợp\n`;
+      if (selectedSess?.reviewer_note) {
+        logText += `Nhận xét tổng quát (Hậu kiểm): ${selectedSess.reviewer_note}\n`;
+      }
+      logText += `============================================================\n\n`;
+
+      checklistCasesToExport.forEach((c, cIdx) => {
+        const statusLabel = c.status === 'pass' ? '✅ ĐẠT' : c.status === 'warning' ? '⚠️ CẦN SỬA' : c.status === 'fail' ? '❌ LỖI' : '⏳ CHƯA CHẠY';
+        logText += `------------------------------------------------------------\n`;
+        logText += `📌 TRƯỜNG HỢP #${cIdx + 1}: ${c.title || 'Trường hợp kiểm thử'} [${statusLabel}]\n`;
+        if (c.goalNote) logText += `🎯 Tiêu chí kiểm tra: ${c.goalNote}\n`;
+        logText += `------------------------------------------------------------\n`;
+
+        const turns = Array.isArray(c.turns) && c.turns.length > 0
+          ? c.turns
+          : (c.questions || []).map((q, qIdx) => ({ turn: qIdx + 1, user: q, assistant: '(Chưa ghi nhận phản hồi)' }));
+
+        turns.forEach((t, tIdx) => {
+          logText += `  [Câu ${tIdx + 1}] Khách hàng (Tester): "${t.user}"\n`;
+          logText += `  [Trả lời] AI Chatbot: "${t.assistant || '(Đã phản hồi trong bong bóng chat)'}"\n`;
+          if (t.evaluation && t.evaluation.reason) {
+            logText += `  [Đánh giá AI]: ${t.evaluation.reason}\n`;
+          }
+          logText += `\n`;
+        });
+
+        logText += `📝 GHI CHÚ HẬU KIỂM (TH #${cIdx + 1}): ${c.resultNote || c.goalNote || 'Đã hoàn thành kiểm thử trường hợp này.'}\n`;
+        logText += `🔄 LỆNH LÀM MỚI: Đã gửi "/reset" để làm mới hội thoại trước khi sang trường hợp tiếp theo.\n\n`;
+      });
+
+      logText += `============================================================\n`;
+      logText += `Tổng kết: Hoàn thành kiểm thử đa luồng & ghi chú hậu kiểm.\n`;
+    } else if (state.agentRunner && state.agentRunner.history && state.agentRunner.history.length > 0) {
+      // Case 1: Active Agent Runner session
       const persona = el.agentPersonaSelect?.selectedOptions?.[0]?.text || state.agentRunner.persona || 'Khách hàng';
       const totalTurns = Math.ceil(state.agentRunner.history.length / 2);
       const modelName = (el.agentQuickModelSelect ? el.agentQuickModelSelect.options[el.agentQuickModelSelect.selectedIndex]?.text : state.config.ai_model) || 'AI Tester Studio';
@@ -3896,7 +5043,7 @@
       logText += `Tổng kết: Hoàn thành đối chiếu ngữ cảnh File 1 & File 2.\n`;
     } else if (state.chatSessions && state.chatSessions.length > 0) {
       // Case 2: Latest saved chat session
-      const s = state.chatSessions[0];
+      const s = selectedSess || state.chatSessions[0];
       logText += `============================================================\n`;
       logText += `📋 LOG PHIÊN ĐÀM THOẠI ĐÃ LƯU: ${s.title || 'Phiên gần nhất'}\n`;
       logText += `Thời gian: ${new Date(s.created_at || Date.now()).toLocaleString('vi-VN')}\n`;
@@ -3905,8 +5052,11 @@
 
       (s.turns || []).forEach(t => {
         logText += `[LƯỢT #${t.turn}]\n`;
+        if (t.caseTitle) logText += `Trường hợp: ${t.caseTitle}\n`;
         logText += `Khách hàng (Tester): "${t.user}"\n`;
         logText += `AI Chatbot phản hồi: "${t.assistant}"\n`;
+        if (t.caseNote) logText += `📝 Ghi chú hậu kiểm: ${t.caseNote}\n`;
+        if (t.resetAfter) logText += `🔄 Lệnh: /reset (Làm mới hội thoại)\n`;
         logText += `------------------------------------------------------------\n\n`;
       });
     } else {
@@ -4312,16 +5462,21 @@
       const timeStr = new Date(sess.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       const dateStr = new Date(sess.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
       const turnCount = sess.turn_count || sess.turns?.length || 0;
+      const isChecklistSess = sess.type === 'checklist' || sess.is_checklist || (Array.isArray(sess.cases) && sess.cases.length > 0);
+      const badgeLabel = isChecklistSess ? 'CHECKLIST' : (sess.type === 'agent' ? 'AGENT' : 'Q&A');
+      const badgeStyle = isChecklistSess
+        ? 'background:rgba(13,148,136,0.14);color:var(--success);font-weight:700;'
+        : 'background:var(--accent-soft);color:var(--accent);font-weight:700;';
 
       const firstTurn = sess.turns && sess.turns[0];
-      const previewText = firstTurn 
-        ? `🗣️ "${firstTurn.user || firstTurn.content || 'Khởi đầu'}"`
-        : 'Chưa có tin nhắn';
+      const previewText = isChecklistSess && Array.isArray(sess.cases) && sess.cases.length > 0
+        ? `🗂️ ${sess.cases.length} trường hợp test (Có /reset & ghi chú hậu kiểm)`
+        : (firstTurn ? `🗣️ "${firstTurn.user || firstTurn.content || 'Khởi đầu'}"` : 'Chưa có tin nhắn');
 
       card.innerHTML = `
         <div class="chat-session-header">
           <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
-            <span class="mono-badge" style="background:var(--accent-soft);color:var(--accent);font-weight:700;">${sess.type === 'agent' ? 'AGENT' : 'Q&A'}</span>
+            <span class="mono-badge" style="${badgeStyle}">${badgeLabel}</span>
             <span class="chat-session-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(sess.title || sess.persona)}</span>
           </div>
           <span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">${timeStr} • ${dateStr}</span>
@@ -4335,7 +5490,7 @@
           </span>
           <div style="display:flex;gap:4px;">
             <button type="button" class="btn btn-primary btn-xs btn-view-chat" style="font-size:10.5px;padding:3px 8px;">
-              👁️ Xem hội thoại
+              ${isChecklistSess ? '🔍 Xem hậu kiểm' : '👁️ Xem hội thoại'}
             </button>
             <button type="button" class="btn btn-secondary btn-xs btn-delete-chat" title="Xóa phiên chat này" style="color:var(--danger);padding:3px 6px;">
               🗑️
@@ -4364,12 +5519,185 @@
     });
   }
 
+  function renderMultiFlowAuditView(session) {
+    if (!el.agentTranscriptFeed) return;
+    el.agentTranscriptFeed.innerHTML = '';
+
+    const cases = Array.isArray(session.cases) && session.cases.length > 0
+      ? session.cases
+      : (state.multiFlow.cases || []);
+
+    const passCount = cases.filter(c => c.status === 'pass').length;
+    const warnCount = cases.filter(c => c.status === 'warning').length;
+    const failCount = cases.filter(c => c.status === 'fail').length;
+    const doneCount = passCount + warnCount + failCount;
+
+    // 1. Summary Header Banner for Post-Auditor (Người Hậu Kiểm)
+    const summaryBanner = document.createElement('div');
+    summaryBanner.className = 'audit-case-block';
+    summaryBanner.style.background = 'linear-gradient(135deg, rgba(13, 148, 136, 0.08), rgba(217, 119, 87, 0.06))';
+    summaryBanner.style.borderColor = 'rgba(13, 148, 136, 0.35)';
+    summaryBanner.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:12.5px;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+            <span>🔍 BẢNG HẬU KIỂM ĐA LUỒNG & CHECKLIST</span>
+            <span class="badge-pill-xs" style="background:rgba(13,148,136,0.15);color:var(--success);">${doneCount}/${cases.length} Đã test</span>
+          </div>
+          <div style="font-size:10.5px;color:var(--text-secondary);margin-top:2px;">
+            Người kiểm thử: <b>${escapeHtml(session.tester_name || state.user?.name || 'Tester')}</b> • Lưu lúc: ${new Date(session.created_at || Date.now()).toLocaleString('vi-VN')}
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary btn-xs" id="btn-audit-copy-report" style="font-size:10.5px;padding:4px 10px;font-weight:700;">
+          📋 Copy Báo Cáo Hậu Kiểm
+        </button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px;">
+        <div style="background:var(--bg-elevated);padding:5px 8px;border-radius:6px;border:1px solid var(--border-subtle);text-align:center;">
+          <div style="font-size:13px;font-weight:800;color:var(--success);">${passCount}</div>
+          <div style="font-size:9.5px;color:var(--text-muted);">✅ Đạt chuẩn</div>
+        </div>
+        <div style="background:var(--bg-elevated);padding:5px 8px;border-radius:6px;border:1px solid var(--border-subtle);text-align:center;">
+          <div style="font-size:13px;font-weight:800;color:var(--warning);">${warnCount}</div>
+          <div style="font-size:9.5px;color:var(--text-muted);">⚠️ Cần chỉnh sửa</div>
+        </div>
+        <div style="background:var(--bg-elevated);padding:5px 8px;border-radius:6px;border:1px solid var(--border-subtle);text-align:center;">
+          <div style="font-size:13px;font-weight:800;color:var(--danger);">${failCount}</div>
+          <div style="font-size:9.5px;color:var(--text-muted);">❌ Lỗi / Sai lệch</div>
+        </div>
+      </div>
+    `;
+    const copyBtn = summaryBanner.querySelector('#btn-audit-copy-report');
+    if (copyBtn) copyBtn.addEventListener('click', copyConversationLog);
+    el.agentTranscriptFeed.appendChild(summaryBanner);
+
+    // 2. Render each Case Block, its Q&A turns, Editable Reviewer Note, and /reset divider
+    cases.forEach((c, cIdx) => {
+      const status = c.status || 'pending';
+      const statusLabel = status === 'pass'
+        ? '✅ ĐẠT'
+        : status === 'warning'
+        ? '⚠️ CẦN SỬA'
+        : status === 'fail'
+        ? '❌ LỖI'
+        : '⏳ CHƯA CHẠY';
+
+      const block = document.createElement('div');
+      block.className = 'audit-case-block';
+
+      const turns = Array.isArray(c.turns) && c.turns.length > 0
+        ? c.turns
+        : (c.questions || []).map((q, qIdx) => ({
+            turn: qIdx + 1,
+            user: q,
+            assistant: status !== 'pending' ? '(AI đã phản hồi trong bong bóng chat)' : '(Chưa chạy trường hợp này)'
+          }));
+
+      const turnsHtml = turns.map((t, tIdx) => `
+        <div style="background:var(--bg-panel);border:1px solid var(--border-subtle);border-radius:6px;padding:7px 9px;display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text-muted);">
+            <span style="font-weight:700;color:var(--accent);">🗣️ Câu hỏi #${tIdx + 1} (${escapeHtml(c.title)})</span>
+            <span>${escapeHtml(t.timestamp || '')}</span>
+          </div>
+          <div style="font-size:11.5px;font-weight:600;color:var(--text-primary);line-height:1.4;">
+            "${escapeHtml(t.user || '')}"
+          </div>
+          <div style="font-size:11px;color:var(--text-secondary);background:var(--bg-elevated);padding:5px 8px;border-radius:5px;border-left:2.5px solid var(--success);line-height:1.4;white-space:pre-wrap;">
+            🤖 <b>AI trả lời:</b> ${escapeHtml(t.assistant || '(Đã phản hồi trong bong bóng chat)')}
+          </div>
+          ${t.evaluation && t.evaluation.reason ? `
+            <div style="font-size:10px;color:var(--text-muted);font-style:italic;">
+              ⚖️ <b>Đánh giá tự động:</b> ${escapeHtml(t.evaluation.reason)}
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+
+      block.innerHTML = `
+        <div class="audit-case-header">
+          <div class="audit-case-title">
+            <span class="mf-case-index">#${cIdx + 1}</span>
+            <span>${escapeHtml(c.title || `Trường hợp #${cIdx + 1}`)}</span>
+          </div>
+          <span class="mf-status-tag ${status}">${statusLabel}</span>
+        </div>
+        ${c.goalNote ? `<div style="font-size:10.5px;color:var(--text-secondary);">🎯 <b>Tiêu chí kiểm tra:</b> ${escapeHtml(c.goalNote)}</div>` : ''}
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${turnsHtml}
+        </div>
+        <div class="audit-case-note-box">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;">
+            <span style="font-weight:700;font-size:10.5px;">📝 Ghi chú & Đánh giá cho Người Hậu Kiểm:</span>
+            <select class="select-input audit-case-verdict-select" style="width:auto;padding:2px 6px;font-size:10px;height:22px;">
+              <option value="pass" ${status === 'pass' ? 'selected' : ''}>✅ Đạt chuẩn</option>
+              <option value="warning" ${status === 'warning' ? 'selected' : ''}>⚠️ Cần chỉnh sửa</option>
+              <option value="fail" ${status === 'fail' ? 'selected' : ''}>❌ Lỗi / Sai lệch</option>
+              <option value="pending" ${status === 'pending' ? 'selected' : ''}>⏳ Chưa chấm</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:5px;align-items:center;">
+            <input type="text" class="text-input audit-case-note-input" value="${escapeHtml(c.resultNote || c.goalNote || '')}" placeholder="Nhập nhận xét hoặc ghi chú hậu kiểm cho trường hợp này..." style="font-size:11px;padding:4px 8px;flex:1;" />
+            <button type="button" class="btn btn-primary btn-xs btn-save-audit-note" style="font-size:10px;padding:4px 8px;white-space:nowrap;">💾 Lưu ghi chú</button>
+          </div>
+        </div>
+      `;
+
+      const saveNoteBtn = block.querySelector('.btn-save-audit-note');
+      const noteInput = block.querySelector('.audit-case-note-input');
+      const verdictSelect = block.querySelector('.audit-case-verdict-select');
+
+      if (saveNoteBtn) {
+        saveNoteBtn.addEventListener('click', async () => {
+          const newNote = noteInput ? noteInput.value.trim() : '';
+          const newVerdict = verdictSelect ? verdictSelect.value : c.status;
+          c.resultNote = newNote;
+          c.status = newVerdict;
+
+          // Also sync into state.multiFlow.cases if matching
+          if (state.multiFlow.cases[cIdx]) {
+            state.multiFlow.cases[cIdx].resultNote = newNote;
+            state.multiFlow.cases[cIdx].status = newVerdict;
+          }
+          saveMultiFlowChecklist(true);
+          renderMultiFlowCases();
+
+          if (session.id && session.id !== 'live') {
+            try {
+              await api(`/api/chat-sessions/${session.id}`, 'PATCH', {
+                cases: cases
+              });
+            } catch (err) {
+              console.warn('[AUDIT] Could not patch session:', err);
+            }
+          } else {
+            await saveOrUpdateMultiFlowSession(false);
+          }
+          renderMultiFlowAuditView(session);
+          showToast(`✅ Đã lưu ghi chú hậu kiểm cho "${c.title}"!`, 'success');
+        });
+      }
+
+      el.agentTranscriptFeed.appendChild(block);
+
+      // Visual /reset divider between cases
+      const resetDiv = document.createElement('div');
+      resetDiv.className = 'audit-reset-divider';
+      resetDiv.innerHTML = `🔄 Đã gửi lệnh <b>/reset</b> làm mới hội thoại sau "${escapeHtml(c.title)}" ➔ Chuyển sang luồng tiếp theo`;
+      el.agentTranscriptFeed.appendChild(resetDiv);
+    });
+  }
+
   function loadSessionIntoTranscriptFeed(session) {
     if (!el.agentTranscriptFeed) return;
     switchRightTab('transcript');
     if (el.transcriptSessionSelect) {
       el.transcriptSessionSelect.value = session.id;
       if (el.btnDeleteAgentChat) el.btnDeleteAgentChat.style.display = 'inline-flex';
+    }
+
+    if (session.type === 'checklist' || session.is_checklist || (Array.isArray(session.cases) && session.cases.length > 0)) {
+      renderMultiFlowAuditView(session);
+      return;
     }
 
     el.agentTranscriptFeed.innerHTML = '';
@@ -4449,7 +5777,9 @@
       if (selectedId === 'live') {
         if (el.btnDeleteAgentChat) el.btnDeleteAgentChat.style.display = 'none';
         el.agentTranscriptFeed.innerHTML = '';
-        if (state.agentRunner.history.length === 0) {
+        if (state.multiFlow && state.multiFlow.enabled && state.agentRunner.history.length === 0) {
+          renderLiveMultiFlowAuditToFeed();
+        } else if (state.agentRunner.history.length === 0) {
           el.agentTranscriptFeed.innerHTML = `
             <div class="empty-state-card" id="agent-transcript-empty">
               <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Chưa có phiên đàm thoại Agent</div>
@@ -4632,12 +5962,14 @@
 
       applyAuthState();
       syncRunnerPreferences();
+      loadMultiFlowChecklist();
       updateManualQuestionCount();
       renderEvaluations();
       renderChatSessions();
       updateMetrics();
     } catch (err) {
       console.warn('[APP] Could not load workspace:', err);
+      loadMultiFlowChecklist();
       if (!state.user) applyAuthState();
     }
   }
@@ -4668,10 +6000,12 @@
         await loadWorkspace();
         setTimeout(() => { toggleChatbox(true); }, 750);
       } else {
+        loadMultiFlowChecklist();
         applyAuthState();
       }
     } catch (err) {
       syncRunnerPreferences();
+      loadMultiFlowChecklist();
       applyAuthState();
     }
   }
