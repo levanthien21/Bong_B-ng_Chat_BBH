@@ -16,7 +16,10 @@
     "default_register_role": "tester",
     "allow_role_selection_on_register": true,
     "auto_sync_user_to_chat": true,
-    "updated_at": "2026-10-24T13:01:08.108Z"
+    "updated_at": "2026-10-24T13:01:08.108Z",
+    "cloud_db_url": "https://ideal-hamster-185243.upstash.io",
+    "cloud_db_provider": "upstash",
+    "cloud_db_last_synced": "2026-11-09T08:31:52.308Z"
   },
   "roles": {
     "admin": {
@@ -112,7 +115,7 @@
         "updated_at": "2026-10-26T08:07:15.234Z"
       },
       "created_at": "2026-10-25T08:20:08.743Z",
-      "last_login": "2026-10-27T04:30:46.072Z",
+      "last_login": "2026-11-09T08:32:07.540Z",
       "tests_submitted": 23,
       "embed_list": [
         {
@@ -121,10 +124,210 @@
           "page_id": "095817282564177",
           "embed_code": "095817282564177",
           "is_active": true,
-          "created_at": "2026-10-25T08:20:08.743Z"
+          "created_at": "2026-10-25T08:20:08.743Z",
+          "updated_at": "2026-11-09T08:32:07.535Z"
         }
       ],
       "active_embed_id": "emb_thien_default"
+    },
+    {
+      "id": "usr_colleague_demo",
+      "name": "Đồng nghiệp BBH",
+      "email": "colleague@gmail.com",
+      "username": "colleague",
+      "role": "tester",
+      "status": "active",
+      "avatar_color": "#0D9488",
+      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
+      "page_id": "",
+      "embed_code": "",
+      "deepseek_api_key": "",
+      "productKnowledge": {
+        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
+        "content": "",
+        "updated_at": "2026-10-25T08:34:42.258Z"
+      },
+      "promptRules": {
+        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
+        "content": "",
+        "updated_at": "2026-10-25T08:34:42.258Z"
+      },
+      "created_at": "2026-10-25T08:34:42.258Z",
+      "last_login": null,
+      "tests_submitted": 0,
+      "embed_list": []
+    },
+    {
+      "id": "usr_colleague2_demo",
+      "name": "Tester Đồng nghiệp",
+      "email": "test_colleague2@gmail.com",
+      "username": "test_colleague2",
+      "role": "tester",
+      "status": "active",
+      "avatar_color": "#4F46E5",
+      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
+      "page_id": "",
+      "embed_code": "",
+      "deepseek_api_key": "",
+      "productKnowledge": {
+        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
+        "content": "",
+        "updated_at": "2026-10-25T10:39:24.051Z"
+      },
+      "promptRules": {
+        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
+        "content": "",
+        "updated_at": "2026-10-25T10:39:24.051Z"
+      },
+      "created_at": "2026-10-25T10:39:24.051Z",
+      "last_login": null,
+      "tests_submitted": 0,
+      "embed_list": []
+    },
+    {
+      "id": "usr_1793637926537_ti4e",
+      "name": "test_colleague_1793637926494",
+      "email": "test_colleague_1793637926494@gmail.com",
+      "username": "test_colleague_1793637926494",
+      "phone": "",
+      "role": "tester",
+      "page_id": "112233445566",
+      "embed_code": "112233445566",
+      "embed_list": [
+        {
+          "id": "emb_1793637926537_4sqe",
+          "name": "Chatbot chính",
+          "page_id": "112233445566",
+          "embed_code": "112233445566",
+          "is_active": true,
+          "created_at": "2026-11-02T16:45:26.537Z"
+        }
+      ],
+      "active_embed_id": "emb_1793637926537_4sqe",
+      "ai_model": "local-free",
+      "ai_api_key": "",
+      "gemini_api_key": "",
+      "groq_api_key": "",
+      "deepseek_api_key": "",
+      "productKnowledge": {
+        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
+        "content": "",
+        "updated_at": "2026-11-02T16:45:26.537Z"
+      },
+      "promptRules": {
+        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
+        "content": "",
+        "updated_at": "2026-11-02T16:45:26.537Z"
+      },
+      "status": "active",
+      "avatar_color": "#2563EB",
+      "password_hash": "7f04e210010c3628d5b41574a8704d7f68cf810c556ee57fd566bcc341b5ca6464a20db3d401a5b7caf241966e0f906da03cc4294ac4810a03c57c75834fb8a4",
+      "created_at": "2026-11-02T16:45:26.538Z",
+      "last_login": "2026-11-02T16:45:26.555Z",
+      "tests_submitted": 0
+    },
+    {
+      "id": "usr_1794212622984_7gk8",
+      "name": "colleague_1794212622981",
+      "email": "colleague_1794212622981@gmail.com",
+      "username": "colleague_1794212622981",
+      "phone": "",
+      "role": "tester",
+      "page_id": "9988776655",
+      "embed_code": "page_id: 9988776655",
+      "embed_list": [
+        {
+          "id": "emb_1794212622984_wzz6",
+          "name": "Chatbot chính",
+          "page_id": "9988776655",
+          "embed_code": "page_id: 9988776655",
+          "is_active": true,
+          "created_at": "2026-11-09T08:23:42.984Z"
+        }
+      ],
+      "active_embed_id": "emb_1794212622984_wzz6",
+      "ai_model": "local-free",
+      "ai_api_key": "",
+      "gemini_api_key": "",
+      "groq_api_key": "",
+      "deepseek_api_key": "",
+      "productKnowledge": {
+        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
+        "content": "",
+        "updated_at": "2026-11-09T08:23:42.984Z"
+      },
+      "promptRules": {
+        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
+        "content": "",
+        "updated_at": "2026-11-09T08:23:42.984Z"
+      },
+      "status": "active",
+      "avatar_color": "#059669",
+      "password_hash": "67a50eae5f05d9a32e0a75d5631c8bf57d698afd6f6149e639e4062fb541987dd20b74a50df4b31e16d79538a42bbede5ab863ec24410ea973101baa53da2644",
+      "created_at": "2026-11-09T08:23:42.985Z",
+      "last_login": "2026-11-09T08:23:42.985Z",
+      "tests_submitted": 0
+    },
+    {
+      "id": "usr_1794212638282_1l82",
+      "name": "colleague_1794212638280",
+      "email": "colleague_1794212638280@gmail.com",
+      "username": "colleague_1794212638280",
+      "phone": "",
+      "role": "tester",
+      "page_id": "111122223333",
+      "embed_code": "page_id: 111122223333",
+      "embed_list": [
+        {
+          "id": "emb_1794212638281_xhck",
+          "name": "Chatbot chính",
+          "page_id": "9988776655",
+          "embed_code": "page_id: 9988776655",
+          "is_active": false,
+          "created_at": "2026-11-09T08:23:58.281Z",
+          "updated_at": "2026-11-09T08:23:58.296Z"
+        },
+        {
+          "id": "emb_1794212638288_cl1s",
+          "name": "Chatbot Khách Sạn Hồ Chí Minh",
+          "page_id": "111122223333",
+          "embed_code": "page_id: 111122223333",
+          "is_active": true,
+          "created_at": "2026-11-09T08:23:58.288Z",
+          "updated_at": "2026-11-09T08:23:58.296Z"
+        },
+        {
+          "id": "emb_1794212638291_oyep",
+          "name": "Chatbot Tour Du Lịch Đà Nẵng",
+          "page_id": "444455556666",
+          "embed_code": "page_id: 444455556666",
+          "is_active": false,
+          "created_at": "2026-11-09T08:23:58.291Z",
+          "updated_at": "2026-11-09T08:23:58.296Z"
+        }
+      ],
+      "active_embed_id": "emb_1794212638288_cl1s",
+      "ai_model": "local-free",
+      "ai_api_key": "",
+      "gemini_api_key": "",
+      "groq_api_key": "",
+      "deepseek_api_key": "",
+      "productKnowledge": {
+        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
+        "content": "",
+        "updated_at": "2026-11-09T08:23:58.282Z"
+      },
+      "promptRules": {
+        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
+        "content": "",
+        "updated_at": "2026-11-09T08:23:58.282Z"
+      },
+      "status": "active",
+      "avatar_color": "#D97757",
+      "password_hash": "67a50eae5f05d9a32e0a75d5631c8bf57d698afd6f6149e639e4062fb541987dd20b74a50df4b31e16d79538a42bbede5ab863ec24410ea973101baa53da2644",
+      "created_at": "2026-11-09T08:23:58.282Z",
+      "last_login": "2026-11-09T08:23:58.297Z",
+      "tests_submitted": 0
     }
   ],
   "sessions": {
@@ -303,6 +506,10 @@
     "bbh_usr_1793637926537_ti4e.mvzhplln.eyJpZCI6InVzcl8xNzkzNjM3OTI2NTM3X3RpNGUiLCJlbWFpbCI6InRlc3RfY29sbGVhZ3VlXzE3OTM2Mzc5MjY0OTRAZ21haWwuY29tIiwidXNlcm5hbWUiOiJ0ZXN0X2NvbGxlYWd1ZV8xNzkzNjM3OTI2NDk0IiwibmFtZSI6InRlc3RfY29sbGVhZ3VlXzE3OTM2Mzc5MjY0OTQiLCJyb2xlIjoidGVzdGVyIiwicGFnZV9pZCI6Ijk5ODg3NzY2NTU0NCIsImVtYmVkX2NvZGUiOiI5OTg4Nzc2NjU1NDQiLCJlbWJlZF9saXN0IjpbeyJpZCI6ImVtYl8xNzkzNjM3OTI2NTM3XzRzcWUiLCJuYW1lIjoiQ2hhdGJvdCBjaMOtbmgiLCJwYWdlX2lkIjoiOTk4ODc3NjY1NTQ0IiwiZW1iZWRfY29kZSI6Ijk5ODg3NzY2NTU0NCIsImlzX2FjdGl2ZSI6dHJ1ZSwiY3JlYXRlZF9hdCI6IjIwMjYtMTEtMDJUMTY6NDU6MjYuNTM3WiJ9XSwiYWN0aXZlX2VtYmVkX2lkIjoiZW1iXzE3OTM2Mzc5MjY1MzdfNHNxZSIsInBhc3N3b3JkX2hhc2giOiI3ZjA0ZTIxMDAxMGMzNjI4ZDViNDE1NzRhODcwNGQ3ZjY4Y2Y4MTBjNTU2ZWU1N2ZkNTY2YmNjMzQxYjVjYTY0NjRhMjBkYjNkNDAxYTViN2NhZjI0MTk2NmUwZjkwNmRhMDNjYzQyOTRhYzQ4MTBhMDNjNTdjNzU4MzRmYjhhNCIsImNyZWF0ZWRfYXQiOiIyMDI2LTExLTAyVDE2OjQ1OjI2LjUzOFoifQ.f814ac7523c6b9099883b25b693a57a6": {
       "user_id": "usr_1793637926537_ti4e",
       "created_at": "2026-11-02T16:45:26.555Z"
+    },
+    "bbh_usr_thien_admin.mw9065ir.eyJpZCI6InVzcl90aGllbl9hZG1pbiIsImVtYWlsIjoidGhpZW5sdi5iYmhAZ21haWwuY29tIiwidXNlcm5hbWUiOiJ0aGllbmx2LmJiaCIsIm5hbWUiOiJUaGnhu4duIEJCSCIsInJvbGUiOiJhZG1pbiIsInBhZ2VfaWQiOiIwOTU4MTcyODI1NjQxNzciLCJlbWJlZF9jb2RlIjoiMDk1ODE3MjgyNTY0MTc3IiwiZW1iZWRfbGlzdCI6W3siaWQiOiJlbWJfdGhpZW5fZGVmYXVsdCIsIm5hbWUiOiJDaGF0Ym90IFRoaeG7h24gQkJIIChN4bq3YyDEkeG7i25oKSIsInBhZ2VfaWQiOiIwOTU4MTcyODI1NjQxNzciLCJlbWJlZF9jb2RlIjoiMDk1ODE3MjgyNTY0MTc3IiwiaXNfYWN0aXZlIjp0cnVlLCJjcmVhdGVkX2F0IjoiMjAyNi0xMC0yNVQwODoyMDowOC43NDNaIiwidXBkYXRlZF9hdCI6IjIwMjYtMTEtMDlUMDg6MzI6MDcuNTM1WiJ9XSwiYWN0aXZlX2VtYmVkX2lkIjoiZW1iX3RoaWVuX2RlZmF1bHQiLCJwYXNzd29yZF9oYXNoIjoiZWJhNzYzYmQxYTBkNjViOGRmNGQ5NmRkNjRmYzk5ODQyNDQzODRkMmQ4YjMwY2YwMTk1NjgxMzI3NTI5YTBmODY1MzU5NzUzNmIzN2I0MjcwOWEzZThhYzRjMmE0NTEwMDYyOGU2OGZjYzg3NGQyYmMzMTBlZjBmZjI4ZWQ3NzEiLCJjcmVhdGVkX2F0IjoiMjAyNi0xMC0yNVQwODoyMDowOC43NDNaIn0.2e4c7688aa10aa8ab9c4f583d2bef3ae": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-11-09T08:32:07.540Z"
     }
   },
   "evaluations": [
@@ -642,6 +849,13 @@
   ],
   "chat_sessions": [],
   "logs": [
+    {
+      "id": "log_1794213127540_wnb5",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-11-09T08:32:07.540Z"
+    },
     {
       "id": "log_1793637926571_8zgw",
       "actor": "test_colleague_1793637926494",
