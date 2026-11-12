@@ -57,6 +57,10 @@
       currentSessionId: null
     },
 
+    // Quick Test Users (for multi-flow testing without creating multiple real accounts)
+    testUsers: [],
+    lastCreatedTestUser: null, // { email, password, userId, token }
+
     // Autonomous Multi-Turn Agent State Machine (Method 2)
     agentRunner: {
       isRunning: false,
@@ -200,6 +204,24 @@
     btnAdminManage: document.getElementById('btn-admin-manage'),
     modalAdminUsers: document.getElementById('modal-admin-users'),
     btnCloseAdminModal: document.getElementById('btn-close-admin-modal'),
+    // Test User Manager
+    btnOpenTestUsers: document.getElementById('btn-open-test-users'),
+    modalTestUsers: document.getElementById('modal-test-users'),
+    btnCloseTestUsersModal: document.getElementById('btn-close-test-users-modal'),
+    testUserCountBadge: document.getElementById('test-user-count-badge'),
+    testUserModalCount: document.getElementById('test-user-modal-count'),
+    testUsersList: document.getElementById('test-users-list'),
+    tuCreateLabel: document.getElementById('tu-create-label'),
+    tuCreatePassword: document.getElementById('tu-create-password'),
+    tuCreatePageid: document.getElementById('tu-create-pageid'),
+    btnTuCreate: document.getElementById('btn-tu-create'),
+    btnTuDeleteAll: document.getElementById('btn-tu-delete-all'),
+    btnTuRefresh: document.getElementById('btn-tu-refresh'),
+    tuCredentialsBox: document.getElementById('tu-credentials-box'),
+    tuCredEmail: document.getElementById('tu-cred-email'),
+    tuCredPass: document.getElementById('tu-cred-pass'),
+    btnTuSwitchTo: document.getElementById('btn-tu-switch-to'),
+    btnTuCopyCreds: document.getElementById('btn-tu-copy-creds'),
     adminModalTabs: document.getElementById('admin-modal-tabs'),
     adminUsersTbody: document.getElementById('admin-users-tbody'),
     adminSearchUsers: document.getElementById('admin-search-users'),
@@ -6012,5 +6034,293 @@
 
   // Run on startup
   bootstrap();
+
+  // ============================================================================
+  // QUICK TEST USER MANAGER
+  // ============================================================================
+
+  function updateTestUserBadge() {
+    const count = state.testUsers.length;
+    if (el.testUserCountBadge) el.testUserCountBadge.textContent = count + ' user';
+    if (el.testUserModalCount) el.testUserModalCount.textContent = count + ' user';
+  }
+
+  async function loadTestUsers() {
+    try {
+      const res = await api('/api/test-users');
+      state.testUsers = res.testUsers || [];
+      updateTestUserBadge();
+      renderTestUsersList();
+    } catch (e) {
+      console.warn('[TEST-USERS] Failed to load:', e);
+    }
+  }
+
+  function renderTestUsersList() {
+    if (!el.testUsersList) return;
+    const list = state.testUsers;
+    if (list.length === 0) {
+      el.testUsersList.innerHTML = `
+        <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:11.5px;border:1px dashed var(--border-subtle);border-radius:8px;background:var(--bg-panel);">
+          <div style="font-size:20px;margin-bottom:4px;">🧪</div>
+          <b>Chưa có tài khoản test nào.</b>
+          <div style="font-size:11px;margin-top:3px;">Bấm <b>Tạo User Test</b> để tạo tài khoản test đầu tiên.</div>
+        </div>`;
+      return;
+    }
+    el.testUsersList.innerHTML = '';
+    list.forEach(u => {
+      const card = document.createElement('div');
+      card.className = 'test-user-card';
+      const initials = (u.name || 'T').charAt(0).toUpperCase();
+      const timeStr = u.created_at ? new Date(u.created_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+      const isCurrentSession = state.user && state.user.id === u.id;
+
+      card.innerHTML = `
+        <div class="test-user-avatar" style="background:${u.avatar_color || '#4F46E5'};">${initials}</div>
+        <div class="test-user-info">
+          <div class="test-user-name">
+            ${escapeHtml(u.name)}
+            ${isCurrentSession ? '<span class="test-user-badge" style="background:rgba(5,150,105,0.14);color:var(--success);margin-left:4px;">✅ Đang test</span>' : ''}
+          </div>
+          <div class="test-user-email">${escapeHtml(u.email)}</div>
+          <div style="font-size:9.5px;color:var(--text-muted);margin-top:1px;">Tạo lúc: ${timeStr} • PageID: ${escapeHtml(u.page_id || 'Chưa cấu hình')}</div>
+        </div>
+        <div class="test-user-actions">
+          <button type="button" class="btn btn-secondary btn-xs btn-tu-switch" data-uid="${u.id}" title="Chuyển sang test với tài khoản này" style="font-size:10px;padding:3px 8px;color:#4F46E5;border-color:rgba(79,70,229,0.4);">
+            🔄 Dùng
+          </button>
+          <button type="button" class="btn btn-secondary btn-xs btn-tu-delete" data-uid="${u.id}" title="Xóa tài khoản test này" style="font-size:10px;padding:3px 7px;color:var(--danger);">
+            🗑️
+          </button>
+        </div>`;
+
+      card.querySelector('.btn-tu-switch').addEventListener('click', () => switchToTestUser(u));
+      card.querySelector('.btn-tu-delete').addEventListener('click', () => deleteTestUser(u.id, u.name));
+      el.testUsersList.appendChild(card);
+    });
+  }
+
+  async function createTestUser() {
+    if (!el.btnTuCreate) return;
+    const label = el.tuCreateLabel ? el.tuCreateLabel.value.trim() : '';
+    const password = (el.tuCreatePassword ? el.tuCreatePassword.value.trim() : '') || '123456';
+    const pageId = el.tuCreatePageid ? el.tuCreatePageid.value.trim() : '';
+
+    el.btnTuCreate.disabled = true;
+    el.btnTuCreate.innerHTML = '⏳ Đang tạo...';
+
+    try {
+      const res = await api('/api/test-users', 'POST', {
+        label: label || undefined,
+        password,
+        page_id: pageId || undefined
+      });
+
+      state.testUsers.unshift(res.testUser);
+      state.lastCreatedTestUser = {
+        email: res.credentials.email,
+        password: res.credentials.password,
+        userId: res.testUser.id,
+        token: null,
+        user: res.testUser
+      };
+
+      updateTestUserBadge();
+      renderTestUsersList();
+
+      // Show credentials box
+      if (el.tuCredentialsBox) {
+        el.tuCredentialsBox.style.display = 'block';
+        if (el.tuCredEmail) el.tuCredEmail.textContent = res.credentials.email;
+        if (el.tuCredPass) el.tuCredPass.textContent = res.credentials.password;
+      }
+
+      if (el.tuCreateLabel) el.tuCreateLabel.value = '';
+      showToast(`🧪 Đã tạo tài khoản test "${res.testUser.name}" thành công!`, 'success');
+    } catch (e) {
+      showToast('Lỗi tạo user test: ' + e.message, 'error');
+    } finally {
+      el.btnTuCreate.disabled = false;
+      el.btnTuCreate.innerHTML = '🧪 Tạo User Test';
+    }
+  }
+
+  async function switchToTestUser(testUserObj) {
+    try {
+      const res = await api(`/api/test-users/${testUserObj.id}/login-as`, 'POST');
+      if (!res.ok || !res.token) {
+        showToast('Không thể chuyển sang tài khoản test này.', 'error');
+        return;
+      }
+
+      // Confirm before switching (saves current work)
+      const confirmed = confirm(
+        `🔄 Chuyển sang test với tài khoản: "${testUserObj.name}"?\n\nLưu ý:\n• Mọi thao tác test sẽ được lưu dưới tài khoản này\n• Bấm "Quay lại Admin" để về lại tài khoản chính`
+      );
+      if (!confirmed) return;
+
+      // Store original admin token
+      const adminToken = state.token;
+      const adminUser = state.user;
+      localStorage.setItem('bbh_admin_token_backup', adminToken || '');
+      localStorage.setItem('bbh_admin_user_backup', JSON.stringify(sanitizeSafe(adminUser)));
+
+      // Switch to test user token
+      state.token = res.token;
+      localStorage.setItem('bbh_auth_token', res.token);
+      state.user = res.user;
+
+      // Reload workspace with the test user's data
+      await loadWorkspace();
+      toggleChatbox(true);
+      if (el.modalTestUsers) el.modalTestUsers.style.display = 'none';
+      showToast(`✅ Đang test với tài khoản: ${testUserObj.name}`, 'success');
+
+      // Show "Return to Admin" banner
+      showReturnToAdminBanner(adminToken, adminUser);
+    } catch (e) {
+      showToast('Lỗi chuyển tài khoản: ' + e.message, 'error');
+    }
+  }
+
+  function sanitizeSafe(user) {
+    if (!user) return null;
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatar_color: user.avatar_color
+    };
+  }
+
+  function showReturnToAdminBanner(adminToken, adminUser) {
+    let banner = document.getElementById('return-to-admin-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'return-to-admin-banner';
+      banner.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+        background: linear-gradient(90deg, #4F46E5, #2563EB);
+        color: #fff; padding: 8px 16px;
+        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        font-size: 12px; font-weight: 600; box-shadow: 0 2px 12px rgba(79,70,229,0.4);
+      `;
+      document.body.appendChild(banner);
+      document.body.style.paddingTop = '38px';
+    }
+    const name = state.user?.name || 'Test User';
+    banner.innerHTML = `
+      <span>🧪 Đang chạy test với tài khoản: <b>${escapeHtml(name)}</b></span>
+      <button type="button" id="btn-return-to-admin" style="
+        background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4);
+        color: #fff; border-radius: 6px; padding: 3px 10px; font-size: 11px;
+        font-weight: 700; cursor: pointer; white-space: nowrap;
+      ">↩ Quay lại Admin</button>`;
+    banner.querySelector('#btn-return-to-admin').addEventListener('click', async () => {
+      const backupToken = localStorage.getItem('bbh_admin_token_backup');
+      if (!backupToken) {
+        showToast('Không tìm thấy phiên Admin. Vui lòng đăng nhập lại.', 'error');
+        return;
+      }
+      state.token = backupToken;
+      localStorage.setItem('bbh_auth_token', backupToken);
+      localStorage.removeItem('bbh_admin_token_backup');
+      localStorage.removeItem('bbh_admin_user_backup');
+      await loadWorkspace();
+      toggleChatbox(true);
+      banner.remove();
+      document.body.style.paddingTop = '';
+      showToast('✅ Đã quay lại tài khoản Admin!', 'success');
+    });
+  }
+
+  async function deleteTestUser(userId, name) {
+    if (!confirm(`Xóa tài khoản test "${name}"?\n\nTất cả dữ liệu kiểm thử của tài khoản này sẽ bị xóa vĩnh viễn.`)) return;
+    try {
+      await api(`/api/test-users/${userId}`, 'DELETE');
+      state.testUsers = state.testUsers.filter(u => u.id !== userId);
+      updateTestUserBadge();
+      renderTestUsersList();
+      if (el.tuCredentialsBox && state.lastCreatedTestUser?.userId === userId) {
+        el.tuCredentialsBox.style.display = 'none';
+        state.lastCreatedTestUser = null;
+      }
+      showToast(`Đã xóa tài khoản test "${name}".`, 'info');
+    } catch (e) {
+      showToast('Lỗi xóa: ' + e.message, 'error');
+    }
+  }
+
+  // Open / Close modal
+  if (el.btnOpenTestUsers) {
+    el.btnOpenTestUsers.addEventListener('click', () => {
+      if (!state.user) { showToast('Vui lòng đăng nhập trước.', 'warning'); return; }
+      if (el.modalTestUsers) el.modalTestUsers.style.display = 'flex';
+      loadTestUsers();
+    });
+  }
+  if (el.btnCloseTestUsersModal) {
+    el.btnCloseTestUsersModal.addEventListener('click', () => {
+      if (el.modalTestUsers) el.modalTestUsers.style.display = 'none';
+    });
+  }
+  if (el.modalTestUsers) {
+    el.modalTestUsers.addEventListener('click', (e) => {
+      if (e.target === el.modalTestUsers) el.modalTestUsers.style.display = 'none';
+    });
+  }
+
+  // Create button
+  if (el.btnTuCreate) el.btnTuCreate.addEventListener('click', createTestUser);
+
+  // Refresh button
+  if (el.btnTuRefresh) el.btnTuRefresh.addEventListener('click', loadTestUsers);
+
+  // Delete All button
+  if (el.btnTuDeleteAll) {
+    el.btnTuDeleteAll.addEventListener('click', async () => {
+      if (state.testUsers.length === 0) { showToast('Không có tài khoản test nào để xóa.', 'info'); return; }
+      if (!confirm(`Xóa toàn bộ ${state.testUsers.length} tài khoản test?\n\nThao tác này sẽ xóa tất cả dữ liệu kiểm thử của chúng và không thể hoàn tác.`)) return;
+      try {
+        await api('/api/test-users', 'DELETE');
+        state.testUsers = [];
+        state.lastCreatedTestUser = null;
+        updateTestUserBadge();
+        renderTestUsersList();
+        if (el.tuCredentialsBox) el.tuCredentialsBox.style.display = 'none';
+        showToast('Đã xóa toàn bộ tài khoản test!', 'success');
+      } catch (e) {
+        showToast('Lỗi: ' + e.message, 'error');
+      }
+    });
+  }
+
+  // "Switch To" button (from credentials box for last created user)
+  if (el.btnTuSwitchTo) {
+    el.btnTuSwitchTo.addEventListener('click', () => {
+      if (state.lastCreatedTestUser) switchToTestUser(state.lastCreatedTestUser.user);
+    });
+  }
+
+  // "Copy Credentials" button
+  if (el.btnTuCopyCreds) {
+    el.btnTuCopyCreds.addEventListener('click', () => {
+      if (!state.lastCreatedTestUser) return;
+      const text = `📧 Email: ${state.lastCreatedTestUser.email}\n🔒 Mật khẩu: ${state.lastCreatedTestUser.password}`;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => showToast('📋 Đã copy thông tin đăng nhập!', 'success'));
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); showToast('📋 Đã copy!', 'success'); } catch {}
+        document.body.removeChild(ta);
+      }
+    });
+  }
+
+  // Also load test users when workspace loads if admin
+  const _origLoadWorkspace = loadWorkspace;
 
 })();
