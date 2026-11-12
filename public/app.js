@@ -1069,7 +1069,7 @@
 
   let currentMountedPageId = null;
 
-  function mountUserChatbox(pageId) {
+  function mountUserChatbox(pageId, forceRebuild = false) {
     const container = document.getElementById('BBH-EMBED-CONTAINER');
     const setupCard = document.getElementById('embed-setup-card');
 
@@ -1090,7 +1090,7 @@
     if (el.headerPageIdBadge) el.headerPageIdBadge.textContent = `ID: ${pageId}`;
     if (el.stageActivePageId) el.stageActivePageId.textContent = pageId;
 
-    if (currentMountedPageId === pageId && container && container.querySelector('iframe')) {
+    if (!forceRebuild && currentMountedPageId === pageId && container && container.querySelector('iframe')) {
       return;
     }
 
@@ -1109,7 +1109,7 @@
         }
         window.BBH.init({ page_id: pageId });
       } else {
-        setTimeout(() => mountUserChatbox(pageId), 400);
+        setTimeout(() => mountUserChatbox(pageId, forceRebuild), 400);
       }
     } catch (err) {
       console.warn('[BBH] Error mounting chatbox:', err);
@@ -1532,10 +1532,19 @@
       }
     }
 
+    if (data.from === 'IFRAME_CHATBOT' && data.type === 'IFRAME_READY') {
+      if (typeof state.onIframeReadyCallback === 'function') {
+        try { state.onIframeReadyCallback(); } catch (err) {}
+      }
+    }
+
     if (data.from === 'RETION_EMBED' || data.type === 'BBH_INIT_SUCCESS' || data.type === 'INIT_SUCCESS') {
       state.sdkReady = true;
       if (el.headerSdkDot) el.headerSdkDot.className = 'pulse-dot';
       if (el.stageSdkDot) el.stageSdkDot.className = 'pulse-dot';
+      if (typeof state.onIframeReadyCallback === 'function') {
+        try { state.onIframeReadyCallback(); } catch (err) {}
+      }
       setTimeout(() => { toggleChatbox(true); }, 350);
     }
   }
@@ -6191,44 +6200,116 @@
     renderActiveTestUser();
     renderTestUsersList();
 
-    // Reset and sync chatbox visitor context with this customer's data
+    // Reset and sync chatbox visitor context with this customer's data (force rebuild iframe)
     resetChatboxVisitor(user);
 
     if (notify) {
-      showToast(`👤 Đã chọn User test: "${user.name}" (${user.phone || 'Sẵn sàng'})`, 'success');
+      showToast(`✨ Đã kích hoạt "${user.name}" ➔ Mở bong bóng chat mới toanh (sạch lịch sử)!`, 'success');
     }
   }
 
   function resetChatboxVisitor(customerInfo = null) {
     const pageId = state.config?.page_id || (state.user && state.user.page_id) || '';
-    if (pageId) {
-      try {
-        localStorage.removeItem('data_embed_chat_' + pageId);
-        if (customerInfo) {
-          const clientData = {
-            client_id: customerInfo.client_id || ('cl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7)),
-            name: customerInfo.name || '',
-            phone: customerInfo.phone || '',
-            email: customerInfo.email || ''
-          };
-          localStorage.setItem('data_embed_chat_' + pageId, JSON.stringify(clientData));
-          localStorage.setItem('bbh_last_client_id', clientData.client_id);
-          state.clientId = clientData.client_id;
-          if (el.clientIdDisplay) el.clientIdDisplay.textContent = clientData.client_id;
-        } else {
-          localStorage.removeItem('bbh_last_client_id');
-        }
-      } catch (e) {
-        console.warn('[RESET-VISITOR] Error resetting visitor session:', e);
+    const freshClientId = 'cid_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+
+    // 0. Tell the existing cross-origin iframe to wipe its internal client_id_${pageId} storage before destroying
+    try {
+      const oldIframe = getBbhIframe();
+      if (oldIframe && oldIframe.contentWindow && pageId) {
+        oldIframe.contentWindow.postMessage({
+          from: 'parent-app-preview',
+          reset_conversation: true,
+          reset_page_id: pageId
+        }, '*');
       }
+    } catch (e) {}
+
+    try {
+      // 1. Purge all old visitor sessions and client IDs from parent localStorage
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('data_embed_chat') || k.startsWith('bbh_client_id_') || k === 'bbh_last_client_id' || k.startsWith('client_id_'))) {
+          localStorage.removeItem(k);
+        }
+      }
+
+      if (customerInfo && customerInfo.name) {
+        const clientData = {
+          page_id: pageId,
+          client_id: freshClientId,
+          'client-id': freshClientId,
+          name: customerInfo.name || '',
+          phone: customerInfo.phone || '',
+          email: customerInfo.email || ''
+        };
+        if (pageId) {
+          localStorage.setItem('data_embed_chat_' + pageId, JSON.stringify(clientData));
+        }
+        localStorage.setItem('data_embed_chat', JSON.stringify(clientData));
+        localStorage.setItem('bbh_last_client_id', freshClientId);
+        state.clientId = freshClientId;
+        if (el.clientIdDisplay) el.clientIdDisplay.textContent = freshClientId;
+      }
+    } catch (e) {
+      console.warn('[RESET-VISITOR] Error resetting visitor session storage:', e);
     }
 
-    // Mount fresh chatbox & ensure open
-    mountUserChatbox(pageId);
-    setTimeout(() => {
+    // 2. Clear live transcript feed & agent turn history so old customer conversation is gone
+    state.agentRunner.history = [];
+    state.agentRunner.turnIndex = 1;
+    if (el.transcriptSessionSelect) el.transcriptSessionSelect.value = 'live';
+    if (el.agentTranscriptFeed) {
+      const custName = customerInfo ? customerInfo.name : 'Khách mới';
+      el.agentTranscriptFeed.innerHTML = `
+        <div class="empty-state-card" style="background: rgba(13, 148, 136, 0.08); border: 1px solid rgba(13, 148, 136, 0.25);">
+          <div style="font-size: 12.5px; font-weight: 700; color: var(--teal);">✨ Bong bóng chat mới toanh cho: "${escapeHtml(custName)}"</div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 3px;">
+            Đã làm mới mã định danh khách (${freshClientId}). Hội thoại độc lập 100%, không trùng lịch sử với khách cũ.
+          </div>
+        </div>
+      `;
+    }
+
+    // 3. Force rebuild of the iframe embed so a brand new window/iframe instance is created
+    if (pageId) {
+      mountUserChatbox(pageId, true);
+    }
+
+    // 4. Sync new visitor session into the freshly mounted iframe and open it
+    const syncFreshVisitorToIframe = () => {
+      const iframe = getBbhIframe();
+      if (!iframe || !iframe.contentWindow) return;
+
+      // Clear any residual client_id inside iframe's origin storage
+      if (pageId) {
+        iframe.contentWindow.postMessage({
+          from: 'parent-app-preview',
+          reset_conversation: true,
+          reset_page_id: pageId
+        }, '*');
+      }
+
+      if (customerInfo && customerInfo.name) {
+        // Initialize new client session in Botbanhang embed UI with the new user's name
+        iframe.contentWindow.postMessage({
+          from: 'parent-app',
+          user_name: customerInfo.name,
+          user_phone: customerInfo.phone || '',
+          user_email: customerInfo.email || '',
+          client_id: freshClientId
+        }, '*');
+      }
+
       toggleChatbox(true);
-      sendResetCommand(true);
-    }, 600);
+    };
+
+    state.onIframeReadyCallback = () => {
+      syncFreshVisitorToIframe();
+      state.onIframeReadyCallback = null;
+    };
+
+    setTimeout(syncFreshVisitorToIframe, 600);
+    setTimeout(syncFreshVisitorToIframe, 1300);
   }
 
   function sendUserIntroToChat() {
@@ -6443,13 +6524,8 @@
       const flow = el.tuInlineFlow ? el.tuInlineFlow.value.trim() : '';
 
       if (!name) {
-        showToast('Vui lòng nhập Tên của bạn / Tên khách hàng test.', 'warning');
+        showToast('Vui lòng nhập Tên của bạn / Tên khách hàng test (chỉ tên là bắt buộc).', 'warning');
         if (el.tuInlineName) el.tuInlineName.focus();
-        return;
-      }
-      if (!phone) {
-        showToast('Vui lòng nhập Số điện thoại khách hàng.', 'warning');
-        if (el.tuInlinePhone) el.tuInlinePhone.focus();
         return;
       }
 
@@ -6542,13 +6618,8 @@
       const pageId = el.tuCreatePageid ? el.tuCreatePageid.value.trim() : '';
 
       if (!name) {
-        showToast('Vui lòng nhập Tên của bạn / Họ tên khách hàng.', 'warning');
+        showToast('Vui lòng nhập Tên của bạn / Họ tên khách hàng (chỉ tên là bắt buộc).', 'warning');
         if (el.tuCreateName) el.tuCreateName.focus();
-        return;
-      }
-      if (!phone) {
-        showToast('Vui lòng nhập Số điện thoại của bạn.', 'warning');
-        if (el.tuCreatePhone) el.tuCreatePhone.focus();
         return;
       }
 
@@ -6563,6 +6634,10 @@
           password,
           page_id: pageId || undefined
         });
+        if (el.tuCreateName) el.tuCreateName.value = '';
+        if (el.tuCreatePhone) el.tuCreatePhone.value = '';
+        if (el.tuCreateEmail) el.tuCreateEmail.value = '';
+        if (el.tuCreateFlow) el.tuCreateFlow.value = '';
         if (el.modalTestUsers) el.modalTestUsers.style.display = 'none';
       } finally {
         el.btnTuCreate.disabled = false;

@@ -4199,7 +4199,10 @@ CHỈ TRẢ VỀ JSON HỢP LỆ:
     // POST /api/test-users — Create or update a test user for multi-flow testing
     if (pathname === '/api/test-users' && req.method === 'POST') {
       const body = await parseBody(req);
-      const name = String(body.name || body.label || '').trim() || ('Khách test ' + ((db.users || []).filter(u => u.is_test_user).length + 1));
+      const name = String(body.name || body.label || '').trim();
+      if (!name) {
+        return sendJSON(res, 400, { ok: false, message: 'Vui lòng nhập Tên của bạn (chỉ tên là bắt buộc).' });
+      }
       const phone = String(body.phone || body.sdt || '').trim();
       const autoEmail = 'test_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6) + '@bbh.test';
       const email = String(body.email || '').trim().toLowerCase() || autoEmail;
