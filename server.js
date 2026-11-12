@@ -2938,7 +2938,8 @@ async function handleRequest(req, res) {
 
     // Authentication Guard for remaining API routes
     const auth = getAuthenticatedUser(req);
-    if (pathname.startsWith('/api/') && !auth) {
+    const isTestUsersRoute = pathname === '/api/test-users' || pathname.startsWith('/api/test-users/');
+    if (pathname.startsWith('/api/') && !auth && !isTestUsersRoute) {
       return sendJSON(res, 401, { ok: false, message: 'Vui lòng đăng nhập để tiếp tục.' });
     }
 
@@ -4189,30 +4190,44 @@ CHỈ TRẢ VỀ JSON HỢP LỆ:
     // TEST USER MANAGEMENT (Quick Test Users for Multi-Flow Testing)
     // ========================================================================
 
-    // GET /api/test-users — List all test users (admin or the owner)
+    // GET /api/test-users — List all test users
     if (pathname === '/api/test-users' && req.method === 'GET') {
-      const testUsers = db.users.filter(u => u.is_test_user === true);
+      const testUsers = (db.users || []).filter(u => u.is_test_user === true);
       return sendJSON(res, 200, { ok: true, testUsers: testUsers.map(sanitizeUser) });
     }
 
-    // POST /api/test-users — Create a quick test user (admin only)
+    // POST /api/test-users — Create or update a test user for multi-flow testing
     if (pathname === '/api/test-users' && req.method === 'POST') {
-      if (!isSuperAdmin(auth.user)) {
-        return sendJSON(res, 403, { ok: false, message: 'Chỉ Super Admin mới có quyền tạo tài khoản test.' });
-      }
       const body = await parseBody(req);
-      const label = String(body.label || body.name || '').trim() || ('Test User ' + (db.users.filter(u => u.is_test_user).length + 1));
-      const autoEmail = 'test_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5) + '@bbh.test';
-      const autoPass = body.password || '123456';
-      const pageId = String(body.page_id || body.embed_code || auth.user.page_id || '').trim();
-      const colors = ['#4F46E5', '#2563EB', '#059669', '#D97757', '#0D9488'];
-      const idx = db.users.filter(u => u.is_test_user).length;
+      const name = String(body.name || body.label || '').trim() || ('Khách test ' + ((db.users || []).filter(u => u.is_test_user).length + 1));
+      const phone = String(body.phone || body.sdt || '').trim();
+      const autoEmail = 'test_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6) + '@bbh.test';
+      const email = String(body.email || '').trim().toLowerCase() || autoEmail;
+      const flowName = String(body.flow_name || body.scenario || body.luong || '').trim() || 'Luồng kiểm thử tự do';
+      const notes = String(body.notes || body.ghi_chu || '').trim();
+      const autoPass = body.password ? String(body.password).trim() : '123456';
 
+      const currentUser = auth?.user || (db.users || []).find(u => isSuperAdmin(u)) || (db.users || [])[0] || {};
+      const pageId = String(body.page_id || body.embed_code || currentUser.page_id || db.config?.page_id || '').trim();
+      const colors = ['#4F46E5', '#0D9488', '#D97757', '#2563EB', '#059669', '#7C3AED'];
+      const idx = (db.users || []).filter(u => u.is_test_user).length;
+
+      // Check if email belongs to a real admin/staff account
+      const existingUser = (db.users || []).find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (existingUser && !existingUser.is_test_user) {
+        return sendJSON(res, 400, { ok: false, message: `Email "${email}" đã thuộc về tài khoản người dùng chính. Vui lòng chọn email khác.` });
+      }
+
+      const testUserId = existingUser ? existingUser.id : ('tst_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6));
       const newTestUser = {
-        id: 'tst_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-        name: label,
-        email: autoEmail,
-        username: 'test_' + Math.random().toString(36).substring(2, 8),
+        id: testUserId,
+        name,
+        phone,
+        email,
+        flow_name: flowName,
+        scenario: flowName,
+        notes,
+        username: email.split('@')[0],
         role: 'tester',
         status: 'active',
         is_test_user: true,
@@ -4220,35 +4235,40 @@ CHỈ TRẢ VỀ JSON HỢP LỆ:
         embed_code: pageId,
         avatar_color: colors[idx % colors.length],
         password_hash: hashPassword(autoPass),
-        created_by: auth.user.email,
-        productKnowledge: JSON.parse(JSON.stringify(auth.user.productKnowledge || { title: 'File 1: Kiến thức Sản phẩm & Dịch vụ', content: '', updated_at: new Date().toISOString() })),
-        promptRules: JSON.parse(JSON.stringify(auth.user.promptRules || { title: 'File 2: Quy tắc Prompt & Rào chắn AI Chatbot', content: '', updated_at: new Date().toISOString() })),
-        checklist_cases: Array.isArray(auth.user.checklist_cases) ? JSON.parse(JSON.stringify(auth.user.checklist_cases)) : [],
-        checklist_settings: auth.user.checklist_settings ? JSON.parse(JSON.stringify(auth.user.checklist_settings)) : {},
-        embed_list: Array.isArray(auth.user.embed_list) ? JSON.parse(JSON.stringify(auth.user.embed_list)) : [],
-        active_embed_id: auth.user.active_embed_id || '',
-        created_at: new Date().toISOString(),
+        created_by: currentUser.email || 'tester',
+        productKnowledge: JSON.parse(JSON.stringify(currentUser.productKnowledge || { title: 'File 1: Kiến thức Sản phẩm & Dịch vụ', content: '', updated_at: new Date().toISOString() })),
+        promptRules: JSON.parse(JSON.stringify(currentUser.promptRules || { title: 'File 2: Quy tắc Prompt & Rào chắn AI Chatbot', content: '', updated_at: new Date().toISOString() })),
+        checklist_cases: Array.isArray(currentUser.checklist_cases) ? JSON.parse(JSON.stringify(currentUser.checklist_cases)) : [],
+        checklist_settings: currentUser.checklist_settings ? JSON.parse(JSON.stringify(currentUser.checklist_settings)) : {},
+        embed_list: Array.isArray(currentUser.embed_list) ? JSON.parse(JSON.stringify(currentUser.embed_list)) : [],
+        active_embed_id: currentUser.active_embed_id || '',
+        client_id: 'cid_test_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        created_at: existingUser?.created_at || new Date().toISOString(),
         last_login: null,
         tests_submitted: 0
       };
-      db.users.push(newTestUser);
+
+      if (existingUser) {
+        const uIdx = db.users.findIndex(u => u.id === existingUser.id);
+        db.users[uIdx] = newTestUser;
+      } else {
+        db.users.push(newTestUser);
+      }
+
       saveDB(db);
-      addAuditLog(auth.user.name, auth.user.role, `Tạo tài khoản test nhanh: ${label} (${autoEmail})`);
+      addAuditLog(currentUser.name || 'Tester', currentUser.role || 'tester', `Tạo User Test: ${name} (${email}) - Luồng: ${flowName}`);
       return sendJSON(res, 201, {
         ok: true,
         testUser: sanitizeUser(newTestUser),
-        credentials: { email: autoEmail, password: autoPass },
-        message: `Đã tạo tài khoản test "${label}" thành công!`
+        credentials: { email, password: autoPass, phone, name },
+        message: `Đã tạo User Test "${name}" thành công!`
       });
     }
 
-    // POST /api/test-users/:id/login-as — Admin switch to this test user's context
+    // POST /api/test-users/:id/login-as — Switch to this test user's context
     if (pathname.match(/^\/api\/test-users\/[^/]+\/login-as$/) && req.method === 'POST') {
-      if (!isSuperAdmin(auth.user)) {
-        return sendJSON(res, 403, { ok: false, message: 'Chỉ Super Admin mới có quyền này.' });
-      }
       const testUserId = pathname.split('/')[3];
-      const testUser = db.users.find(u => u.id === testUserId && u.is_test_user === true);
+      const testUser = (db.users || []).find(u => u.id === testUserId && u.is_test_user === true);
       if (!testUser) return sendJSON(res, 404, { ok: false, message: 'Không tìm thấy tài khoản test.' });
       const tempToken = generateToken(testUser);
       return sendJSON(res, 200, {
@@ -4261,14 +4281,10 @@ CHỈ TRẢ VỀ JSON HỢP LỆ:
 
     // DELETE /api/test-users/:id — Delete a test user and all their data
     if (pathname.match(/^\/api\/test-users\/[^/]+$/) && req.method === 'DELETE') {
-      if (!isSuperAdmin(auth.user)) {
-        return sendJSON(res, 403, { ok: false, message: 'Chỉ Super Admin mới có quyền xóa tài khoản test.' });
-      }
       const testUserId = pathname.split('/').pop();
-      const target = db.users.find(u => u.id === testUserId && u.is_test_user === true);
+      const target = (db.users || []).find(u => u.id === testUserId && u.is_test_user === true);
       if (!target) return sendJSON(res, 404, { ok: false, message: 'Không tìm thấy tài khoản test.' });
-      db.users = db.users.filter(u => u.id !== testUserId);
-      // Remove related sessions & evaluations
+      db.users = (db.users || []).filter(u => u.id !== testUserId);
       if (db.sessions) {
         for (const [t, s] of Object.entries(db.sessions)) {
           if (s.user_id === testUserId) delete db.sessions[t];
@@ -4277,17 +4293,14 @@ CHỈ TRẢ VỀ JSON HỢP LỆ:
       db.evaluations = (db.evaluations || []).filter(e => e.user_id !== testUserId);
       db.chat_sessions = (db.chat_sessions || []).filter(s => s.user_id !== testUserId);
       saveDB(db);
-      addAuditLog(auth.user.name, auth.user.role, `Xóa tài khoản test: ${target.name} (${target.email})`);
-      return sendJSON(res, 200, { ok: true, message: `Đã xóa tài khoản test "${target.name}" và toàn bộ dữ liệu liên quan.` });
+      addAuditLog(auth?.user?.name || 'Tester', auth?.user?.role || 'tester', `Xóa tài khoản test: ${target.name} (${target.email})`);
+      return sendJSON(res, 200, { ok: true, message: `Đã xóa tài khoản test "${target.name}".` });
     }
 
     // DELETE /api/test-users — Delete ALL test users (cleanup)
     if (pathname === '/api/test-users' && req.method === 'DELETE') {
-      if (!isSuperAdmin(auth.user)) {
-        return sendJSON(res, 403, { ok: false, message: 'Chỉ Super Admin mới có quyền này.' });
-      }
-      const testUserIds = db.users.filter(u => u.is_test_user).map(u => u.id);
-      db.users = db.users.filter(u => !u.is_test_user);
+      const testUserIds = (db.users || []).filter(u => u.is_test_user).map(u => u.id);
+      db.users = (db.users || []).filter(u => !u.is_test_user);
       if (db.sessions) {
         for (const [t, s] of Object.entries(db.sessions)) {
           if (testUserIds.includes(s.user_id)) delete db.sessions[t];
@@ -4296,7 +4309,7 @@ CHỈ TRẢ VỀ JSON HỢP LỆ:
       db.evaluations = (db.evaluations || []).filter(e => !testUserIds.includes(e.user_id));
       db.chat_sessions = (db.chat_sessions || []).filter(s => !testUserIds.includes(s.user_id));
       saveDB(db);
-      addAuditLog(auth.user.name, auth.user.role, `Xóa toàn bộ ${testUserIds.length} tài khoản test`);
+      addAuditLog(auth?.user?.name || 'Tester', auth?.user?.role || 'tester', `Xóa toàn bộ ${testUserIds.length} tài khoản test`);
       return sendJSON(res, 200, { ok: true, message: `Đã xóa toàn bộ ${testUserIds.length} tài khoản test.` });
     }
 

@@ -204,17 +204,21 @@
     btnAdminManage: document.getElementById('btn-admin-manage'),
     modalAdminUsers: document.getElementById('modal-admin-users'),
     btnCloseAdminModal: document.getElementById('btn-close-admin-modal'),
-    // Test User Manager
+    // Test User Manager & Customer Profile
     btnOpenTestUsers: document.getElementById('btn-open-test-users'),
     modalTestUsers: document.getElementById('modal-test-users'),
     btnCloseTestUsersModal: document.getElementById('btn-close-test-users-modal'),
     testUserCountBadge: document.getElementById('test-user-count-badge'),
     testUserModalCount: document.getElementById('test-user-modal-count'),
     testUsersList: document.getElementById('test-users-list'),
-    tuCreateLabel: document.getElementById('tu-create-label'),
+    tuCreateName: document.getElementById('tu-create-name'),
+    tuCreatePhone: document.getElementById('tu-create-phone'),
+    tuCreateEmail: document.getElementById('tu-create-email'),
+    tuCreateFlow: document.getElementById('tu-create-flow'),
     tuCreatePassword: document.getElementById('tu-create-password'),
     tuCreatePageid: document.getElementById('tu-create-pageid'),
     btnTuCreate: document.getElementById('btn-tu-create'),
+    btnTuModalRandom: document.getElementById('btn-tu-modal-random'),
     btnTuDeleteAll: document.getElementById('btn-tu-delete-all'),
     btnTuRefresh: document.getElementById('btn-tu-refresh'),
     tuCredentialsBox: document.getElementById('tu-credentials-box'),
@@ -222,6 +226,28 @@
     tuCredPass: document.getElementById('tu-cred-pass'),
     btnTuSwitchTo: document.getElementById('btn-tu-switch-to'),
     btnTuCopyCreds: document.getElementById('btn-tu-copy-creds'),
+    // Inline Test User Card Controls
+    btnTuToggleForm: document.getElementById('btn-tu-toggle-form'),
+    btnTuQuickRandom: document.getElementById('btn-tu-quick-random'),
+    btnTuResetChat: document.getElementById('btn-tu-reset-chat'),
+    tuActiveBox: document.getElementById('tu-active-box'),
+    tuActiveName: document.getElementById('tu-active-name'),
+    tuActivePhone: document.getElementById('tu-active-phone'),
+    tuActiveFlow: document.getElementById('tu-active-flow'),
+    btnCopyTuName: document.getElementById('btn-copy-tu-name'),
+    btnCopyTuPhone: document.getElementById('btn-copy-tu-phone'),
+    btnCopyTuEmail: document.getElementById('btn-copy-tu-email'),
+    btnCopyTuAll: document.getElementById('btn-copy-tu-all'),
+    btnTuSendIntro: document.getElementById('btn-tu-send-intro'),
+    tuInlineFormBox: document.getElementById('tu-inline-form-box'),
+    tuInlineName: document.getElementById('tu-inline-name'),
+    tuInlinePhone: document.getElementById('tu-inline-phone'),
+    tuInlineEmail: document.getElementById('tu-inline-email'),
+    tuInlineFlow: document.getElementById('tu-inline-flow'),
+    btnTuInlineRandom: document.getElementById('btn-tu-inline-random'),
+    btnTuInlineSubmit: document.getElementById('btn-tu-inline-submit'),
+    btnTuCloseInlineForm: document.getElementById('btn-tu-close-inline-form'),
+    tuChipsContainer: document.getElementById('tu-chips-container'),
     adminModalTabs: document.getElementById('admin-modal-tabs'),
     adminUsersTbody: document.getElementById('admin-users-tbody'),
     adminSearchUsers: document.getElementById('admin-search-users'),
@@ -5005,6 +5031,9 @@
       logText += `🗂️ BÁO CÁO HẬU KIỂM CHECKLIST ĐA LUỒNG — THIỆN BBH STUDIO\n`;
       logText += `Thời gian xuất: ${now}\n`;
       logText += `Người kiểm thử: ${state.user?.name || state.user?.email || 'Tester'}\n`;
+      if (state.activeTestUser) {
+        logText += `Khách hàng test (Persona): ${state.activeTestUser.name}${state.activeTestUser.phone ? ` - SĐT: ${state.activeTestUser.phone}` : ''}${state.activeTestUser.email ? ` - Email: ${state.activeTestUser.email}` : ''}\n`;
+      }
       logText += `Tiến độ Checklist: Đã test ${doneCount}/${checklistCasesToExport.length} trường hợp\n`;
       if (selectedSess?.reviewer_note) {
         logText += `Nhận xét tổng quát (Hậu kiểm): ${selectedSess.reviewer_note}\n`;
@@ -5985,6 +6014,7 @@
       applyAuthState();
       syncRunnerPreferences();
       loadMultiFlowChecklist();
+      loadTestUsers();
       updateManualQuestionCount();
       renderEvaluations();
       renderChatSessions();
@@ -5992,6 +6022,7 @@
     } catch (err) {
       console.warn('[APP] Could not load workspace:', err);
       loadMultiFlowChecklist();
+      loadTestUsers();
       if (!state.user) applyAuthState();
     }
   }
@@ -6023,11 +6054,13 @@
         setTimeout(() => { toggleChatbox(true); }, 750);
       } else {
         loadMultiFlowChecklist();
+        loadTestUsers();
         applyAuthState();
       }
     } catch (err) {
       syncRunnerPreferences();
       loadMultiFlowChecklist();
+      loadTestUsers();
       applyAuthState();
     }
   }
@@ -6036,12 +6069,38 @@
   bootstrap();
 
   // ============================================================================
-  // QUICK TEST USER MANAGER
+  // QUICK TEST USER & CUSTOMER PERSONA MANAGER (TEST ĐA LUỒNG)
   // ============================================================================
 
+  const RANDOM_VN_NAMES = [
+    'Nguyễn Văn An', 'Trần Thị Mai', 'Lê Hoàng Nam', 'Phạm Minh Tuấn',
+    'Đỗ Thùy Linh', 'Võ Quốc Huy', 'Bùi Thanh Hương', 'Đặng Đức Thắng',
+    'Anh Thiện VIP', 'Chị Ngọc Homestay', 'Nguyễn Thị Bích', 'Trần Quốc Bảo'
+  ];
+
+  const RANDOM_FLOWS = [
+    'Tư vấn báo giá & phòng trống cuối tuần',
+    'Hỏi chính sách ưu đãi & mã voucher giảm giá',
+    'Thủ tục nhận/trả phòng sớm (Check-in/out)',
+    'Chính sách đổi trả, hủy cọc & hoàn tiền',
+    'Dịch vụ tiệc nướng BBQ & mang thú cưng'
+  ];
+
+  function generateRandomUserData() {
+    const name = RANDOM_VN_NAMES[Math.floor(Math.random() * RANDOM_VN_NAMES.length)];
+    const prefixes = ['098', '097', '096', '091', '090', '093', '086'];
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const randomSuffix = Math.floor(1000000 + Math.random() * 9000000).toString().substring(0, 7);
+    const phone = `${prefix}${randomSuffix}`;
+    const cleanSlug = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+    const email = `${cleanSlug || 'khach'}${Math.floor(Math.random() * 900 + 100)}@gmail.com`;
+    const flow = RANDOM_FLOWS[Math.floor(Math.random() * RANDOM_FLOWS.length)];
+    return { name, phone, email, flow };
+  }
+
   function updateTestUserBadge() {
-    const count = state.testUsers.length;
-    if (el.testUserCountBadge) el.testUserCountBadge.textContent = count + ' user';
+    const count = (state.testUsers || []).length;
+    if (el.testUserCountBadge) el.testUserCountBadge.textContent = count + ' khách';
     if (el.testUserModalCount) el.testUserModalCount.textContent = count + ' user';
   }
 
@@ -6050,21 +6109,212 @@
       const res = await api('/api/test-users');
       state.testUsers = res.testUsers || [];
       updateTestUserBadge();
+
+      // Restore active test user from storage if valid
+      const savedActiveJson = localStorage.getItem('bbh_active_test_user');
+      if (savedActiveJson) {
+        try {
+          const parsed = JSON.parse(savedActiveJson);
+          if (parsed && parsed.id && state.testUsers.some(u => u.id === parsed.id)) {
+            state.activeTestUser = state.testUsers.find(u => u.id === parsed.id);
+          } else if (parsed && parsed.name) {
+            state.activeTestUser = parsed;
+          }
+        } catch (e) {}
+      }
+
+      // If no active user yet and we have test users, activate the first one
+      if (!state.activeTestUser && state.testUsers.length > 0) {
+        state.activeTestUser = state.testUsers[0];
+      }
+
+      renderTestUserChips();
+      renderActiveTestUser();
       renderTestUsersList();
     } catch (e) {
       console.warn('[TEST-USERS] Failed to load:', e);
     }
   }
 
+  function renderTestUserChips() {
+    if (!el.tuChipsContainer) return;
+    el.tuChipsContainer.innerHTML = '';
+    const list = state.testUsers || [];
+
+    if (list.length === 0) {
+      el.tuChipsContainer.innerHTML = `
+        <span style="font-size:10px;color:var(--text-muted);font-style:italic;">
+          Chưa có User test nào. Bấm <b>"➕ Thêm User"</b> hoặc <b>"🎲 Sinh nhanh"</b> để tạo ngay.
+        </span>`;
+      return;
+    }
+
+    list.forEach(u => {
+      const chip = document.createElement('div');
+      const isActive = state.activeTestUser && state.activeTestUser.id === u.id;
+      chip.className = `tu-chip ${isActive ? 'is-active' : ''}`;
+      chip.title = `Kích hoạt test với: ${u.name} (${u.phone || u.email || 'Không có SĐT'}) - Luồng: ${u.flow_name || 'Tự do'}`;
+
+      chip.innerHTML = `
+        <span class="tu-chip-dot"></span>
+        <span style="font-weight:700;">${escapeHtml(u.name)}</span>
+        ${u.phone ? `<span style="font-size:9.5px;opacity:0.8;font-family:var(--font-mono);">${escapeHtml(u.phone)}</span>` : ''}
+      `;
+
+      chip.addEventListener('click', () => {
+        activateTestUser(u, true);
+      });
+      el.tuChipsContainer.appendChild(chip);
+    });
+  }
+
+  function renderActiveTestUser() {
+    if (!el.tuActiveBox) return;
+    const u = state.activeTestUser;
+    if (!u) {
+      el.tuActiveBox.style.display = 'none';
+      return;
+    }
+
+    el.tuActiveBox.style.display = 'block';
+    if (el.tuActiveName) el.tuActiveName.textContent = u.name || 'Khách test';
+    if (el.tuActivePhone) el.tuActivePhone.textContent = u.phone ? `📞 ${u.phone}` : (u.email || 'Chưa có SĐT');
+    if (el.tuActiveFlow) el.tuActiveFlow.textContent = u.flow_name || u.scenario || 'Luồng tự do';
+  }
+
+  function activateTestUser(user, notify = true) {
+    if (!user) return;
+    state.activeTestUser = user;
+    localStorage.setItem('bbh_active_test_user', JSON.stringify(user));
+
+    renderTestUserChips();
+    renderActiveTestUser();
+    renderTestUsersList();
+
+    // Reset and sync chatbox visitor context with this customer's data
+    resetChatboxVisitor(user);
+
+    if (notify) {
+      showToast(`👤 Đã chọn User test: "${user.name}" (${user.phone || 'Sẵn sàng'})`, 'success');
+    }
+  }
+
+  function resetChatboxVisitor(customerInfo = null) {
+    const pageId = state.config?.page_id || (state.user && state.user.page_id) || '';
+    if (pageId) {
+      try {
+        localStorage.removeItem('data_embed_chat_' + pageId);
+        if (customerInfo) {
+          const clientData = {
+            client_id: customerInfo.client_id || ('cl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7)),
+            name: customerInfo.name || '',
+            phone: customerInfo.phone || '',
+            email: customerInfo.email || ''
+          };
+          localStorage.setItem('data_embed_chat_' + pageId, JSON.stringify(clientData));
+          localStorage.setItem('bbh_last_client_id', clientData.client_id);
+          state.clientId = clientData.client_id;
+          if (el.clientIdDisplay) el.clientIdDisplay.textContent = clientData.client_id;
+        } else {
+          localStorage.removeItem('bbh_last_client_id');
+        }
+      } catch (e) {
+        console.warn('[RESET-VISITOR] Error resetting visitor session:', e);
+      }
+    }
+
+    // Mount fresh chatbox & ensure open
+    mountUserChatbox(pageId);
+    setTimeout(() => {
+      toggleChatbox(true);
+      sendResetCommand(true);
+    }, 600);
+  }
+
+  function sendUserIntroToChat() {
+    const u = state.activeTestUser;
+    if (!u) {
+      showToast('Vui lòng chọn hoặc tạo 1 User test trước.', 'warning');
+      return;
+    }
+    const introMsg = `Chào bạn, mình là ${u.name}${u.phone ? ` - SĐT: ${u.phone}` : ''}. Mình đang tìm hiểu về ${u.flow_name || 'dịch vụ bên mình'}, tư vấn giúp mình nhé!`;
+    sendPromptToChat(introMsg);
+    showToast(`💬 Đã gửi lời chào của "${u.name}" vào khung chat!`, 'success');
+  }
+
+  function copyTextToClipboard(text, successMsg) {
+    if (!text) {
+      showToast('Thông tin này đang trống.', 'warning');
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(successMsg, 'success');
+      }).catch(() => fallbackCopy(text, successMsg));
+    } else {
+      fallbackCopy(text, successMsg);
+    }
+  }
+
+  function fallbackCopy(text, successMsg) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      showToast(successMsg, 'success');
+    } catch {
+      showToast(text, 'info');
+    }
+    document.body.removeChild(ta);
+  }
+
+  async function createTestUser(payload = {}) {
+    try {
+      const res = await api('/api/test-users', 'POST', payload);
+      if (res && res.testUser) {
+        // Add or update in state
+        const existingIdx = state.testUsers.findIndex(u => u.id === res.testUser.id);
+        if (existingIdx >= 0) {
+          state.testUsers[existingIdx] = res.testUser;
+        } else {
+          state.testUsers.unshift(res.testUser);
+        }
+
+        updateTestUserBadge();
+        activateTestUser(res.testUser, false);
+
+        // Hide inline form
+        if (el.tuInlineFormBox) el.tuInlineFormBox.style.display = 'none';
+
+        // Update modal credentials box if modal is open
+        if (el.tuCredentialsBox) {
+          el.tuCredentialsBox.style.display = 'block';
+          if (el.tuCredEmail) el.tuCredEmail.textContent = res.testUser.email;
+          if (el.tuCredPass) el.tuCredPass.textContent = res.credentials?.password || '123456';
+        }
+
+        showToast(`🎉 Đã tạo & kích hoạt User Test "${res.testUser.name}" (${res.testUser.phone || 'Sẵn sàng'})!`, 'success');
+        return res.testUser;
+      }
+    } catch (err) {
+      showToast('Lỗi tạo User Test: ' + err.message, 'error');
+      throw err;
+    }
+  }
+
   function renderTestUsersList() {
     if (!el.testUsersList) return;
-    const list = state.testUsers;
+    const list = state.testUsers || [];
     if (list.length === 0) {
       el.testUsersList.innerHTML = `
         <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:11.5px;border:1px dashed var(--border-subtle);border-radius:8px;background:var(--bg-panel);">
           <div style="font-size:20px;margin-bottom:4px;">🧪</div>
           <b>Chưa có tài khoản test nào.</b>
-          <div style="font-size:11px;margin-top:3px;">Bấm <b>Tạo User Test</b> để tạo tài khoản test đầu tiên.</div>
+          <div style="font-size:11px;margin-top:3px;">Điền thông tin ở trên hoặc bấm <b>"Sinh ngẫu nhiên"</b> để tạo ngay.</div>
         </div>`;
       return;
     }
@@ -6074,165 +6324,46 @@
       card.className = 'test-user-card';
       const initials = (u.name || 'T').charAt(0).toUpperCase();
       const timeStr = u.created_at ? new Date(u.created_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-      const isCurrentSession = state.user && state.user.id === u.id;
+      const isCurrentActive = state.activeTestUser && state.activeTestUser.id === u.id;
 
       card.innerHTML = `
         <div class="test-user-avatar" style="background:${u.avatar_color || '#4F46E5'};">${initials}</div>
         <div class="test-user-info">
           <div class="test-user-name">
             ${escapeHtml(u.name)}
-            ${isCurrentSession ? '<span class="test-user-badge" style="background:rgba(5,150,105,0.14);color:var(--success);margin-left:4px;">✅ Đang test</span>' : ''}
+            ${isCurrentActive ? '<span class="test-user-badge" style="background:rgba(5,150,105,0.15);color:var(--success);margin-left:4px;">🟢 Đang test</span>' : ''}
           </div>
-          <div class="test-user-email">${escapeHtml(u.email)}</div>
-          <div style="font-size:9.5px;color:var(--text-muted);margin-top:1px;">Tạo lúc: ${timeStr} • PageID: ${escapeHtml(u.page_id || 'Chưa cấu hình')}</div>
+          <div style="font-size:10.5px;color:var(--text-primary);font-family:var(--font-mono);font-weight:600;margin-top:1px;">
+            ${u.phone ? `📞 ${escapeHtml(u.phone)}` : ''} ${u.email ? `• ✉️ ${escapeHtml(u.email)}` : ''}
+          </div>
+          <div style="font-size:9.5px;color:var(--text-muted);margin-top:2px;">
+            🎯 <b>Luồng:</b> ${escapeHtml(u.flow_name || 'Tự do')} • Tạo lúc: ${timeStr}
+          </div>
         </div>
         <div class="test-user-actions">
-          <button type="button" class="btn btn-secondary btn-xs btn-tu-switch" data-uid="${u.id}" title="Chuyển sang test với tài khoản này" style="font-size:10px;padding:3px 8px;color:#4F46E5;border-color:rgba(79,70,229,0.4);">
-            🔄 Dùng
+          <button type="button" class="btn btn-primary btn-xs btn-tu-select" data-uid="${u.id}" title="Kích hoạt test với khách hàng này" style="font-size:10px;padding:3px 8px;background:#4F46E5;border-color:#4F46E5;">
+            ▶️ Dùng
           </button>
-          <button type="button" class="btn btn-secondary btn-xs btn-tu-delete" data-uid="${u.id}" title="Xóa tài khoản test này" style="font-size:10px;padding:3px 7px;color:var(--danger);">
+          <button type="button" class="btn btn-secondary btn-xs btn-tu-copy" data-uid="${u.id}" title="Copy thông tin Tên & SĐT để điền vào bong bóng chat" style="font-size:10px;padding:3px 6px;">
+            📋 Copy
+          </button>
+          <button type="button" class="btn btn-secondary btn-xs btn-tu-delete" data-uid="${u.id}" title="Xóa tài khoản test này" style="font-size:10px;padding:3px 6px;color:var(--danger);">
             🗑️
           </button>
         </div>`;
 
-      card.querySelector('.btn-tu-switch').addEventListener('click', () => switchToTestUser(u));
-      card.querySelector('.btn-tu-delete').addEventListener('click', () => deleteTestUser(u.id, u.name));
-      el.testUsersList.appendChild(card);
-    });
-  }
-
-  async function createTestUser() {
-    if (!el.btnTuCreate) return;
-    const label = el.tuCreateLabel ? el.tuCreateLabel.value.trim() : '';
-    const password = (el.tuCreatePassword ? el.tuCreatePassword.value.trim() : '') || '123456';
-    const pageId = el.tuCreatePageid ? el.tuCreatePageid.value.trim() : '';
-
-    el.btnTuCreate.disabled = true;
-    el.btnTuCreate.innerHTML = '⏳ Đang tạo...';
-
-    try {
-      const res = await api('/api/test-users', 'POST', {
-        label: label || undefined,
-        password,
-        page_id: pageId || undefined
+      card.querySelector('.btn-tu-select').addEventListener('click', () => {
+        activateTestUser(u, true);
+        if (el.modalTestUsers) el.modalTestUsers.style.display = 'none';
       });
 
-      state.testUsers.unshift(res.testUser);
-      state.lastCreatedTestUser = {
-        email: res.credentials.email,
-        password: res.credentials.password,
-        userId: res.testUser.id,
-        token: null,
-        user: res.testUser
-      };
+      card.querySelector('.btn-tu-copy').addEventListener('click', () => {
+        const text = `Tên: ${u.name}\nSĐT: ${u.phone || ''}\nEmail: ${u.email || ''}`;
+        copyTextToClipboard(text, `📋 Đã copy thông tin "${u.name}"!`);
+      });
 
-      updateTestUserBadge();
-      renderTestUsersList();
-
-      // Show credentials box
-      if (el.tuCredentialsBox) {
-        el.tuCredentialsBox.style.display = 'block';
-        if (el.tuCredEmail) el.tuCredEmail.textContent = res.credentials.email;
-        if (el.tuCredPass) el.tuCredPass.textContent = res.credentials.password;
-      }
-
-      if (el.tuCreateLabel) el.tuCreateLabel.value = '';
-      showToast(`🧪 Đã tạo tài khoản test "${res.testUser.name}" thành công!`, 'success');
-    } catch (e) {
-      showToast('Lỗi tạo user test: ' + e.message, 'error');
-    } finally {
-      el.btnTuCreate.disabled = false;
-      el.btnTuCreate.innerHTML = '🧪 Tạo User Test';
-    }
-  }
-
-  async function switchToTestUser(testUserObj) {
-    try {
-      const res = await api(`/api/test-users/${testUserObj.id}/login-as`, 'POST');
-      if (!res.ok || !res.token) {
-        showToast('Không thể chuyển sang tài khoản test này.', 'error');
-        return;
-      }
-
-      // Confirm before switching (saves current work)
-      const confirmed = confirm(
-        `🔄 Chuyển sang test với tài khoản: "${testUserObj.name}"?\n\nLưu ý:\n• Mọi thao tác test sẽ được lưu dưới tài khoản này\n• Bấm "Quay lại Admin" để về lại tài khoản chính`
-      );
-      if (!confirmed) return;
-
-      // Store original admin token
-      const adminToken = state.token;
-      const adminUser = state.user;
-      localStorage.setItem('bbh_admin_token_backup', adminToken || '');
-      localStorage.setItem('bbh_admin_user_backup', JSON.stringify(sanitizeSafe(adminUser)));
-
-      // Switch to test user token
-      state.token = res.token;
-      localStorage.setItem('bbh_auth_token', res.token);
-      state.user = res.user;
-
-      // Reload workspace with the test user's data
-      await loadWorkspace();
-      toggleChatbox(true);
-      if (el.modalTestUsers) el.modalTestUsers.style.display = 'none';
-      showToast(`✅ Đang test với tài khoản: ${testUserObj.name}`, 'success');
-
-      // Show "Return to Admin" banner
-      showReturnToAdminBanner(adminToken, adminUser);
-    } catch (e) {
-      showToast('Lỗi chuyển tài khoản: ' + e.message, 'error');
-    }
-  }
-
-  function sanitizeSafe(user) {
-    if (!user) return null;
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      avatar_color: user.avatar_color
-    };
-  }
-
-  function showReturnToAdminBanner(adminToken, adminUser) {
-    let banner = document.getElementById('return-to-admin-banner');
-    if (!banner) {
-      banner = document.createElement('div');
-      banner.id = 'return-to-admin-banner';
-      banner.style.cssText = `
-        position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
-        background: linear-gradient(90deg, #4F46E5, #2563EB);
-        color: #fff; padding: 8px 16px;
-        display: flex; align-items: center; justify-content: space-between; gap: 10px;
-        font-size: 12px; font-weight: 600; box-shadow: 0 2px 12px rgba(79,70,229,0.4);
-      `;
-      document.body.appendChild(banner);
-      document.body.style.paddingTop = '38px';
-    }
-    const name = state.user?.name || 'Test User';
-    banner.innerHTML = `
-      <span>🧪 Đang chạy test với tài khoản: <b>${escapeHtml(name)}</b></span>
-      <button type="button" id="btn-return-to-admin" style="
-        background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4);
-        color: #fff; border-radius: 6px; padding: 3px 10px; font-size: 11px;
-        font-weight: 700; cursor: pointer; white-space: nowrap;
-      ">↩ Quay lại Admin</button>`;
-    banner.querySelector('#btn-return-to-admin').addEventListener('click', async () => {
-      const backupToken = localStorage.getItem('bbh_admin_token_backup');
-      if (!backupToken) {
-        showToast('Không tìm thấy phiên Admin. Vui lòng đăng nhập lại.', 'error');
-        return;
-      }
-      state.token = backupToken;
-      localStorage.setItem('bbh_auth_token', backupToken);
-      localStorage.removeItem('bbh_admin_token_backup');
-      localStorage.removeItem('bbh_admin_user_backup');
-      await loadWorkspace();
-      toggleChatbox(true);
-      banner.remove();
-      document.body.style.paddingTop = '';
-      showToast('✅ Đã quay lại tài khoản Admin!', 'success');
+      card.querySelector('.btn-tu-delete').addEventListener('click', () => deleteTestUser(u.id, u.name));
+      el.testUsersList.appendChild(card);
     });
   }
 
@@ -6240,23 +6371,142 @@
     if (!confirm(`Xóa tài khoản test "${name}"?\n\nTất cả dữ liệu kiểm thử của tài khoản này sẽ bị xóa vĩnh viễn.`)) return;
     try {
       await api(`/api/test-users/${userId}`, 'DELETE');
-      state.testUsers = state.testUsers.filter(u => u.id !== userId);
-      updateTestUserBadge();
-      renderTestUsersList();
-      if (el.tuCredentialsBox && state.lastCreatedTestUser?.userId === userId) {
-        el.tuCredentialsBox.style.display = 'none';
-        state.lastCreatedTestUser = null;
+      state.testUsers = (state.testUsers || []).filter(u => u.id !== userId);
+      if (state.activeTestUser && state.activeTestUser.id === userId) {
+        state.activeTestUser = state.testUsers[0] || null;
+        localStorage.setItem('bbh_active_test_user', JSON.stringify(state.activeTestUser));
       }
+      updateTestUserBadge();
+      renderTestUserChips();
+      renderActiveTestUser();
+      renderTestUsersList();
       showToast(`Đã xóa tài khoản test "${name}".`, 'info');
     } catch (e) {
       showToast('Lỗi xóa: ' + e.message, 'error');
     }
   }
 
-  // Open / Close modal
+  // Event Listeners for Inline Card
+  if (el.btnTuToggleForm) {
+    el.btnTuToggleForm.addEventListener('click', () => {
+      if (!el.tuInlineFormBox) return;
+      const isVisible = el.tuInlineFormBox.style.display !== 'none';
+      el.tuInlineFormBox.style.display = isVisible ? 'none' : 'block';
+      if (!isVisible && el.tuInlineName) {
+        el.tuInlineName.focus();
+      }
+    });
+  }
+
+  if (el.btnTuCloseInlineForm) {
+    el.btnTuCloseInlineForm.addEventListener('click', () => {
+      if (el.tuInlineFormBox) el.tuInlineFormBox.style.display = 'none';
+    });
+  }
+
+  if (el.btnTuInlineRandom) {
+    el.btnTuInlineRandom.addEventListener('click', () => {
+      const rand = generateRandomUserData();
+      if (el.tuInlineName) el.tuInlineName.value = rand.name;
+      if (el.tuInlinePhone) el.tuInlinePhone.value = rand.phone;
+      if (el.tuInlineEmail) el.tuInlineEmail.value = rand.email;
+      if (el.tuInlineFlow) el.tuInlineFlow.value = rand.flow;
+    });
+  }
+
+  if (el.btnTuQuickRandom) {
+    el.btnTuQuickRandom.addEventListener('click', async () => {
+      const rand = generateRandomUserData();
+      try {
+        await createTestUser({
+          name: rand.name,
+          phone: rand.phone,
+          email: rand.email,
+          flow_name: rand.flow
+        });
+      } catch (e) {}
+    });
+  }
+
+  if (el.btnTuResetChat) {
+    el.btnTuResetChat.addEventListener('click', () => {
+      resetChatboxVisitor(null);
+      showToast('🔄 Đã làm mới Bong bóng chat 100%! Khung chat đã ở trạng thái khách hàng mới toanh.', 'success');
+    });
+  }
+
+  if (el.btnTuInlineSubmit) {
+    el.btnTuInlineSubmit.addEventListener('click', async () => {
+      const name = el.tuInlineName ? el.tuInlineName.value.trim() : '';
+      const phone = el.tuInlinePhone ? el.tuInlinePhone.value.trim() : '';
+      const email = el.tuInlineEmail ? el.tuInlineEmail.value.trim() : '';
+      const flow = el.tuInlineFlow ? el.tuInlineFlow.value.trim() : '';
+
+      if (!name) {
+        showToast('Vui lòng nhập Tên của bạn / Tên khách hàng test.', 'warning');
+        if (el.tuInlineName) el.tuInlineName.focus();
+        return;
+      }
+      if (!phone) {
+        showToast('Vui lòng nhập Số điện thoại khách hàng.', 'warning');
+        if (el.tuInlinePhone) el.tuInlinePhone.focus();
+        return;
+      }
+
+      el.btnTuInlineSubmit.disabled = true;
+      el.btnTuInlineSubmit.textContent = '⏳ Đang lưu...';
+      try {
+        await createTestUser({
+          name,
+          phone,
+          email,
+          flow_name: flow
+        });
+        if (el.tuInlineName) el.tuInlineName.value = '';
+        if (el.tuInlinePhone) el.tuInlinePhone.value = '';
+        if (el.tuInlineEmail) el.tuInlineEmail.value = '';
+        if (el.tuInlineFlow) el.tuInlineFlow.value = '';
+      } finally {
+        el.btnTuInlineSubmit.disabled = false;
+        el.btnTuInlineSubmit.textContent = '💾 Tạo & Kích Hoạt Test';
+      }
+    });
+  }
+
+  // 1-Click Copy Buttons
+  if (el.btnCopyTuName) {
+    el.btnCopyTuName.addEventListener('click', () => {
+      const name = state.activeTestUser?.name || '';
+      copyTextToClipboard(name, `📋 Đã copy Tên: "${name}"!`);
+    });
+  }
+  if (el.btnCopyTuPhone) {
+    el.btnCopyTuPhone.addEventListener('click', () => {
+      const phone = state.activeTestUser?.phone || '';
+      copyTextToClipboard(phone, `📋 Đã copy SĐT: "${phone}"!`);
+    });
+  }
+  if (el.btnCopyTuEmail) {
+    el.btnCopyTuEmail.addEventListener('click', () => {
+      const email = state.activeTestUser?.email || '';
+      copyTextToClipboard(email, `📋 Đã copy Email: "${email}"!`);
+    });
+  }
+  if (el.btnCopyTuAll) {
+    el.btnCopyTuAll.addEventListener('click', () => {
+      const u = state.activeTestUser;
+      if (!u) return;
+      const allText = `Họ tên: ${u.name}\nSĐT: ${u.phone || ''}\nEmail: ${u.email || ''}`;
+      copyTextToClipboard(allText, `📋 Đã copy toàn bộ thông tin "${u.name}"!`);
+    });
+  }
+  if (el.btnTuSendIntro) {
+    el.btnTuSendIntro.addEventListener('click', sendUserIntroToChat);
+  }
+
+  // Modal Handlers
   if (el.btnOpenTestUsers) {
     el.btnOpenTestUsers.addEventListener('click', () => {
-      if (!state.user) { showToast('Vui lòng đăng nhập trước.', 'warning'); return; }
       if (el.modalTestUsers) el.modalTestUsers.style.display = 'flex';
       loadTestUsers();
     });
@@ -6272,55 +6522,80 @@
     });
   }
 
-  // Create button
-  if (el.btnTuCreate) el.btnTuCreate.addEventListener('click', createTestUser);
+  if (el.btnTuModalRandom) {
+    el.btnTuModalRandom.addEventListener('click', () => {
+      const rand = generateRandomUserData();
+      if (el.tuCreateName) el.tuCreateName.value = rand.name;
+      if (el.tuCreatePhone) el.tuCreatePhone.value = rand.phone;
+      if (el.tuCreateEmail) el.tuCreateEmail.value = rand.email;
+      if (el.tuCreateFlow) el.tuCreateFlow.value = rand.flow;
+    });
+  }
 
-  // Refresh button
-  if (el.btnTuRefresh) el.btnTuRefresh.addEventListener('click', loadTestUsers);
+  if (el.btnTuCreate) {
+    el.btnTuCreate.addEventListener('click', async () => {
+      const name = el.tuCreateName ? el.tuCreateName.value.trim() : '';
+      const phone = el.tuCreatePhone ? el.tuCreatePhone.value.trim() : '';
+      const email = el.tuCreateEmail ? el.tuCreateEmail.value.trim() : '';
+      const flow = el.tuCreateFlow ? el.tuCreateFlow.value.trim() : '';
+      const password = el.tuCreatePassword ? el.tuCreatePassword.value.trim() : '123456';
+      const pageId = el.tuCreatePageid ? el.tuCreatePageid.value.trim() : '';
 
-  // Delete All button
+      if (!name) {
+        showToast('Vui lòng nhập Tên của bạn / Họ tên khách hàng.', 'warning');
+        if (el.tuCreateName) el.tuCreateName.focus();
+        return;
+      }
+      if (!phone) {
+        showToast('Vui lòng nhập Số điện thoại của bạn.', 'warning');
+        if (el.tuCreatePhone) el.tuCreatePhone.focus();
+        return;
+      }
+
+      el.btnTuCreate.disabled = true;
+      el.btnTuCreate.textContent = '⏳ Đang tạo...';
+      try {
+        await createTestUser({
+          name,
+          phone,
+          email,
+          flow_name: flow,
+          password,
+          page_id: pageId || undefined
+        });
+        if (el.modalTestUsers) el.modalTestUsers.style.display = 'none';
+      } finally {
+        el.btnTuCreate.disabled = false;
+        el.btnTuCreate.textContent = '🧪 Tạo User & Kích Hoạt Test';
+      }
+    });
+  }
+
+  if (el.btnTuRefresh) {
+    el.btnTuRefresh.addEventListener('click', loadTestUsers);
+  }
+
   if (el.btnTuDeleteAll) {
     el.btnTuDeleteAll.addEventListener('click', async () => {
-      if (state.testUsers.length === 0) { showToast('Không có tài khoản test nào để xóa.', 'info'); return; }
+      if ((state.testUsers || []).length === 0) {
+        showToast('Không có tài khoản test nào để xóa.', 'info');
+        return;
+      }
       if (!confirm(`Xóa toàn bộ ${state.testUsers.length} tài khoản test?\n\nThao tác này sẽ xóa tất cả dữ liệu kiểm thử của chúng và không thể hoàn tác.`)) return;
       try {
         await api('/api/test-users', 'DELETE');
         state.testUsers = [];
-        state.lastCreatedTestUser = null;
+        state.activeTestUser = null;
+        localStorage.removeItem('bbh_active_test_user');
         updateTestUserBadge();
+        renderTestUserChips();
+        renderActiveTestUser();
         renderTestUsersList();
-        if (el.tuCredentialsBox) el.tuCredentialsBox.style.display = 'none';
         showToast('Đã xóa toàn bộ tài khoản test!', 'success');
       } catch (e) {
         showToast('Lỗi: ' + e.message, 'error');
       }
     });
   }
-
-  // "Switch To" button (from credentials box for last created user)
-  if (el.btnTuSwitchTo) {
-    el.btnTuSwitchTo.addEventListener('click', () => {
-      if (state.lastCreatedTestUser) switchToTestUser(state.lastCreatedTestUser.user);
-    });
-  }
-
-  // "Copy Credentials" button
-  if (el.btnTuCopyCreds) {
-    el.btnTuCopyCreds.addEventListener('click', () => {
-      if (!state.lastCreatedTestUser) return;
-      const text = `📧 Email: ${state.lastCreatedTestUser.email}\n🔒 Mật khẩu: ${state.lastCreatedTestUser.password}`;
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(() => showToast('📋 Đã copy thông tin đăng nhập!', 'success'));
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = text; document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); showToast('📋 Đã copy!', 'success'); } catch {}
-        document.body.removeChild(ta);
-      }
-    });
-  }
-
-  // Also load test users when workspace loads if admin
-  const _origLoadWorkspace = loadWorkspace;
 
 })();

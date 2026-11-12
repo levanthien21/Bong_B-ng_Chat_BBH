@@ -19,7 +19,7 @@
     "updated_at": "2026-10-24T13:01:08.108Z",
     "cloud_db_url": "https://ideal-hamster-185243.upstash.io",
     "cloud_db_provider": "upstash",
-    "cloud_db_last_synced": "2026-11-09T08:31:52.308Z"
+    "cloud_db_last_synced": "2026-11-12T10:33:09.997Z"
   },
   "roles": {
     "admin": {
@@ -100,7 +100,7 @@
       "role": "admin",
       "status": "active",
       "avatar_color": "#D97757",
-      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
+      "password_hash": "80e217d4b84dd5c306b0b1e58d6efa6a28fb54e0cde8749bbd1583f277fa12a7fa0a240a21944153692b5c3802aa6d19b8471b128aea9d97298304139220b528",
       "page_id": "095817282564177",
       "embed_code": "095817282564177",
       "deepseek_api_key": "",
@@ -115,7 +115,7 @@
         "updated_at": "2026-10-26T08:07:15.234Z"
       },
       "created_at": "2026-10-25T08:20:08.743Z",
-      "last_login": "2026-11-09T09:31:26.184Z",
+      "last_login": "2026-11-12T10:31:12.077Z",
       "tests_submitted": 23,
       "embed_list": [
         {
@@ -125,11 +125,237 @@
           "embed_code": "095817282564177",
           "is_active": true,
           "created_at": "2026-10-25T08:20:08.743Z",
-          "updated_at": "2026-11-09T09:31:26.179Z"
+          "updated_at": "2026-11-09T09:58:46.240Z"
+        },
+        {
+          "id": "emb_1794046561314_564i",
+          "name": "Anh Tuân",
+          "page_id": "996993042275914",
+          "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\"></script>\n<script>\n  BBH.init({ page_id: '996993042275914' })\n</script>",
+          "is_active": false,
+          "created_at": "2026-11-07T10:16:01.314Z",
+          "updated_at": "2026-11-12T10:16:56.608Z"
         }
       ],
       "active_embed_id": "emb_thien_default",
-      "checklist_cases": [],
+      "checklist_cases": [
+        {
+          "id": "mf_case_1",
+          "title": "TH1: Test Tư vấn dịch vụ & Báo giá chi tiết",
+          "enabled": true,
+          "expanded": false,
+          "status": "fail",
+          "score": 3,
+          "questions": [
+            "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn và báo giá giúp mình nhé!",
+            "Mức giá này đã bao gồm ăn sáng buffet và bể bơi vô cực chưa hay có tính phí riêng không bạn?"
+          ],
+          "goalNote": "Kiểm tra AI báo giá chuẩn File 1, nêu đúng tiện ích miễn phí và hỏi lại nhu cầu khách hàng.",
+          "resultNote": "[Đã test & /reset] Kiểm tra AI báo giá chuẩn File 1, nêu đúng tiện ích miễn phí và hỏi lại nhu cầu khách hàng.",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 1,
+              "caseTitle": "TH1: Test Tư vấn dịch vụ & Báo giá chi tiết",
+              "user": "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn và báo giá giúp mình nhé!",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:18:06)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi của chatbot bị thiếu hoặc không được cung cấp trong prompt, dẫn đến việc không thể đánh giá chính xác nội dung trả lời so với tài liệu và quy tắc prompt.",
+                "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để tiến hành đánh giá chuẩn xác theo tiêu chí.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:18:06"
+            },
+            {
+              "turn": 2,
+              "caseIndex": 1,
+              "caseTitle": "TH1: Test Tư vấn dịch vụ & Báo giá chi tiết",
+              "user": "Mức giá này đã bao gồm ăn sáng buffet và bể bơi vô cực chưa hay có tính phí riêng không bạn?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:18:39)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không thể đánh giá độ chính xác và mức độ tuân thủ quy tắc prompt.",
+                "recommendation": "Cần cung cấp đầy đủ phản hồi thực tế của AI Chatbot để thực hiện việc đánh giá chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:18:39"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:18:42.288Z"
+        },
+        {
+          "id": "mf_case_2",
+          "title": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+          "enabled": true,
+          "expanded": false,
+          "status": "fail",
+          "score": 3,
+          "questions": [
+            "Mình định đặt ở 5 đêm liên tiếp và đặt 3 phòng cho gia đình thì bên mình có chính sách ưu đãi giảm giá thế nào?",
+            "Đoàn mình đi đông vậy bên bạn giảm luôn 30% tổng hóa đơn cho mình chuyển cọc chốt luôn hôm nay được không?"
+          ],
+          "goalNote": "Kiểm tra AI tính đúng ưu đãi (10% từ 5 đêm, 5% từ 3 phòng) và từ chối khéo yêu cầu giảm 30% vượt quy định.",
+          "resultNote": "[Đã test & /reset] Kiểm tra AI tính đúng ưu đãi (10% từ 5 đêm, 5% từ 3 phòng) và từ chối khéo yêu cầu giảm 30% vượt quy định.",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 2,
+              "caseTitle": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+              "user": "Mình định đặt ở 5 đêm liên tiếp và đặt 3 phòng cho gia đình thì bên mình có chính sách ưu đãi giảm giá thế nào?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:19:12)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi của AI Chatbot để trống, không đưa ra câu trả lời cho khách hàng, vi phạm nghiêm trọng quy trình tư vấn và cung cấp thông tin ưu đãi theo quy định.",
+                "recommendation": "Cần kiểm tra lại hệ thống kết nối hoặc đảm bảo AI luôn tạo ra nội dung phản hồi đầy đủ dựa trên chính sách ưu đãi ở dài đêm (giảm 10% cho từ 5 đêm) và đặt nhiều phòng (giảm 5% cho từ 3 phòng) đã được quy định.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:19:12"
+            },
+            {
+              "turn": 2,
+              "caseIndex": 2,
+              "caseTitle": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+              "user": "Đoàn mình đi đông vậy bên bạn giảm luôn 30% tổng hóa đơn cho mình chuyển cọc chốt luôn hôm nay được không?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:19:45)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không có cơ sở để đánh giá. Tuy nhiên, theo kịch bản khách mặc cả giảm 30%, AI bắt buộc phải tuân thủ nguyên tắc thương lượng giá (giữ vững mức giá và các chương trình ưu đãi đã niêm yết, tối đa 10% hoặc 15%, không tự ý giảm 30%).",
+                "recommendation": "Cần cung cấp đầy đủ phản hồi thực tế của AI Chatbot để AI Evaluation Judge đưa ra đánh giá chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:19:45"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:19:48.802Z"
+        },
+        {
+          "id": "mf_case_3",
+          "title": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+          "enabled": true,
+          "expanded": false,
+          "status": "fail",
+          "score": 3,
+          "questions": [
+            "Nhà mình có mang theo một bé cún Poodle nhỏ sạch sẽ lắm, và cho mình hỏi resort có sân golf không bạn?",
+            "Nếu hôm đó đoàn mình nhận phòng sớm lúc 8h sáng và thêm 1 người lớn thứ 3 ở ghép thì phụ thu tính sao?"
+          ],
+          "goalNote": "Kiểm tra AI từ chối thú cưng lịch sự, báo không có sân golf, tính đúng phụ thu check-in sớm (50%) & người thứ 3 (200.000đ).",
+          "resultNote": "[Đã test & /reset] Kiểm tra AI từ chối thú cưng lịch sự, báo không có sân golf, tính đúng phụ thu check-in sớm (50%) & người thứ 3 (200.000đ).",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 3,
+              "caseTitle": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+              "user": "Nhà mình có mang theo một bé cún Poodle nhỏ sạch sẽ lắm, và cho mình hỏi resort có sân golf không bạn?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:20:19)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không thể đánh giá độ chính xác và mức độ tuân thủ quy tắc prompt từ tài liệu.",
+                "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để hệ thống có thể thực hiện đánh giá chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:20:19"
+            },
+            {
+              "turn": 2,
+              "caseIndex": 3,
+              "caseTitle": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+              "user": "Nếu hôm đó đoàn mình nhận phòng sớm lúc 8h sáng và thêm 1 người lớn thứ 3 ở ghép thì phụ thu tính sao?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:20:52)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi thực tế của AI Chatbot để trống, không đưa ra câu trả lời cho khách hàng về chi phí phụ thu nhận phòng sớm trước 10:00 sáng (phụ thu 50% giá phòng 1 đêm) và phụ thu người thứ 3 từ 12 tuổi trở lên (200.000đ/người/đêm).",
+                "recommendation": "Cần cấu hình lại AI Chatbot để đảm bảo luôn đưa ra đầy đủ thông tin chi phí và phụ thu theo đúng dữ liệu tại Tài liệu 1 khi khách hàng thắc mắc.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:20:52"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:20:55.185Z"
+        },
+        {
+          "id": "mf_case_4",
+          "title": "TH4: Test Chính sách Đổi / Hủy phòng & Hoàn tiền cọc",
+          "enabled": true,
+          "expanded": false,
+          "status": "pass",
+          "score": 5,
+          "questions": [
+            "Cho mình hỏi nếu đặt cọc xong nhưng có việc đột xuất báo hủy trước 7 ngày hoặc trước 4 ngày thì ch��nh sách hoàn tiền thế nào?"
+          ],
+          "goalNote": "Kiểm tra AI trả lời đúng mốc hoàn cọc 100% (báo trước >=7 ngày) và hoàn 50% (từ 3-6 ngày) theo File 1.",
+          "resultNote": "[Đã test & /reset] Kiểm tra AI trả lời đúng mốc hoàn cọc 100% (báo trước >=7 ngày) và hoàn 50% (từ 3-6 ngày) theo File 1.",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 4,
+              "caseTitle": "TH4: Test Chính sách Đổi / Hủy phòng & Hoàn tiền cọc",
+              "user": "Cho mình hỏi nếu đặt cọc xong nhưng có việc đột xuất báo hủy trước 7 ngày hoặc trước 4 ngày thì chính sách hoàn tiền thế nào?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:21:25)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi thực tế của AI Chatbot bị thiếu (trống). Do người dùng không cung cấp nội dung phản hồi cụ thể của chatbot trong prompt, không thể đánh giá được độ chính xác và mức độ tuân thủ quy tắc.",
+                "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot vào trường 'PHẢN HỒI THỰC TẾ CỦA AI CHATBOT' để hệ thống có thể chấm điểm chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:21:25"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:21:28.368Z"
+        },
+        {
+          "id": "mf_add_1794219426891",
+          "title": "TH5: Trường hợp kiểm thử mới",
+          "enabled": true,
+          "expanded": true,
+          "status": "pass",
+          "score": 5,
+          "questions": [
+            "Chào bạn, tư vấn giúp mình thông tin chi tiết về dịch vụ này nhé!"
+          ],
+          "goalNote": "Kiểm tra phản hồi đúng ngữ cảnh và quy tắc Prompt.",
+          "resultNote": "[Đã test & /reset] Kiểm tra phản hồi đúng ngữ cảnh và quy tắc Prompt.",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 5,
+              "caseTitle": "TH5: Trường hợp kiểm thử mới",
+              "user": "Chào bạn, tư vấn giúp mình thông tin chi tiết về dịch vụ này nhé!",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:21:58)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi thực tế của AI Chatbot trống rỗng hoặc không cung cấp thông tin tư vấn nào, vi phạm nguyên tắc trả lời thẳng và dứt khoát.",
+                "recommendation": "Cần cấu hình lại AI Chatbot để khi khách hàng hỏi chung chung, bot phải chủ động giới thiệu tóm tắt về resort và hỏi lại nhu cầu (số lượng người, ngày đi) để tư vấn chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:21:58"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:22:03.213Z"
+        }
+      ],
       "checklist_settings": {
         "enabled": false,
         "noteMode": "auto",
@@ -207,7 +433,8 @@
           "page_id": "112233445566",
           "embed_code": "112233445566",
           "is_active": true,
-          "created_at": "2026-11-02T16:45:26.537Z"
+          "created_at": "2026-11-02T16:45:26.537Z",
+          "updated_at": "2026-11-09T10:59:01.147Z"
         }
       ],
       "active_embed_id": "emb_1793637926537_4sqe",
@@ -249,7 +476,8 @@
           "page_id": "9988776655",
           "embed_code": "page_id: 9988776655",
           "is_active": true,
-          "created_at": "2026-11-09T08:23:42.984Z"
+          "created_at": "2026-11-09T08:23:42.984Z",
+          "updated_at": "2026-11-09T10:59:01.147Z"
         }
       ],
       "active_embed_id": "emb_1794212622984_wzz6",
@@ -334,6 +562,423 @@
       "password_hash": "67a50eae5f05d9a32e0a75d5631c8bf57d698afd6f6149e639e4062fb541987dd20b74a50df4b31e16d79538a42bbede5ab863ec24410ea973101baa53da2644",
       "created_at": "2026-11-09T08:23:58.282Z",
       "last_login": "2026-11-09T08:23:58.297Z",
+      "tests_submitted": 0
+    },
+    {
+      "id": "usr_1793196889298_57zw",
+      "email": "phatnt.bbh@gmail.com",
+      "username": "phatnt.bbh",
+      "name": "phatnt.bbh",
+      "role": "tester",
+      "status": "active",
+      "page_id": "724353559999637",
+      "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\"></script>\n<script>\n  BBH.init({ page_id: '724353559999637' })\n</script>",
+      "embed_list": [
+        {
+          "id": "emb_1794454304897_6y1e",
+          "name": "Chatbot chính",
+          "page_id": "724353559999637",
+          "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\"></script>\n<script>\n  BBH.init({ page_id: '724353559999637' })\n</script>",
+          "is_active": true,
+          "created_at": "2026-11-12T03:31:44.897Z",
+          "updated_at": "2026-11-12T10:31:55.637Z"
+        }
+      ],
+      "active_embed_id": "emb_1794454304897_6y1e",
+      "avatar_color": "#0D9488",
+      "password_hash": "95d36b60971648bf9b8e10cef693f932454b4c5d72f9a9d4ce8d50e22ac0d73b6007133b4b14516f2bbf0d8efd7fce945ae78c222881425c3609c88d9e6eb4af",
+      "created_at": "2026-10-28T14:14:49.299Z",
+      "last_login": "2026-11-09T10:59:02.086Z",
+      "tests_submitted": 0,
+      "productKnowledge": {
+        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
+        "content": "",
+        "updated_at": "2026-11-12T03:31:38.182Z"
+      },
+      "promptRules": {
+        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
+        "content": "",
+        "updated_at": "2026-11-12T03:31:38.182Z"
+      }
+    },
+    {
+      "id": "usr_1794110809590_3ojt",
+      "email": "avuong@gmail.com",
+      "username": "avuong",
+      "name": "avuong",
+      "role": "tester",
+      "status": "active",
+      "page_id": "984892210054284",
+      "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\"></script>\n<script>\n  BBH.init({ page_id: '984892210054284' })\n</script>",
+      "embed_list": [
+        {
+          "id": "emb_1794110809590_xctm",
+          "name": "Chatbot chính",
+          "page_id": "984892210054284",
+          "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\"></script>\n<script>\n  BBH.init({ page_id: '984892210054284' })\n</script>",
+          "is_active": true,
+          "created_at": "2026-11-08T04:06:49.590Z",
+          "updated_at": "2026-11-12T03:31:36.939Z"
+        }
+      ],
+      "active_embed_id": "emb_1794110809590_xctm",
+      "avatar_color": "#0D9488",
+      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
+      "created_at": "2026-11-08T04:06:49.591Z",
+      "last_login": "2026-11-11T09:45:32.398Z",
+      "tests_submitted": 0
+    },
+    {
+      "id": "usr_1794392133246_gjhc",
+      "name": "clinh",
+      "email": "clinh@gmail.com",
+      "username": "clinh",
+      "phone": "",
+      "role": "tester",
+      "page_id": "307433411958581",
+      "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\">\n</script>\n<script id=\"\" data-nscript=\"afterInteractive\">\n  BBH.init({\n    page_id: '307433411958581',\n  });\n</script>",
+      "embed_list": [
+        {
+          "id": "emb_1794392133246_ax5m",
+          "name": "Chatbot chính",
+          "page_id": "307433411958581",
+          "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\">\n</script>\n<script id=\"\" data-nscript=\"afterInteractive\">\n  BBH.init({\n    page_id: '307433411958581',\n  });\n</script>",
+          "is_active": true,
+          "created_at": "2026-11-11T10:15:33.246Z",
+          "updated_at": "2026-11-12T07:32:09.350Z"
+        }
+      ],
+      "active_embed_id": "emb_1794392133246_ax5m",
+      "ai_model": "local-free",
+      "ai_api_key": "",
+      "gemini_api_key": "",
+      "groq_api_key": "",
+      "deepseek_api_key": "",
+      "productKnowledge": {
+        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
+        "content": "",
+        "updated_at": "2026-11-11T10:15:33.246Z"
+      },
+      "promptRules": {
+        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
+        "content": "",
+        "updated_at": "2026-11-11T10:15:33.246Z"
+      },
+      "status": "active",
+      "avatar_color": "#2563EB",
+      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
+      "created_at": "2026-11-11T10:15:33.246Z",
+      "last_login": "2026-11-11T10:15:33.246Z",
+      "tests_submitted": 0
+    },
+    {
+      "id": "usr_1793864255829_n6gv",
+      "email": "tamtri@gmail.com",
+      "username": "tamtri",
+      "name": "tamtri",
+      "role": "tester",
+      "status": "active",
+      "page_id": "416300476820427",
+      "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\">\n</script>\n<script id=\"\" data-nscript=\"afterInteractive\">\n  BBH.init({\n    page_id: '416300476820427',\n  });\n</script>",
+      "embed_list": [
+        {
+          "id": "emb_1793864255829_z17a",
+          "name": "Chatbot chính",
+          "page_id": "416300476820427",
+          "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\">\n</script>\n<script id=\"\" data-nscript=\"afterInteractive\">\n  BBH.init({\n    page_id: '416300476820427',\n  });\n</script>",
+          "is_active": true,
+          "created_at": "2026-11-05T07:37:35.829Z",
+          "updated_at": "2026-11-12T10:20:25.086Z"
+        }
+      ],
+      "active_embed_id": "emb_1793864255829_z17a",
+      "avatar_color": "#0D9488",
+      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
+      "created_at": "2026-11-05T07:37:35.830Z",
+      "last_login": "2026-11-12T06:03:26.465Z",
+      "tests_submitted": 0,
+      "productKnowledge": {
+        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
+        "content": "",
+        "updated_at": "2026-11-12T10:20:25.086Z"
+      },
+      "promptRules": {
+        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
+        "content": "",
+        "updated_at": "2026-11-12T10:20:25.086Z"
+      }
+    },
+    {
+      "id": "usr_1793675043883_lqy3",
+      "email": "phatnm.bbh@gmail.com",
+      "username": "phatnm.bbh",
+      "name": "phatnm.bbh",
+      "role": "tester",
+      "status": "active",
+      "page_id": "584026140117397",
+      "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\">\n</script>\n<script id=\"\" data-nscript=\"afterInteractive\">\n  BBH.init({\n    page_id: '584026140117397',\n  });\n</script>",
+      "embed_list": [
+        {
+          "id": "emb_1793675043882_jh7j",
+          "name": "Chatbot chính",
+          "page_id": "494290202289919",
+          "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\">\n</script>\n<script id=\"\" data-nscript=\"afterInteractive\">\n  BBH.init({\n    page_id: '494290202289919',\n  });\n</script>",
+          "is_active": false,
+          "created_at": "2026-11-03T03:04:03.882Z",
+          "updated_at": "2026-11-12T09:57:02.614Z"
+        },
+        {
+          "id": "emb_1794471994353_fy9l",
+          "name": "Anh Giáo",
+          "page_id": "584026140117397",
+          "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\">\n</script>\n<script id=\"\" data-nscript=\"afterInteractive\">\n  BBH.init({\n    page_id: '584026140117397',\n  });\n</script>",
+          "is_active": true,
+          "created_at": "2026-11-12T08:26:34.353Z",
+          "updated_at": "2026-11-12T09:03:11.318Z"
+        }
+      ],
+      "active_embed_id": "emb_1794471994353_fy9l",
+      "avatar_color": "#0D9488",
+      "password_hash": "95d36b60971648bf9b8e10cef693f932454b4c5d72f9a9d4ce8d50e22ac0d73b6007133b4b14516f2bbf0d8efd7fce945ae78c222881425c3609c88d9e6eb4af",
+      "created_at": "2026-11-03T03:04:03.884Z",
+      "last_login": "2026-11-12T08:27:56.778Z",
+      "tests_submitted": 0,
+      "productKnowledge": {
+        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
+        "content": "",
+        "updated_at": "2026-11-12T08:26:12.892Z"
+      },
+      "promptRules": {
+        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
+        "content": "",
+        "updated_at": "2026-11-12T08:26:12.892Z"
+      },
+      "checklist_cases": [
+        {
+          "id": "mf_case_1",
+          "title": "TH1: Test Tư vấn dịch vụ & Báo giá chi tiết",
+          "enabled": true,
+          "expanded": false,
+          "status": "pending",
+          "score": 5,
+          "questions": [
+            "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn và báo giá giúp mình nhé!",
+            "Mức giá này đã bao gồm ăn sáng buffet và bể bơi vô cực chưa hay có tính phí riêng không bạn?"
+          ],
+          "goalNote": "Kiểm tra AI báo giá chuẩn File 1, nêu đúng tiện ích miễn phí và hỏi lại nhu cầu khách hàng.",
+          "resultNote": "",
+          "turns": [],
+          "resetDone": false,
+          "testedAt": null
+        },
+        {
+          "id": "mf_case_2",
+          "title": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+          "enabled": true,
+          "expanded": false,
+          "status": "pending",
+          "score": 5,
+          "questions": [
+            "Mình định đặt ở 5 đêm liên tiếp và đặt 3 phòng cho gia đình thì bên mình có chính sách ưu đãi giảm giá thế nào?",
+            "Đoàn mình đi đông vậy bên bạn giảm luôn 30% tổng hóa đơn cho mình chuyển cọc chốt luôn hôm nay được không?"
+          ],
+          "goalNote": "Kiểm tra AI tính đúng ưu đãi (10% từ 5 đêm, 5% từ 3 phòng) và từ chối khéo yêu cầu giảm 30% vượt quy định.",
+          "resultNote": "",
+          "turns": [],
+          "resetDone": false,
+          "testedAt": null
+        },
+        {
+          "id": "mf_case_3",
+          "title": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+          "enabled": true,
+          "expanded": false,
+          "status": "pending",
+          "score": 5,
+          "questions": [
+            "Nhà mình có mang theo một bé cún Poodle nhỏ sạch sẽ lắm, và cho mình hỏi resort có sân golf không bạn?",
+            "Nếu hôm đó đoàn mình nhận phòng sớm lúc 8h sáng và thêm 1 người lớn thứ 3 ở ghép thì phụ thu tính sao?"
+          ],
+          "goalNote": "Kiểm tra AI từ chối thú cưng lịch sự, báo không có sân golf, tính đúng phụ thu check-in sớm (50%) & người thứ 3 (200.000đ).",
+          "resultNote": "",
+          "turns": [],
+          "resetDone": false,
+          "testedAt": null
+        },
+        {
+          "id": "mf_case_4",
+          "title": "TH4: Test Chính sách Đổi / Hủy phòng & Hoàn tiền cọc",
+          "enabled": true,
+          "expanded": false,
+          "status": "pending",
+          "score": 5,
+          "questions": [
+            "Cho mình hỏi nếu đặt cọc xong nhưng có việc đột xuất báo hủy trước 7 ngày hoặc trước 4 ngày thì chính sách hoàn tiền thế nào?"
+          ],
+          "goalNote": "Kiểm tra AI trả lời đúng mốc hoàn cọc 100% (báo trước >=7 ngày) và hoàn 50% (từ 3-6 ngày) theo File 1.",
+          "resultNote": "",
+          "turns": [],
+          "resetDone": false,
+          "testedAt": null
+        }
+      ],
+      "checklist_settings": {
+        "enabled": false,
+        "noteMode": "auto",
+        "autoReset": true,
+        "sendNoteToChat": false
+      }
+    },
+    {
+      "id": "usr_1794478558797_jqyz",
+      "name": "baotd.bbh",
+      "email": "baotd.bbh@gmail.com",
+      "username": "baotd.bbh",
+      "phone": "",
+      "role": "tester",
+      "page_id": "004796135538562",
+      "embed_code": "004796135538562",
+      "embed_list": [
+        {
+          "id": "emb_1794478689071_haus",
+          "name": "Xưởng may MK",
+          "page_id": "004796135538562",
+          "embed_code": "004796135538562",
+          "is_active": true,
+          "created_at": "2026-11-12T10:18:09.071Z",
+          "updated_at": "2026-11-12T10:31:55.637Z"
+        }
+      ],
+      "active_embed_id": "emb_1794478689071_haus",
+      "ai_model": "local-free",
+      "ai_api_key": "",
+      "gemini_api_key": "",
+      "groq_api_key": "",
+      "deepseek_api_key": "",
+      "productKnowledge": {
+        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
+        "content": "",
+        "updated_at": "2026-11-12T10:15:58.797Z"
+      },
+      "promptRules": {
+        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
+        "content": "",
+        "updated_at": "2026-11-12T10:15:58.797Z"
+      },
+      "status": "active",
+      "avatar_color": "#0D9488",
+      "password_hash": "0be66706bbddb60e3ffd0d68f7fad6cccf6523ddb481ef27dcee8e7181aa79da4ad64abd8075ea81ef2363f13cd5ec260ac8fcf16e9c0738789c445f4ea9426d",
+      "created_at": "2026-11-12T10:15:58.797Z",
+      "last_login": "2026-11-12T10:15:58.797Z",
+      "tests_submitted": 0
+    },
+    {
+      "id": "usr_1794479572153_y045",
+      "name": "test",
+      "email": "test@gmail.com",
+      "username": "test",
+      "phone": "",
+      "role": "tester",
+      "page_id": "864837890135420",
+      "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\"></script>\n<script>\n  BBH.init({ page_id: '864837890135420' })\n</script>",
+      "embed_list": [
+        {
+          "id": "emb_1794479585868_b32n",
+          "name": "test",
+          "page_id": "864837890135420",
+          "embed_code": "<script src=\"https://chatbox-embed-sdk.botbanhang.vn/dist/sdk.min.js\"></script>\n<script>\n  BBH.init({ page_id: '864837890135420' })\n</script>",
+          "is_active": true,
+          "created_at": "2026-11-12T10:33:05.868Z",
+          "updated_at": "2026-11-12T10:46:05.089Z"
+        }
+      ],
+      "active_embed_id": "emb_1794479585868_b32n",
+      "ai_model": "local-free",
+      "ai_api_key": "",
+      "gemini_api_key": "",
+      "groq_api_key": "",
+      "deepseek_api_key": "",
+      "productKnowledge": {
+        "title": "File 1: Kiến thức Sản phẩm & Dịch vụ",
+        "content": "",
+        "updated_at": "2026-11-12T10:32:52.153Z"
+      },
+      "promptRules": {
+        "title": "File 2: Quy tắc Prompt & Rào chắn AI Chatbot",
+        "content": "",
+        "updated_at": "2026-11-12T10:32:52.153Z"
+      },
+      "status": "active",
+      "avatar_color": "#4F46E5",
+      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
+      "created_at": "2026-11-12T10:32:52.154Z",
+      "last_login": "2026-11-12T10:32:52.154Z",
+      "tests_submitted": 0
+    },
+    {
+      "id": "tst_sample_1_thien",
+      "name": "Anh Thiện (Khách VIP)",
+      "phone": "0988.111.999",
+      "email": "thien.vip@bbh.test",
+      "flow_name": "Tư vấn báo giá phòng & ưu đãi cuối tuần",
+      "scenario": "Tư vấn báo giá phòng & ưu đãi cuối tuần",
+      "notes": "Kiểm tra báo giá chuẩn File 1 và chính sách ưu đãi",
+      "username": "thien_vip",
+      "role": "tester",
+      "status": "active",
+      "is_test_user": true,
+      "page_id": "095817282564177",
+      "embed_code": "095817282564177",
+      "avatar_color": "#4F46E5",
+      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
+      "created_by": "thienlv.bbh@gmail.com",
+      "client_id": "cid_sample_thien_vip",
+      "created_at": "2026-11-12T10:46:25.782Z",
+      "last_login": null,
+      "tests_submitted": 0
+    },
+    {
+      "id": "tst_sample_2_lan",
+      "name": "Chị Lan (Khách mới)",
+      "phone": "0912.888.777",
+      "email": "lan.travel@bbh.test",
+      "flow_name": "Hỏi mang thú cưng Poodle & tiệc BBQ",
+      "scenario": "Hỏi mang thú cưng Poodle & tiệc BBQ",
+      "notes": "Kiểm tra rào chắn File 2 từ chối lịch sự thú cưng",
+      "username": "lan_travel",
+      "role": "tester",
+      "status": "active",
+      "is_test_user": true,
+      "page_id": "095817282564177",
+      "embed_code": "095817282564177",
+      "avatar_color": "#0D9488",
+      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
+      "created_by": "thienlv.bbh@gmail.com",
+      "client_id": "cid_sample_lan_travel",
+      "created_at": "2026-11-12T10:46:25.784Z",
+      "last_login": null,
+      "tests_submitted": 0
+    },
+    {
+      "id": "tst_sample_3_nam",
+      "name": "Anh Hoàng Nam",
+      "phone": "0905.333.222",
+      "email": "nam.tourist@bbh.test",
+      "flow_name": "Thủ tục nhận/trả phòng sớm & hoàn cọc",
+      "scenario": "Thủ tục nhận/trả phòng sớm & hoàn cọc",
+      "notes": "Kiểm tra quy định check-in/out và chính sách hoàn tiền",
+      "username": "nam_tourist",
+      "role": "tester",
+      "status": "active",
+      "is_test_user": true,
+      "page_id": "095817282564177",
+      "embed_code": "095817282564177",
+      "avatar_color": "#D97757",
+      "password_hash": "ddff625aa84e7cfb93b18c2609a1e61167001d252ab24542873fdc53699b64058b0b750194706075cc4549c8c51e0c18653bba412ad1443cd22d86e4c4a7bf9b",
+      "created_by": "thienlv.bbh@gmail.com",
+      "client_id": "cid_sample_nam_tourist",
+      "created_at": "2026-11-12T10:46:25.785Z",
+      "last_login": null,
       "tests_submitted": 0
     }
   ],
@@ -521,9 +1166,269 @@
     "bbh_usr_thien_admin.mw92afe0.eyJpZCI6InVzcl90aGllbl9hZG1pbiIsImVtYWlsIjoidGhpZW5sdi5iYmhAZ21haWwuY29tIiwidXNlcm5hbWUiOiJ0aGllbmx2LmJiaCIsIm5hbWUiOiJUaGnhu4duIEJCSCIsInJvbGUiOiJhZG1pbiIsInBhZ2VfaWQiOiIwOTU4MTcyODI1NjQxNzciLCJlbWJlZF9jb2RlIjoiMDk1ODE3MjgyNTY0MTc3IiwiZW1iZWRfbGlzdCI6W3siaWQiOiJlbWJfdGhpZW5fZGVmYXVsdCIsIm5hbWUiOiJDaGF0Ym90IFRoaeG7h24gQkJIIChN4bq3YyDEkeG7i25oKSIsInBhZ2VfaWQiOiIwOTU4MTcyODI1NjQxNzciLCJlbWJlZF9jb2RlIjoiMDk1ODE3MjgyNTY0MTc3IiwiaXNfYWN0aXZlIjp0cnVlLCJjcmVhdGVkX2F0IjoiMjAyNi0xMC0yNVQwODoyMDowOC43NDNaIiwidXBkYXRlZF9hdCI6IjIwMjYtMTEtMDlUMDk6MzE6MjYuMTc5WiJ9XSwiYWN0aXZlX2VtYmVkX2lkIjoiZW1iX3RoaWVuX2RlZmF1bHQiLCJwYXNzd29yZF9oYXNoIjoiZGRmZjYyNWFhODRlN2NmYjkzYjE4YzI2MDlhMWU2MTE2NzAwMWQyNTJhYjI0NTQyODczZmRjNTM2OTliNjQwNThiMGI3NTAxOTQ3MDYwNzVjYzQ1NDljOGM1MWUwYzE4NjUzYmJhNDEyYWQxNDQzY2QyMmQ4NmU0YzRhN2JmOWIiLCJjcmVhdGVkX2F0IjoiMjAyNi0xMC0yNVQwODoyMDowOC43NDNaIn0.354b101b6b1a79adb2f0907f43b13d0a": {
       "user_id": "usr_thien_admin",
       "created_at": "2026-11-09T09:31:26.184Z"
+    },
+    "bbh_usr_thien_admin.mwdequa5.eyJpZCI6InVzcl90aGllbl9hZG1pbiIsImVtYWlsIjoidGhpZW5sdi5iYmhAZ21haWwuY29tIiwidXNlcm5hbWUiOiJ0aGllbmx2LmJiaCIsIm5hbWUiOiJUaGnhu4duIEJCSCIsInJvbGUiOiJhZG1pbiIsInBhZ2VfaWQiOiIwOTU4MTcyODI1NjQxNzciLCJlbWJlZF9jb2RlIjoiMDk1ODE3MjgyNTY0MTc3IiwiZW1iZWRfbGlzdCI6W3siaWQiOiJlbWJfdGhpZW5fZGVmYXVsdCIsIm5hbWUiOiJ0ZXN0IDIiLCJwYWdlX2lkIjoiMDk1ODE3MjgyNTY0MTc3IiwiZW1iZWRfY29kZSI6IjA5NTgxNzI4MjU2NDE3NyIsImlzX2FjdGl2ZSI6dHJ1ZSwiY3JlYXRlZF9hdCI6IjIwMjYtMTAtMjVUMDg6MjA6MDguNzQzWiIsInVwZGF0ZWRfYXQiOiIyMDI2LTExLTEyVDEwOjIwOjI0LjU1MVoifSx7ImlkIjoiZW1iXzE3OTQwNDY1NjEzMTRfNTY0aSIsIm5hbWUiOiJBbmggVHXDom4iLCJwYWdlX2lkIjoiOTk2OTkzMDQyMjc1OTE0IiwiZW1iZWRfY29kZSI6IjxzY3JpcHQgc3JjPVwiaHR0cHM6Ly9jaGF0Ym94LWVtYmVkLXNkay5ib3RiYW5oYW5nLnZuL2Rpc3Qvc2RrLm1pbi5qc1wiPjwvc2NyaXB0PlxuPHNjcmlwdD5cbiAgQkJILmluaXQoeyBwYWdlX2lkOiAnOTk2OTkzMDQyMjc1OTE0JyB9KVxuPC9zY3JpcHQ-IiwiaXNfYWN0aXZlIjpmYWxzZSwiY3JlYXRlZF9hdCI6IjIwMjYtMTEtMDdUMTA6MTY6MDEuMzE0WiIsInVwZGF0ZWRfYXQiOiIyMDI2LTExLTEyVDEwOjE2OjU2LjYwOFoifV0sImFjdGl2ZV9lbWJlZF9pZCI6ImVtYl90aGllbl9kZWZhdWx0IiwicGFzc3dvcmRfaGFzaCI6ImRkZmY2MjVhYTg0ZTdjZmI5M2IxOGMyNjA5YTFlNjExNjcwMDFkMjUyYWIyNDU0Mjg3M2ZkYzUzNjk5YjY0MDU4YjBiNzUwMTk0NzA2MDc1Y2M0NTQ5YzhjNTFlMGMxODY1M2JiYTQxMmFkMTQ0M2NkMjJkODZlNGM0YTdiZjliIiwiY3JlYXRlZF9hdCI6IjIwMjYtMTAtMjVUMDg6MjA6MDguNzQzWiJ9.8650c3caed55aee4e252c4b36c5ea51d": {
+      "user_id": "usr_thien_admin",
+      "created_at": "2026-11-12T10:31:12.077Z"
     }
   },
   "evaluations": [
+    {
+      "id": "eval_1794219719931",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Chào bạn, tư vấn giúp mình thông tin chi tiết về dịch vụ này nhé!",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:21:58)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Phản hồi thực tế của AI Chatbot trống rỗng hoặc không cung cấp thông tin tư vấn nào, vi phạm nguyên tắc trả lời thẳng và dứt khoát.",
+      "recommendation": "Cần cấu hình lại AI Chatbot để khi khách hàng hỏi chung chung, bot phải chủ động giới thiệu tóm tắt về resort và hỏi lại nhu cầu (số lượng người, ngày đi) để tư vấn chính xác.",
+      "created_at": "2026-11-09T10:21:59.931Z"
+    },
+    {
+      "id": "eval_1794219686650",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Cho mình hỏi nếu đặt cọc xong nhưng có việc đột xuất báo hủy trước 7 ngày hoặc trước 4 ngày thì chính sách hoàn tiền thế nào?",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:21:25)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Phản hồi thực tế của AI Chatbot bị thiếu (trống). Do người dùng không cung cấp nội dung phản hồi cụ thể của chatbot trong prompt, không thể đánh giá được độ chính xác và mức độ tuân thủ quy tắc.",
+      "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot vào trường 'PHẢN HỒI THỰC TẾ CỦA AI CHATBOT' để hệ thống có thể chấm điểm chính xác.",
+      "created_at": "2026-11-09T10:21:26.650Z"
+    },
+    {
+      "id": "eval_1794219653470",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Nếu hôm đó đoàn mình nhận phòng sớm lúc 8h sáng và thêm 1 người lớn thứ 3 ở ghép thì phụ thu tính sao?",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:20:52)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Phản hồi thực tế của AI Chatbot để trống, không đưa ra câu trả lời cho khách hàng về chi phí phụ thu nhận phòng sớm trước 10:00 sáng (phụ thu 50% giá phòng 1 đêm) và phụ thu người thứ 3 từ 12 tuổi trở lên (200.000đ/người/đêm).",
+      "recommendation": "Cần cấu hình lại AI Chatbot để đảm bảo luôn đưa ra đầy đủ thông tin chi phí và phụ thu theo đúng dữ liệu tại Tài liệu 1 khi khách hàng thắc mắc.",
+      "created_at": "2026-11-09T10:20:53.470Z"
+    },
+    {
+      "id": "eval_1794219620255",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Nhà mình có mang theo một bé cún Poodle nhỏ sạch sẽ lắm, và cho mình hỏi resort có sân golf không bạn?",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:20:19)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không thể đánh giá độ chính xác và mức độ tuân thủ quy tắc prompt từ tài liệu.",
+      "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để hệ thống có thể thực hiện đánh giá chính xác.",
+      "created_at": "2026-11-09T10:20:20.255Z"
+    },
+    {
+      "id": "eval_1794219587148",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Đoàn m��nh đi đông vậy bên bạn giảm luôn 30% tổng hóa đơn cho mình chuyển cọc chốt luôn hôm nay được không?",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:19:45)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không có cơ sở để đánh giá. Tuy nhiên, theo kịch bản khách mặc cả giảm 30%, AI bắt buộc phải tuân thủ nguyên tắc thương lượng giá (giữ vững mức giá và các chương trình ưu đãi đã niêm yết, tối đa 10% hoặc 15%, không tự ý giảm 30%).",
+      "recommendation": "Cần cung cấp đầy đủ phản hồi thực tế của AI Chatbot để AI Evaluation Judge đưa ra đánh giá chính xác.",
+      "created_at": "2026-11-09T10:19:47.148Z"
+    },
+    {
+      "id": "eval_1794219554091",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Mình định đặt ở 5 đêm liên tiếp và đặt 3 phòng cho gia đình thì bên mình có chính sách ưu đãi giảm giá thế nào?",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:19:12)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Phản hồi của AI Chatbot để trống, không đưa ra câu trả lời cho khách hàng, vi phạm nghiêm trọng quy trình tư vấn và cung cấp thông tin ưu đãi theo quy định.",
+      "recommendation": "Cần kiểm tra lại hệ thống kết nối hoặc đảm bảo AI luôn tạo ra nội dung phản hồi đầy đủ dựa trên chính sách ưu đãi ở dài đêm (giảm 10% cho từ 5 đêm) và đặt nhiều phòng (giảm 5% cho từ 3 phòng) đã được quy định.",
+      "created_at": "2026-11-09T10:19:14.091Z"
+    },
+    {
+      "id": "eval_1794219520523",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Mức giá này đã bao gồm ăn sáng buffet và bể bơi vô cực chưa hay có tính phí riêng không bạn?",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:18:39)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không thể đánh giá độ chính xác và mức độ tuân thủ quy tắc prompt.",
+      "recommendation": "Cần cung cấp đầy đủ phản hồi thực tế của AI Chatbot để thực hiện việc đánh giá chính xác.",
+      "created_at": "2026-11-09T10:18:40.523Z"
+    },
+    {
+      "id": "eval_1794219487537",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn và báo giá giúp mình nhé!",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:18:06)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Phản hồi của chatbot bị thiếu hoặc không được cung cấp trong prompt, dẫn đến việc không thể đánh giá chính xác nội dung trả lời so với tài liệu và quy tắc prompt.",
+      "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để tiến hành đánh giá chuẩn xác theo tiêu chí.",
+      "created_at": "2026-11-09T10:18:07.537Z"
+    },
+    {
+      "id": "eval_1794219268613",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "test abc",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:02:58)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Câu hỏi test không rõ ràng ('test abc'), và chatbot không đưa ra phản hồi thực tế nào để đánh giá theo bộ quy tắc sản phẩm của Bongbongchat.vn.",
+      "recommendation": "Cần thực hiện lại test case với các câu hỏi thực tế về dịch vụ, chính sách, giá phòng hoặc các rào chắn (thú cưng, dịch vụ không có) để đánh giá chính xác.",
+      "created_at": "2026-11-09T10:14:28.613Z"
+    },
+    {
+      "id": "eval_1794218579846",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Cho mình hỏi nếu đặt cọc xong nhưng có việc đột xuất báo hủy trước 7 ngày hoặc trước 4 ngày thì chính sách hoàn tiền thế nào?",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:02:58)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Phản hồi của chatbot bị bỏ trống, không đưa ra được câu trả lời cho khách hàng về chính sách hủy phòng và hoàn tiền theo yêu cầu.",
+      "recommendation": "Cần cấu hình lại hệ thống để đảm bảo chatbot không bị lỗi phản hồi trống và luôn cung cấp chính xác thông tin hoàn tiền dựa trên mốc thời gian (báo trước từ 7 ngày trở lên hoàn 100%, từ 3 đến 6 ngày hoàn 50%).",
+      "created_at": "2026-11-09T10:02:59.846Z"
+    },
+    {
+      "id": "eval_1794218552049",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Nếu hôm đó đoàn mình nhận phòng sớm lúc 8h sáng và thêm 1 người lớn thứ 3 ở ghép thì phụ thu tính sao?",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:02:25)",
+      "result": "pass",
+      "score": 4,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "AI có phản hồi lịch sự, đúng trọng tâm câu hỏi của khách hàng.",
+      "recommendation": "Có thể kích hoạt DeepSeek API để phân tích chuyên sâu hơn.",
+      "created_at": "2026-11-09T10:02:32.049Z"
+    },
+    {
+      "id": "eval_1794218513288",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Nhà mình có mang theo một bé cún Poodle nhỏ sạch sẽ lắm, và cho mình hỏi resort có sân golf không bạn?",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:01:52)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không thể kiểm chứng việc chatbot có tuân thủ quy tắc từ chối thú cưng và phủ nhận sân golf hay không.",
+      "recommendation": "C���n cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để thực hiện việc đánh giá chính xác.",
+      "created_at": "2026-11-09T10:01:53.288Z"
+    },
+    {
+      "id": "eval_1794218480117",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Đoàn mình đi đông vậy bên bạn giảm luôn 30% tổng hóa đơn cho mình chuyển cọc chốt luôn hôm nay được không?",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:01:18)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Phản hồi của AI Chatbot trống hoặc thiếu nội dung trong phần kiểm tra thực tế, hoặc nếu có phản hồi thương lượng giảm giá 30% thì đã vi phạm nguyên tắc thương lượng giá (tối đa chỉ giảm 10% cho 5 đêm hoặc 15% cho khách thân thiết).",
+      "recommendation": "Cần cấu hình lại AI Chatbot để luôn tuân thủ nguyên tắc không tự ý giảm giá ngoài quy định và giữ vững mức ưu đãi tối đa theo tài liệu.",
+      "created_at": "2026-11-09T10:01:20.117Z"
+    },
+    {
+      "id": "eval_1794218446998",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Mình định đặt ở 5 đêm liên tiếp và đặt 3 phòng cho gia đình thì bên mình có chính sách ưu đãi giảm giá thế nào?",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:00:45)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Phản hồi thực tế của AI Chatbot bị thiếu (trống). Do không có nội dung phản hồi để đối chiếu với tài liệu và bộ quy tắc, hệ thống không thể kiểm chứng tính chính xác hoặc mức độ tuân thủ rào chắn (như chính sách ưu đãi dài ngày, ưu đãi nhiều phòng và câu hỏi bắt buộc về số lượng người và ngày đi).",
+      "recommendation": "C��n cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để AI Evaluation Judge thực hiện việc chấm điểm và đánh giá chính xác.",
+      "created_at": "2026-11-09T10:00:46.998Z"
+    },
+    {
+      "id": "eval_1794218414132",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Mức giá này đã bao gồm ăn sáng buffet và bể bơi vô cực chưa hay có tính phí riêng không bạn?",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 17:00:12)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Phản hồi thực tế của AI Chatbot trống rỗng hoặc không được cung cấp trong prompt.",
+      "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để tiến hành đánh giá chính xác.",
+      "created_at": "2026-11-09T10:00:14.132Z"
+    },
+    {
+      "id": "eval_1794218380687",
+      "tester_id": "usr_thien_admin",
+      "tester_name": "Thiện BBH",
+      "tester_role": "admin",
+      "persona": "Khách hàng",
+      "prompt_used": "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn và báo giá giúp mình nhé!",
+      "ai_response_summary": "(AI đã phản hồi trong bong bóng chat lúc 16:59:39)",
+      "result": "fail",
+      "score": 1,
+      "judge_engine": "Gemini 1.5 Flash (Free)",
+      "client_id": "usrthienadmin_2nik9a1",
+      "analysis": "Phản hồi thực tế của AI Chatbot trống rỗng hoặc không được cung cấp trong prompt.",
+      "recommendation": "Cần cung cấp phản hồi thực tế của AI Chatbot để thực hiện việc đánh giá chính xác.",
+      "created_at": "2026-11-09T09:59:40.687Z"
+    },
     {
       "id": "eval_agent_1793032140816",
       "tester_id": "usr_thien_admin",
@@ -536,7 +1441,7 @@
       "score": 4,
       "judge_engine": "Ollama (qwen2.5:latest - 0đ Local)",
       "client_id": "agent_runner",
-      "analysis": "Bot đã nêu chính xác mức giá và các chính sách ưu đãi, nhưng chưa hỏi về số lượng người và ngày dự định. Câu trả lời của tôi đã hỏi về mức giá và có thể mở rộng để hỏi thêm về số lượng người và ngày dự định.",
+      "analysis": "Bot đã nêu chính xác mức giá và các chính sách ưu đãi, nhưng chưa hỏi về số lượng người và ngày dự định. Câu trả lời của tôi đã hỏi về mức gi�� và có thể mở rộng để hỏi thêm về số lượng người và ngày dự định.",
       "created_at": "2026-10-26T16:29:00.816Z"
     },
     {
@@ -560,7 +1465,7 @@
       "tester_name": "Thiện BBH",
       "tester_role": "admin",
       "persona": "Gia đình 4 người có con nhỏ",
-      "prompt_used": "Dạ, mình có 4 người lớn và 1 trẻ em dưới 6 tuổi. Dự định đi từ thứ 5 đến thứ 6 tuần này. Anh/chị có ưu đãi gì không ạ?",
+      "prompt_used": "Dạ, mình có 4 người lớn và 1 tr�� em dưới 6 tuổi. Dự định đi từ thứ 5 đến thứ 6 tuần này. Anh/chị có ưu đãi gì không ạ?",
       "ai_response_summary": "Dạ phòng gia đình bên em giá 1.800.000đ/đêm ạ. Bên em hiện có chính sách giảm 10% khi đặt từ 5 đêm trở lên và giảm 5% khi đặt từ 3 phòng cùng lúc.",
       "result": "pass",
       "score": 4,
@@ -590,7 +1495,7 @@
       "tester_name": "Thiện BBH",
       "tester_role": "admin",
       "persona": "Gia đình 4 người có con nhỏ",
-      "prompt_used": "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn giúp mình nhé!",
+      "prompt_used": "Chào bạn, bên mình còn phòng trống cho đợt cuối tu��n này không? Tư vấn giúp mình nhé!",
       "ai_response_summary": "Dạ bên em còn phòng ạ. Anh/chị dự định đi ngày nào và có mấy người lớn, mấy trẻ em để em kiểm tra loại phòng và báo giá chính xác cho mình ạ?",
       "result": "pass",
       "score": 5,
@@ -858,8 +1763,797 @@
       "created_at": "2026-10-25T15:37:00.655Z"
     }
   ],
-  "chat_sessions": [],
+  "chat_sessions": [
+    {
+      "id": "session_mf_1794219452883",
+      "user_id": "usr_thien_admin",
+      "user_name": "Thiện BBH",
+      "title": "Checklist Đa Luồng: 5/5 trường hợp đã test",
+      "type": "checklist",
+      "persona": "Checklist (5 trường hợp)",
+      "turns": [
+        {
+          "turn": 1,
+          "caseIndex": 1,
+          "caseTitle": "TH1: Test Tư vấn dịch vụ & Báo giá chi tiết",
+          "user": "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn và báo giá giúp mình nhé!",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:18:06)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Phản hồi của chatbot bị thiếu hoặc không được cung cấp trong prompt, dẫn đến việc không th��� đánh giá chính xác nội dung trả lời so với tài liệu và quy tắc prompt.",
+            "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để tiến hành đánh giá chuẩn xác theo tiêu chí.",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "fail",
+          "score": 3,
+          "caseNote": "[Đã test & /reset] Kiểm tra AI báo giá chuẩn File 1, nêu đúng tiện ích miễn phí và hỏi lại nhu cầu khách hàng.",
+          "resetAfter": true,
+          "timestamp": "17:18:06"
+        },
+        {
+          "turn": 2,
+          "caseIndex": 1,
+          "caseTitle": "TH1: Test Tư vấn dịch vụ & Báo giá chi tiết",
+          "user": "Mức giá này đã bao gồm ăn s��ng buffet và bể bơi vô cực chưa hay có tính phí riêng không bạn?",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:18:39)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không thể đánh giá độ chính xác và mức độ tuân thủ quy tắc prompt.",
+            "recommendation": "Cần cung cấp đầy đủ phản hồi thực tế của AI Chatbot để thực hiện việc đánh giá chính xác.",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "fail",
+          "score": 3,
+          "caseNote": "[Đã test & /reset] Kiểm tra AI báo giá chuẩn File 1, nêu đúng tiện ích miễn phí và hỏi lại nhu cầu khách hàng.",
+          "resetAfter": true,
+          "timestamp": "17:18:39"
+        },
+        {
+          "turn": 3,
+          "caseIndex": 2,
+          "caseTitle": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+          "user": "Mình định đặt ở 5 đêm liên tiếp và đặt 3 phòng cho gia đình thì bên mình có chính sách ưu đãi giảm giá thế nào?",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:19:12)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Phản hồi của AI Chatbot để trống, không đưa ra câu trả lời cho khách hàng, vi phạm nghiêm trọng quy trình tư vấn và cung cấp thông tin ưu đãi theo quy định.",
+            "recommendation": "Cần kiểm tra lại hệ thống kết nối hoặc đảm bảo AI luôn tạo ra nội dung phản hồi đầy đủ dựa trên chính sách ưu đãi ở dài đêm (giảm 10% cho từ 5 đêm) và đặt nhiều phòng (giảm 5% cho từ 3 phòng) đã được quy định.",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "fail",
+          "score": 3,
+          "caseNote": "[Đã test & /reset] Kiểm tra AI tính đúng ưu đãi (10% từ 5 đêm, 5% từ 3 phòng) và từ chối khéo yêu cầu giảm 30% vượt quy định.",
+          "resetAfter": true,
+          "timestamp": "17:19:12"
+        },
+        {
+          "turn": 4,
+          "caseIndex": 2,
+          "caseTitle": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+          "user": "Đoàn mình đi đông vậy bên bạn giảm luôn 30% tổng hóa đơn cho mình chuyển cọc chốt luôn hôm nay được không?",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:19:45)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không có cơ sở để đánh giá. Tuy nhiên, theo kịch bản khách mặc cả giảm 30%, AI bắt buộc phải tuân thủ nguyên tắc thương lượng giá (giữ vững mức giá và các chương trình ưu đãi đã niêm yết, tối đa 10% hoặc 15%, không tự ý giảm 30%).",
+            "recommendation": "Cần cung cấp đầy đủ phản hồi thực tế của AI Chatbot để AI Evaluation Judge đưa ra đánh giá chính xác.",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "fail",
+          "score": 3,
+          "caseNote": "[Đã test & /reset] Ki���m tra AI tính đúng ưu đãi (10% từ 5 đêm, 5% từ 3 phòng) và từ chối khéo yêu cầu giảm 30% vượt quy định.",
+          "resetAfter": true,
+          "timestamp": "17:19:45"
+        },
+        {
+          "turn": 5,
+          "caseIndex": 3,
+          "caseTitle": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+          "user": "Nhà mình có mang theo một bé cún Poodle nhỏ sạch sẽ lắm, và cho mình hỏi resort có sân golf không bạn?",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:20:19)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không thể đánh giá độ chính xác và mức độ tuân thủ quy tắc prompt từ tài liệu.",
+            "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để hệ thống có thể thực hiện đánh giá chính xác.",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "fail",
+          "score": 3,
+          "caseNote": "[Đã test & /reset] Kiểm tra AI từ chối thú cưng lịch sự, báo không có sân golf, tính đúng phụ thu check-in sớm (50%) & người thứ 3 (200.000đ).",
+          "resetAfter": true,
+          "timestamp": "17:20:19"
+        },
+        {
+          "turn": 6,
+          "caseIndex": 3,
+          "caseTitle": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+          "user": "Nếu hôm đó đoàn mình nhận phòng sớm lúc 8h sáng và thêm 1 người lớn thứ 3 ở ghép thì phụ thu tính sao?",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:20:52)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Phản hồi thực tế của AI Chatbot để trống, không đưa ra câu trả lời cho khách hàng về chi phí phụ thu nhận phòng sớm trước 10:00 sáng (phụ thu 50% giá phòng 1 đêm) và phụ thu người thứ 3 từ 12 tuổi trở lên (200.000đ/người/đêm).",
+            "recommendation": "Cần cấu hình lại AI Chatbot để đảm bảo luôn đưa ra đầy đủ thông tin chi phí và phụ thu theo đúng dữ liệu tại Tài liệu 1 khi khách hàng thắc mắc.",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "fail",
+          "score": 3,
+          "caseNote": "[Đã test & /reset] Kiểm tra AI từ chối thú cưng lịch sự, báo không có sân golf, tính đúng phụ thu check-in sớm (50%) & người thứ 3 (200.000đ).",
+          "resetAfter": true,
+          "timestamp": "17:20:52"
+        },
+        {
+          "turn": 7,
+          "caseIndex": 4,
+          "caseTitle": "TH4: Test Ch��nh sách Đổi / Hủy phòng & Hoàn tiền cọc",
+          "user": "Cho mình hỏi nếu đặt cọc xong nhưng có việc đột xuất báo hủy trước 7 ngày hoặc trước 4 ngày thì chính sách hoàn tiền thế nào?",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:21:25)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Phản hồi thực tế của AI Chatbot bị thiếu (trống). Do người dùng không cung cấp nội dung phản hồi cụ thể của chatbot trong prompt, không thể đánh giá được độ chính xác và mức độ tuân thủ quy tắc.",
+            "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot vào trường 'PHẢN HỒI THỰC TẾ CỦA AI CHATBOT' để hệ thống có thể chấm điểm chính xác.",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "pass",
+          "score": 5,
+          "caseNote": "[Đã test & /reset] Kiểm tra AI trả lời đúng mốc hoàn cọc 100% (báo trước >=7 ngày) và hoàn 50% (từ 3-6 ngày) theo File 1.",
+          "resetAfter": true,
+          "timestamp": "17:21:25"
+        },
+        {
+          "turn": 8,
+          "caseIndex": 5,
+          "caseTitle": "TH5: Trường hợp ki���m thử mới",
+          "user": "Chào bạn, tư vấn giúp mình thông tin chi tiết về dịch vụ này nhé!",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:21:58)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Phản hồi thực tế của AI Chatbot trống rỗng hoặc không cung cấp thông tin tư vấn nào, vi phạm nguyên tắc trả lời thẳng và dứt khoát.",
+            "recommendation": "Cần cấu hình lại AI Chatbot để khi khách hàng hỏi chung chung, bot phải chủ động giới thiệu tóm tắt về resort và hỏi lại nhu cầu (số lượng người, ngày đi) để tư vấn chính xác.",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "pass",
+          "score": 5,
+          "caseNote": "[Đã test & /reset] Kiểm tra phản hồi đúng ngữ cảnh và quy tắc Prompt.",
+          "resetAfter": true,
+          "timestamp": "17:21:58"
+        }
+      ],
+      "cases": [
+        {
+          "id": "mf_case_1",
+          "title": "TH1: Test Tư vấn dịch vụ & Báo giá chi tiết",
+          "enabled": true,
+          "expanded": false,
+          "status": "fail",
+          "score": 3,
+          "questions": [
+            "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn và báo giá giúp mình nhé!",
+            "Mức giá này đã bao gồm ăn sáng buffet và bể bơi vô cực chưa hay có tính phí riêng không bạn?"
+          ],
+          "goalNote": "Kiểm tra AI báo giá chuẩn File 1, nêu đúng tiện ích miễn phí và hỏi lại nhu cầu khách hàng.",
+          "resultNote": "[Đã test & /reset] Kiểm tra AI báo giá chuẩn File 1, nêu đúng tiện ích miễn phí và hỏi lại nhu cầu khách hàng.",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 1,
+              "caseTitle": "TH1: Test Tư vấn dịch vụ & Báo giá chi tiết",
+              "user": "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn và báo giá giúp mình nhé!",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:18:06)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi của chatbot bị thiếu hoặc không được cung cấp trong prompt, dẫn đến việc không thể đánh giá chính xác nội dung trả lời so với tài liệu và quy tắc prompt.",
+                "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để tiến hành đánh giá chuẩn xác theo tiêu chí.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:18:06"
+            },
+            {
+              "turn": 2,
+              "caseIndex": 1,
+              "caseTitle": "TH1: Test Tư vấn dịch vụ & Báo giá chi tiết",
+              "user": "Mức giá này đã bao gồm ăn sáng buffet và bể bơi vô cực chưa hay có tính phí riêng không bạn?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:18:39)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không thể đánh giá độ chính xác và mức độ tuân thủ quy tắc prompt.",
+                "recommendation": "Cần cung cấp đầy đủ phản hồi thực tế của AI Chatbot để thực hiện việc đánh giá chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:18:39"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:18:42.288Z"
+        },
+        {
+          "id": "mf_case_2",
+          "title": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+          "enabled": true,
+          "expanded": false,
+          "status": "fail",
+          "score": 3,
+          "questions": [
+            "Mình định đặt ở 5 đêm liên tiếp và đặt 3 phòng cho gia đình thì bên mình có chính sách ưu đãi giảm giá thế nào?",
+            "Đoàn mình đi đông vậy bên bạn giảm luôn 30% tổng hóa đơn cho mình chuyển cọc chốt luôn hôm nay được không?"
+          ],
+          "goalNote": "Kiểm tra AI tính đúng ưu đãi (10% từ 5 đêm, 5% từ 3 phòng) và từ chối khéo yêu cầu giảm 30% vượt quy định.",
+          "resultNote": "[Đã test & /reset] Kiểm tra AI tính đúng ưu đãi (10% từ 5 đêm, 5% từ 3 phòng) và từ chối khéo yêu cầu giảm 30% vượt quy định.",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 2,
+              "caseTitle": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+              "user": "Mình định đặt ở 5 đêm liên tiếp và đặt 3 phòng cho gia đình thì bên mình có chính sách ưu đãi giảm giá thế nào?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:19:12)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi của AI Chatbot để trống, không đưa ra câu trả lời cho khách hàng, vi phạm nghiêm trọng quy trình tư vấn và cung cấp thông tin ưu đãi theo quy định.",
+                "recommendation": "Cần kiểm tra lại hệ thống kết nối hoặc đảm bảo AI luôn tạo ra nội dung phản hồi đầy đủ dựa trên chính sách ưu đãi ở dài đêm (giảm 10% cho từ 5 đêm) và đặt nhiều phòng (giảm 5% cho từ 3 phòng) đã được quy định.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:19:12"
+            },
+            {
+              "turn": 2,
+              "caseIndex": 2,
+              "caseTitle": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+              "user": "Đoàn mình đi đông vậy bên bạn giảm luôn 30% tổng hóa đơn cho mình chuyển cọc chốt luôn hôm nay được không?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:19:45)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không có cơ sở để đánh giá. Tuy nhiên, theo kịch bản khách mặc cả giảm 30%, AI bắt buộc phải tuân thủ nguyên tắc thương lượng giá (giữ vững mức giá và các chương trình ưu đãi đã niêm yết, tối đa 10% hoặc 15%, không tự ý giảm 30%).",
+                "recommendation": "Cần cung cấp đầy đủ phản hồi thực tế của AI Chatbot để AI Evaluation Judge đưa ra đánh giá chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:19:45"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:19:48.802Z"
+        },
+        {
+          "id": "mf_case_3",
+          "title": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+          "enabled": true,
+          "expanded": false,
+          "status": "fail",
+          "score": 3,
+          "questions": [
+            "Nhà mình có mang theo một bé cún Poodle nhỏ sạch sẽ lắm, và cho mình hỏi resort có sân golf không bạn?",
+            "Nếu hôm đó đoàn mình nhận phòng sớm lúc 8h sáng và thêm 1 người lớn thứ 3 ở ghép thì phụ thu tính sao?"
+          ],
+          "goalNote": "Kiểm tra AI từ chối thú cưng lịch sự, báo không có sân golf, tính đúng phụ thu check-in sớm (50%) & người thứ 3 (200.000đ).",
+          "resultNote": "[Đã test & /reset] Kiểm tra AI từ chối thú cưng lịch sự, báo không có sân golf, tính đúng phụ thu check-in sớm (50%) & người thứ 3 (200.000đ).",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 3,
+              "caseTitle": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+              "user": "Nhà mình có mang theo một bé cún Poodle nhỏ sạch sẽ lắm, và cho mình hỏi resort có sân golf không bạn?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:20:19)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không thể đánh giá độ chính xác và mức độ tuân thủ quy tắc prompt từ tài liệu.",
+                "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để hệ thống có thể thực hiện đánh giá chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:20:19"
+            },
+            {
+              "turn": 2,
+              "caseIndex": 3,
+              "caseTitle": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+              "user": "Nếu hôm đó đoàn mình nhận phòng sớm lúc 8h sáng và thêm 1 người lớn thứ 3 ở ghép thì phụ thu tính sao?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:20:52)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi thực tế của AI Chatbot để trống, không đưa ra câu trả lời cho khách hàng về chi phí phụ thu nhận phòng sớm trước 10:00 sáng (phụ thu 50% giá phòng 1 đêm) và phụ thu người thứ 3 từ 12 tuổi trở lên (200.000đ/người/đêm).",
+                "recommendation": "Cần cấu hình lại AI Chatbot để đảm bảo luôn đưa ra đầy đủ thông tin chi phí và phụ thu theo đúng dữ liệu tại Tài liệu 1 khi khách hàng thắc mắc.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:20:52"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:20:55.185Z"
+        },
+        {
+          "id": "mf_case_4",
+          "title": "TH4: Test Chính sách Đổi / Hủy phòng & Hoàn tiền cọc",
+          "enabled": true,
+          "expanded": false,
+          "status": "pass",
+          "score": 5,
+          "questions": [
+            "Cho mình hỏi nếu đặt cọc xong nhưng có việc đột xuất báo hủy trước 7 ngày hoặc trước 4 ngày thì chính sách hoàn tiền thế nào?"
+          ],
+          "goalNote": "Kiểm tra AI trả lời đúng mốc hoàn cọc 100% (báo trước >=7 ngày) và hoàn 50% (từ 3-6 ngày) theo File 1.",
+          "resultNote": "[Đã test & /reset] Kiểm tra AI trả lời đúng mốc hoàn cọc 100% (b��o trước >=7 ngày) và hoàn 50% (từ 3-6 ngày) theo File 1.",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 4,
+              "caseTitle": "TH4: Test Chính sách Đổi / Hủy phòng & Hoàn tiền cọc",
+              "user": "Cho mình hỏi nếu đặt cọc xong nhưng có việc đột xuất báo hủy trước 7 ngày hoặc trước 4 ngày thì chính sách hoàn tiền thế nào?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:21:25)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Ph���n hồi thực tế của AI Chatbot bị thiếu (trống). Do người dùng không cung cấp nội dung phản hồi cụ thể của chatbot trong prompt, không thể đánh giá được độ chính xác và mức độ tuân thủ quy tắc.",
+                "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot vào trường 'PHẢN HỒI THỰC TẾ CỦA AI CHATBOT' để hệ thống có thể chấm điểm chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:21:25"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:21:28.368Z"
+        },
+        {
+          "id": "mf_add_1794219426891",
+          "title": "TH5: Trường hợp kiểm thử mới",
+          "enabled": true,
+          "expanded": true,
+          "status": "pass",
+          "score": 5,
+          "questions": [
+            "Chào bạn, tư vấn giúp mình thông tin chi tiết về dịch vụ này nhé!"
+          ],
+          "goalNote": "Kiểm tra phản hồi đúng ngữ cảnh và quy tắc Prompt.",
+          "resultNote": "[Đã test & /reset] Kiểm tra phản hồi đúng ngữ cảnh và quy tắc Prompt.",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 5,
+              "caseTitle": "TH5: Trường hợp kiểm thử mới",
+              "user": "Chào bạn, tư vấn giúp mình thông tin chi tiết về dịch vụ này nhé!",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:21:58)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi thực tế của AI Chatbot trống rỗng hoặc không cung cấp thông tin tư vấn nào, vi phạm nguyên tắc trả lời thẳng và dứt khoát.",
+                "recommendation": "Cần cấu hình lại AI Chatbot để khi khách hàng hỏi chung chung, bot phải chủ động giới thiệu tóm tắt về resort và hỏi lại nhu cầu (số lượng người, ngày đi) để tư vấn chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:21:58"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:22:03.213Z"
+        }
+      ],
+      "is_checklist": true,
+      "reviewer_note": "",
+      "audit_status": "completed",
+      "turn_count": 8,
+      "verdict_summary": "fail",
+      "average_score": 4,
+      "created_at": "2026-11-09T10:22:03.825Z",
+      "updated_at": "2026-11-09T10:22:03.825Z"
+    },
+    {
+      "id": "session_mf_1794218346016",
+      "user_id": "usr_thien_admin",
+      "user_name": "Thiện BBH",
+      "title": "Checklist Đa Luồng: 4/4 trường hợp đã test",
+      "type": "checklist",
+      "persona": "Checklist (4 trường hợp)",
+      "turns": [
+        {
+          "turn": 1,
+          "caseIndex": 1,
+          "caseTitle": "TH1: Test Tư vấn dịch vụ & B��o giá chi tiết",
+          "user": "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn và báo giá giúp mình nhé!",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 16:59:39)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Phản hồi thực tế của AI Chatbot trống rỗng hoặc không được cung cấp trong prompt.",
+            "recommendation": "Cần cung cấp phản hồi thực tế của AI Chatbot để thực hiện việc đánh giá chính xác.",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "fail",
+          "score": 3,
+          "caseNote": "[Đã test & /reset] Kiểm tra AI báo giá chuẩn File 1, nêu đúng tiện ích miễn phí và hỏi lại nhu cầu khách hàng.",
+          "resetAfter": true,
+          "timestamp": "16:59:39"
+        },
+        {
+          "turn": 2,
+          "caseIndex": 1,
+          "caseTitle": "TH1: Test Tư vấn dịch vụ & Báo giá chi tiết",
+          "user": "Mức giá này đã bao gồm ăn sáng buffet và bể bơi vô cực chưa hay có tính phí riêng không bạn?",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:00:12)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Phản hồi thực tế của AI Chatbot trống rỗng hoặc không được cung cấp trong prompt.",
+            "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để tiến hành đánh giá chính xác.",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "fail",
+          "score": 3,
+          "caseNote": "[Đã test & /reset] Kiểm tra AI báo giá chuẩn File 1, nêu đúng tiện ích miễn phí và hỏi lại nhu cầu khách hàng.",
+          "resetAfter": true,
+          "timestamp": "17:00:12"
+        },
+        {
+          "turn": 3,
+          "caseIndex": 2,
+          "caseTitle": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+          "user": "Mình định đặt ở 5 đêm liên tiếp và đặt 3 phòng cho gia đình thì bên mình có chính sách ưu đãi giảm giá thế nào?",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:00:45)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Phản hồi thực tế của AI Chatbot bị thiếu (trống). Do không có nội dung phản hồi để đối chiếu với tài liệu và bộ quy tắc, hệ thống không thể kiểm chứng tính chính xác hoặc mức độ tuân thủ rào chắn (như chính sách ưu đãi dài ngày, ưu đãi nhiều phòng và câu hỏi bắt buộc về số lượng người và ngày đi).",
+            "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để AI Evaluation Judge thực hiện việc chấm điểm và đánh giá chính xác.",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "fail",
+          "score": 3,
+          "caseNote": "[Đã test & /reset] Kiểm tra AI tính đúng ưu đãi (10% từ 5 đêm, 5% từ 3 phòng) và từ chối khéo yêu cầu giảm 30% vượt quy định.",
+          "resetAfter": true,
+          "timestamp": "17:00:45"
+        },
+        {
+          "turn": 4,
+          "caseIndex": 2,
+          "caseTitle": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+          "user": "Đoàn mình đi đông vậy bên bạn giảm luôn 30% tổng hóa đơn cho mình chuyển cọc chốt luôn hôm nay được không?",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:01:18)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Phản hồi của AI Chatbot trống hoặc thiếu nội dung trong phần kiểm tra thực tế, ho��c nếu có phản hồi thương lượng giảm giá 30% thì đã vi phạm nguyên tắc thương lượng giá (tối đa chỉ giảm 10% cho 5 đêm hoặc 15% cho khách thân thiết).",
+            "recommendation": "Cần cấu hình lại AI Chatbot để luôn tuân thủ nguyên tắc không tự ý giảm giá ngoài quy định và giữ vững mức ưu đãi tối đa theo tài liệu.",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "fail",
+          "score": 3,
+          "caseNote": "[Đã test & /reset] Kiểm tra AI tính đúng ưu đãi (10% từ 5 đêm, 5% từ 3 phòng) và từ chối khéo yêu cầu giảm 30% vượt quy định.",
+          "resetAfter": true,
+          "timestamp": "17:01:18"
+        },
+        {
+          "turn": 5,
+          "caseIndex": 3,
+          "caseTitle": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+          "user": "Nhà mình có mang theo một bé cún Poodle nhỏ sạch sẽ lắm, và cho mình hỏi resort có sân golf không bạn?",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:01:52)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không thể kiểm chứng việc chatbot có tuân thủ quy tắc từ chối thú cưng và phủ nhận sân golf hay không.",
+            "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để thực hiện việc đánh giá chính xác.",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "fail",
+          "score": 3,
+          "caseNote": "[Đã test & /reset] Kiểm tra AI từ chối thú cưng lịch sự, báo không có sân golf, tính đúng phụ thu check-in sớm (50%) & người thứ 3 (200.000đ).",
+          "resetAfter": true,
+          "timestamp": "17:01:52"
+        },
+        {
+          "turn": 6,
+          "caseIndex": 3,
+          "caseTitle": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+          "user": "Nếu hôm đó đoàn mình nhận phòng sớm lúc 8h sáng và thêm 1 người lớn thứ 3 ở ghép thì phụ thu tính sao?",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:02:25)",
+          "evaluation": {
+            "verdict": "pass",
+            "score": 4,
+            "reason": "AI có phản hồi lịch sự, đúng trọng tâm câu hỏi của khách hàng.",
+            "recommendation": "Có thể kích hoạt DeepSeek API để phân tích chuyên sâu hơn.",
+            "knowledge_compliance": "pass",
+            "prompt_compliance": "pass"
+          },
+          "verdict": "fail",
+          "score": 3,
+          "caseNote": "[Đã test & /reset] Kiểm tra AI từ chối thú cưng lịch sự, báo không có sân golf, tính đúng phụ thu check-in sớm (50%) & người thứ 3 (200.000đ).",
+          "resetAfter": true,
+          "timestamp": "17:02:25"
+        },
+        {
+          "turn": 7,
+          "caseIndex": 4,
+          "caseTitle": "TH4: Test Chính sách Đổi / Hủy phòng & Hoàn tiền cọc",
+          "user": "Cho mình hỏi nếu đặt cọc xong nhưng có việc đột xuất báo hủy trước 7 ngày hoặc trước 4 ngày thì chính sách hoàn tiền thế nào?",
+          "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:02:58)",
+          "evaluation": {
+            "verdict": "fail",
+            "score": 1,
+            "reason": "Phản hồi của chatbot bị bỏ trống, không đưa ra được câu trả lời cho khách hàng về chính sách hủy phòng và hoàn tiền theo yêu cầu.",
+            "recommendation": "Cần cấu hình lại hệ thống để đảm bảo chatbot không bị lỗi phản hồi trống và luôn cung cấp chính xác thông tin hoàn tiền dựa trên mốc thời gian (báo trước từ 7 ngày trở lên hoàn 100%, từ 3 đến 6 ngày hoàn 50%).",
+            "knowledge_compliance": "fail",
+            "prompt_compliance": "fail"
+          },
+          "verdict": "pass",
+          "score": 5,
+          "caseNote": "[Đã test & /reset] Kiểm tra AI trả lời đúng mốc hoàn cọc 100% (báo trước >=7 ngày) và hoàn 50% (từ 3-6 ngày) theo File 1.",
+          "resetAfter": true,
+          "timestamp": "17:02:58"
+        }
+      ],
+      "cases": [
+        {
+          "id": "mf_case_1",
+          "title": "TH1: Test Tư vấn dịch vụ & Báo giá chi tiết",
+          "enabled": true,
+          "expanded": false,
+          "status": "fail",
+          "score": 3,
+          "questions": [
+            "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn và báo giá giúp mình nhé!",
+            "Mức giá này đã bao gồm ăn sáng buffet và bể bơi vô cực chưa hay có tính phí riêng không bạn?"
+          ],
+          "goalNote": "Kiểm tra AI báo giá chuẩn File 1, nêu đúng tiện ích miễn phí và hỏi lại nhu cầu khách hàng.",
+          "resultNote": "[Đã test & /reset] Ki��m tra AI báo giá chuẩn File 1, nêu đúng tiện ích miễn phí và hỏi lại nhu cầu khách hàng.",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 1,
+              "caseTitle": "TH1: Test Tư vấn dịch vụ & Báo giá chi tiết",
+              "user": "Chào bạn, bên mình còn phòng trống cho đợt cuối tuần này không? Tư vấn và báo giá giúp mình nhé!",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 16:59:39)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi thực tế của AI Chatbot trống rỗng hoặc không được cung cấp trong prompt.",
+                "recommendation": "Cần cung cấp phản hồi thực tế của AI Chatbot để thực hiện việc đánh giá chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "16:59:39"
+            },
+            {
+              "turn": 2,
+              "caseIndex": 1,
+              "caseTitle": "TH1: Test Tư vấn dịch vụ & Báo giá chi tiết",
+              "user": "Mức giá này đã bao gồm ăn sáng buffet và b�� bơi vô cực chưa hay có tính phí ri��ng không bạn?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:00:12)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi thực tế của AI Chatbot trống rỗng hoặc không được cung cấp trong prompt.",
+                "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để tiến hành đánh giá chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:00:12"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:00:15.529Z"
+        },
+        {
+          "id": "mf_case_2",
+          "title": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+          "enabled": true,
+          "expanded": false,
+          "status": "fail",
+          "score": 3,
+          "questions": [
+            "Mình định đặt ở 5 đêm liên tiếp và đặt 3 phòng cho gia đình thì bên mình có chính sách ưu đãi giảm giá thế nào?",
+            "Đoàn mình đi đông vậy bên bạn giảm luôn 30% tổng hóa đơn cho mình chuyển cọc chốt luôn hôm nay được không?"
+          ],
+          "goalNote": "Kiểm tra AI tính đúng ưu đãi (10% từ 5 đêm, 5% từ 3 phòng) và từ chối khéo yêu cầu giảm 30% vượt quy định.",
+          "resultNote": "[Đã test & /reset] Kiểm tra AI tính đúng ưu đãi (10% từ 5 đêm, 5% từ 3 phòng) và từ chối khéo yêu cầu giảm 30% vượt quy định.",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 2,
+              "caseTitle": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+              "user": "Mình định đặt ở 5 đêm liên tiếp và đặt 3 phòng cho gia đình thì bên mình có chính sách ưu đãi giảm giá thế nào?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:00:45)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi thực tế của AI Chatbot bị thiếu (trống). Do không có nội dung phản hồi để đối chiếu với tài liệu và bộ quy tắc, h�� thống không thể kiểm chứng tính chính xác hoặc mức độ tuân thủ rào chắn (như chính sách ưu đãi dài ngày, ưu đãi nhiều phòng và câu hỏi bắt buộc về số lượng người và ngày đi).",
+                "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để AI Evaluation Judge thực hiện việc chấm điểm và đánh giá chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:00:45"
+            },
+            {
+              "turn": 2,
+              "caseIndex": 2,
+              "caseTitle": "TH2: Test Chính sách Ưu đãi & Thương lượng giảm giá",
+              "user": "Đoàn mình đi đông vậy bên bạn giảm luôn 30% tổng hóa đơn cho mình chuyển cọc chốt luôn hôm nay được không?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:01:18)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi của AI Chatbot trống hoặc thiếu nội dung trong phần kiểm tra thực tế, hoặc nếu có phản hồi thương lư��ng giảm giá 30% thì đã vi phạm nguyên tắc thương lượng giá (tối đa chỉ giảm 10% cho 5 đêm hoặc 15% cho khách thân thiết).",
+                "recommendation": "Cần cấu hình lại AI Chatbot để luôn tuân thủ nguyên tắc không tự ý giảm giá ngoài quy định và giữ vững mức ưu đãi tối đa theo tài liệu.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:01:18"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:01:21.884Z"
+        },
+        {
+          "id": "mf_case_3",
+          "title": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+          "enabled": true,
+          "expanded": false,
+          "status": "fail",
+          "score": 3,
+          "questions": [
+            "Nhà mình có mang theo một bé cún Poodle nhỏ sạch sẽ lắm, và cho mình hỏi resort có sân golf không bạn?",
+            "Nếu hôm đó đoàn mình nhận phòng sớm lúc 8h sáng và thêm 1 người lớn thứ 3 ở ghép thì phụ thu tính sao?"
+          ],
+          "goalNote": "Kiểm tra AI từ chối thú cưng lịch sự, báo không có sân golf, tính đúng phụ thu check-in sớm (50%) & người thứ 3 (200.000đ).",
+          "resultNote": "[Đã test & /reset] Kiểm tra AI từ chối thú cưng lịch sự, báo không có sân golf, tính đúng phụ thu check-in sớm (50%) & người thứ 3 (200.000đ).",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 3,
+              "caseTitle": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+              "user": "Nhà mình có mang theo một bé cún Poodle nhỏ sạch sẽ lắm, và cho mình hỏi resort có sân golf không bạn?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:01:52)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Tester không cung cấp nội dung phản hồi thực tế của AI Chatbot, do đó không thể kiểm chứng việc chatbot có tuân thủ quy tắc từ chối thú cưng và phủ nhận sân golf hay không.",
+                "recommendation": "Cần cung cấp đầy đủ nội dung phản hồi thực tế của AI Chatbot để thực hiện việc đánh giá chính xác.",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:01:52"
+            },
+            {
+              "turn": 2,
+              "caseIndex": 3,
+              "caseTitle": "TH3: Test Rào chắn Thú cưng, Phụ thu & Dịch vụ không có",
+              "user": "Nếu hôm đó đoàn mình nhận phòng sớm lúc 8h sáng và thêm 1 người lớn thứ 3 ở ghép thì phụ thu tính sao?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:02:25)",
+              "evaluation": {
+                "verdict": "pass",
+                "score": 4,
+                "reason": "AI có phản hồi lịch sự, đúng trọng tâm câu hỏi của khách hàng.",
+                "recommendation": "Có thể kích hoạt DeepSeek API để phân tích chuyên sâu hơn.",
+                "knowledge_compliance": "pass",
+                "prompt_compliance": "pass"
+              },
+              "timestamp": "17:02:25"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:02:28.285Z"
+        },
+        {
+          "id": "mf_case_4",
+          "title": "TH4: Test Chính sách Đổi / Hủy phòng & Hoàn tiền cọc",
+          "enabled": true,
+          "expanded": false,
+          "status": "pass",
+          "score": 5,
+          "questions": [
+            "Cho mình hỏi nếu đặt cọc xong nhưng có việc đột xuất báo hủy trước 7 ngày hoặc trước 4 ngày thì chính sách hoàn tiền thế nào?"
+          ],
+          "goalNote": "Kiểm tra AI trả lời đúng mốc hoàn cọc 100% (báo trước >=7 ngày) và hoàn 50% (từ 3-6 ngày) theo File 1.",
+          "resultNote": "[Đã test & /reset] Kiểm tra AI trả lời đúng mốc hoàn cọc 100% (báo trước >=7 ngày) và hoàn 50% (từ 3-6 ngày) theo File 1.",
+          "turns": [
+            {
+              "turn": 1,
+              "caseIndex": 4,
+              "caseTitle": "TH4: Test Chính sách Đổi / Hủy phòng & Hoàn tiền cọc",
+              "user": "Cho mình hỏi nếu đặt cọc xong nhưng có việc đột xuất báo hủy trước 7 ngày hoặc trước 4 ngày thì chính sách hoàn tiền thế nào?",
+              "assistant": "(AI đã phản hồi trong bong bóng chat lúc 17:02:58)",
+              "evaluation": {
+                "verdict": "fail",
+                "score": 1,
+                "reason": "Phản hồi của chatbot bị bỏ trống, không đưa ra được câu trả lời cho khách hàng về chính sách hủy phòng và hoàn tiền theo yêu cầu.",
+                "recommendation": "Cần cấu hình lại hệ thống để đảm bảo chatbot không bị lỗi phản hồi trống và luôn cung cấp chính xác thông tin hoàn tiền dựa trên mốc thời gian (báo trước từ 7 ngày trở lên hoàn 100%, từ 3 đến 6 ngày hoàn 50%).",
+                "knowledge_compliance": "fail",
+                "prompt_compliance": "fail"
+              },
+              "timestamp": "17:02:58"
+            }
+          ],
+          "resetDone": true,
+          "testedAt": "2026-11-09T10:03:01.547Z"
+        }
+      ],
+      "is_checklist": true,
+      "reviewer_note": "",
+      "audit_status": "completed",
+      "turn_count": 7,
+      "verdict_summary": "fail",
+      "average_score": 4,
+      "created_at": "2026-11-09T10:03:02.172Z",
+      "updated_at": "2026-11-09T10:03:02.172Z"
+    }
+  ],
   "logs": [
+    {
+      "id": "log_1794480365117_185w",
+      "actor": "Tester",
+      "role": "tester",
+      "action": "Xóa tài khoản test: Anh Thiện VIP (thien.vip@gmail.com)",
+      "created_at": "2026-11-12T10:46:05.117Z"
+    },
+    {
+      "id": "log_1794480365109_75ye",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Tạo User Test: Chị Mai Homestay (mai.homestay@gmail.com) - Luồng: Hỏi chính sách ưu đãi & voucher",
+      "created_at": "2026-11-12T10:46:05.109Z"
+    },
+    {
+      "id": "log_1794480365098_5wpy",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Tạo User Test: Anh Thiện VIP (thien.vip@gmail.com) - Luồng: Luồng tư vấn đặt phòng cuối tuần",
+      "created_at": "2026-11-12T10:46:05.098Z"
+    },
+    {
+      "id": "log_1794479472111_w7cd",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Xóa tài khoản test: Tester - Luồng Tư Vấn (test_1794479472090_p84@bbh.test)",
+      "created_at": "2026-11-12T10:31:12.111Z"
+    },
+    {
+      "id": "log_1794479472101_htx6",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Tạo tài khoản test nhanh: Tester - Luồng Chốt Đơn (test_1794479472097_y0m@bbh.test)",
+      "created_at": "2026-11-12T10:31:12.101Z"
+    },
+    {
+      "id": "log_1794479472094_hpn8",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Tạo tài khoản test nhanh: Tester - Luồng Tư Vấn (test_1794479472090_p84@bbh.test)",
+      "created_at": "2026-11-12T10:31:12.094Z"
+    },
+    {
+      "id": "log_1794479472077_1y29",
+      "actor": "Thiện BBH",
+      "role": "admin",
+      "action": "Đăng nhập vào hệ thống",
+      "created_at": "2026-11-12T10:31:12.077Z"
+    },
     {
       "id": "log_1794216686184_ziv3",
       "actor": "Thiện BBH",

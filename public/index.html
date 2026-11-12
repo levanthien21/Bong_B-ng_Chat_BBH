@@ -117,22 +117,95 @@
         <div class="panel-body">
           <!-- CÁCH 1: TỰ SOẠN CÂU HỎI THỦ CÔNG (CÓ TÍNH NĂNG BẬT/TẮT TEST ĐA LUỒNG & CHECKLIST HẬU KIỂM) -->
           <div id="view-manual-qa" class="qa-view-pane active">
-            <!-- QUICK TEST USER MANAGER CARD -->
-            <div class="clean-card" id="test-user-manager-card" style="padding: 8px 11px; margin-bottom: 2px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 7px; min-width: 0; flex: 1;">
-                  <span style="font-size: 15px;">🧪</span>
+            <!-- QUICK TEST USER MANAGER CARD (TẠO MỚI USER / KHÁCH HÀNG TEST ĐA LUỒNG) -->
+            <div class="clean-card" id="test-user-manager-card" style="padding: 9px 12px; margin-bottom: 6px; background: linear-gradient(135deg, rgba(79,70,229,0.06) 0%, rgba(13,148,136,0.04) 100%); border: 1.5px solid rgba(79,70,229,0.28); border-radius: 9px;">
+              <!-- Header Bar: Title, Count Badge, Quick Utility Buttons -->
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+                  <span style="font-size: 15px;">👤</span>
                   <div style="min-width: 0;">
-                    <div style="font-size: 11.5px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
-                      <span>User Test nhanh</span>
-                      <span class="count-pill" id="test-user-count-badge" style="background: rgba(79,70,229,0.14); color: #4F46E5; font-size: 9.5px;">0 user</span>
+                    <div style="font-size: 12px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 5px;">
+                      <span>Khách Hàng / User Test</span>
+                      <span class="count-pill" id="test-user-count-badge" style="background: rgba(79,70,229,0.15); color: #4F46E5; font-size: 9.5px; font-weight: 700;">0 khách</span>
                     </div>
-                    <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.3; margin-top: 1px;">Tạo &amp; quản lý tài khoản test riêng cho từng luồng kiểm thử</div>
                   </div>
                 </div>
-                <button type="button" class="btn btn-secondary btn-xs" id="btn-open-test-users" style="font-size: 10.5px; padding: 4px 10px; font-weight: 700; color: #4F46E5; border-color: rgba(79,70,229,0.4); background: rgba(79,70,229,0.07); white-space: nowrap;">
-                  👥 Quản lý
-                </button>
+                <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-tu-toggle-form" style="font-size: 10px; padding: 2px 7px; color: #4F46E5; border-color: rgba(79,70,229,0.35); font-weight: 700;">
+                    ➕ Thêm User
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-tu-quick-random" title="Tự động tạo nhanh 1 User test với tên Việt &amp; SĐT ngẫu nhiên" style="font-size: 10px; padding: 2px 7px;">
+                    🎲 Sinh nhanh
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-tu-reset-chat" title="Xóa cache phiên chatbox để bắt đầu như khách hàng mới 100%" style="font-size: 10px; padding: 2px 7px; color: var(--teal); border-color: rgba(13,148,136,0.35); font-weight: 700;">
+                    🔄 Khách mới (Reset Bot)
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-open-test-users" title="Quản lý chi tiết danh sách tài khoản test" style="font-size: 10px; padding: 2px 6px;">
+                    👥 Danh sách
+                  </button>
+                </div>
+              </div>
+
+              <!-- Active Customer Bar: Hiện thông tin User đang chọn để test -->
+              <div id="tu-active-box" style="display: none; background: var(--bg-surface); border: 1px solid rgba(79,70,229,0.25); border-radius: 7px; padding: 7px 10px; margin-bottom: 6px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; margin-bottom: 4px;">
+                  <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+                    <span class="badge-pill-xs" style="background: rgba(5,150,105,0.15); color: var(--success); font-weight: 700;">🟢 Đang test</span>
+                    <span id="tu-active-name" style="font-size: 11.5px; font-weight: 800; color: var(--text-primary);">---</span>
+                    <span id="tu-active-phone" style="font-size: 11px; font-weight: 700; color: #4F46E5; font-family: var(--font-mono);">---</span>
+                  </div>
+                  <span id="tu-active-flow" class="mono-badge" style="font-size: 9.5px; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Luồng tự do</span>
+                </div>
+                <!-- 1-Click Copy & Quick Actions for the Chatbox Form -->
+                <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap; font-size: 10px;">
+                  <span style="color: var(--text-muted); font-size: 9.5px;">📋 Copy điền form:</span>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-copy-tu-name" style="font-size: 9.5px; padding: 1px 6px;" title="Copy Họ Tên">Tên</button>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-copy-tu-phone" style="font-size: 9.5px; padding: 1px 6px;" title="Copy Số Điện Thoại">SĐT</button>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-copy-tu-email" style="font-size: 9.5px; padding: 1px 6px;" title="Copy Email">Email</button>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-copy-tu-all" style="font-size: 9.5px; padding: 1px 6px; color: #4F46E5; font-weight: 700;" title="Copy tất cả thông tin">Copy All</button>
+                  <button type="button" class="btn btn-primary btn-xs" id="btn-tu-send-intro" style="font-size: 9.5px; padding: 1px 7px; background: #4F46E5; border-color: #4F46E5; margin-left: auto;" title="Gửi câu giới thiệu khách hàng vào khung chat">
+                    ⚡ Gửi Lời Chào
+                  </button>
+                </div>
+              </div>
+
+              <!-- Inline Quick Creation Form (Mở ra khi bấm "➕ Thêm User") -->
+              <div id="tu-inline-form-box" style="display: none; background: var(--bg-surface); border: 1.5px dashed rgba(79,70,229,0.35); border-radius: 8px; padding: 9px 10px; margin-bottom: 6px;">
+                <div style="font-size: 11px; font-weight: 700; color: #4F46E5; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                  <span>➕ Tạo mới User / Khách hàng để test:</span>
+                  <button type="button" id="btn-tu-close-inline-form" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;">✕</button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 6px; margin-bottom: 6px;">
+                  <div>
+                    <label style="font-size: 10px; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 2px;">Tên của bạn (Họ tên) *</label>
+                    <input type="text" class="input input-xs" id="tu-inline-name" placeholder="VD: Anh Thiện VIP, Chị Mai..." style="font-size: 11px; width: 100%;">
+                  </div>
+                  <div>
+                    <label style="font-size: 10px; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 2px;">Số điện thoại *</label>
+                    <input type="text" class="input input-xs" id="tu-inline-phone" placeholder="0988.xxx.999" style="font-size: 11px; width: 100%; font-family: var(--font-mono);">
+                  </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 6px; margin-bottom: 6px;">
+                  <div>
+                    <label style="font-size: 10px; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 2px;">Email của bạn</label>
+                    <input type="email" class="input input-xs" id="tu-inline-email" placeholder="khach@gmail.com" style="font-size: 11px; width: 100%;">
+                  </div>
+                  <div>
+                    <label style="font-size: 10px; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 2px;">Tình huống / Luồng test</label>
+                    <input type="text" class="input input-xs" id="tu-inline-flow" placeholder="VD: Luồng tư vấn đặt phòng cuối tuần" style="font-size: 11px; width: 100%;">
+                  </div>
+                </div>
+                <div style="display: flex; gap: 4px; justify-content: flex-end; margin-top: 4px;">
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-tu-inline-random" style="font-size: 10.5px; padding: 3px 8px;">🎲 Điền ngẫu nhiên</button>
+                  <button type="button" class="btn btn-primary btn-xs" id="btn-tu-inline-submit" style="font-size: 10.5px; padding: 3px 12px; font-weight: 700; background: #4F46E5; border-color: #4F46E5;">
+                    💾 Tạo &amp; Kích Hoạt Test
+                  </button>
+                </div>
+              </div>
+
+              <!-- Danh sách Test Users dạng Chips nhanh để chuyển đổi tức thì -->
+              <div id="tu-chips-container" style="display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin;">
+                <!-- Populated dynamically: user chips -->
               </div>
             </div>
 
@@ -1588,31 +1661,51 @@ Bên mình có cho mang theo một bé cún Poodle nhỏ không?
             ➕ <span>Tạo tài khoản test mới</span>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px; margin-bottom: 8px;">
             <div class="form-group" style="margin: 0;">
-              <label class="form-label" style="font-size: 10.5px;">Tên / Nhãn User Test:</label>
-              <input type="text" class="input input-sm" id="tu-create-label" placeholder="VD: Tester - Luồng Tư Vấn" style="font-size: 11.5px;">
+              <label class="form-label" style="font-size: 10.5px;">Tên của bạn (Họ tên khách hàng) *:</label>
+              <input type="text" class="input input-sm" id="tu-create-name" placeholder="VD: Anh Thiện VIP, Chị Mai..." style="font-size: 11.5px;" required>
             </div>
             <div class="form-group" style="margin: 0;">
-              <label class="form-label" style="font-size: 10.5px;">Mật khẩu (mặc định: 123456):</label>
-              <input type="text" class="input input-sm" id="tu-create-password" value="123456" placeholder="123456" style="font-size: 11.5px;">
+              <label class="form-label" style="font-size: 10.5px;">Số điện thoại của bạn *:</label>
+              <input type="text" class="input input-sm" id="tu-create-phone" placeholder="0988.xxx.999" style="font-size: 11.5px; font-family: var(--font-mono);" required>
             </div>
           </div>
 
-          <div class="form-group" style="margin: 0 0 10px 0;">
-            <label class="form-label" style="font-size: 10.5px;">Page ID / Mã nhúng bong bóng chat (mặc định: dùng Page ID của Admin):</label>
-            <input type="text" class="input input-sm" id="tu-create-pageid" placeholder="Để trống để dùng Page ID của tài khoản Admin" style="font-family: var(--font-mono); font-size: 11px;">
+          <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px; margin-bottom: 8px;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 10.5px;">Email của bạn:</label>
+              <input type="email" class="input input-sm" id="tu-create-email" placeholder="khach@gmail.com" style="font-size: 11.5px;">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 10.5px;">Tình huống / Luồng test:</label>
+              <input type="text" class="input input-sm" id="tu-create-flow" placeholder="VD: Luồng tư vấn đặt phòng cuối tuần" style="font-size: 11.5px;">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 10.5px;">Mật khẩu tài khoản (mặc định: 123456):</label>
+              <input type="text" class="input input-sm" id="tu-create-password" value="123456" placeholder="123456" style="font-size: 11.5px;">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label class="form-label" style="font-size: 10.5px;">Page ID (mặc định: dùng Chatbot hiện tại):</label>
+              <input type="text" class="input input-sm" id="tu-create-pageid" placeholder="Để trống để dùng Chatbot hiện tại" style="font-family: var(--font-mono); font-size: 11px;">
+            </div>
           </div>
 
           <div style="background: rgba(79,70,229,0.07); border: 1px solid rgba(79,70,229,0.2); border-radius: 7px; padding: 7px 10px; font-size: 10.5px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 10px;">
-            💡 <b>Hệ thống sẽ tự tạo email &amp; đặt tên ngẫu nhiên cho tài khoản test.</b> Tài khoản này kế thừa <b>File 1, File 2 và Checklist</b> từ Admin. Có thể xóa bất kỳ lúc nào mà không ảnh hưởng dữ liệu chính.
+            💡 <b>Thông tin User khớp chính xác với form bong bóng chat (Tên, SĐT, Email).</b> Khi kích hoạt, hệ thống sẽ gán profile này vào bong bóng chat và sẵn sàng nút 1-click copy để điền form nhanh chóng!
           </div>
 
-          <div style="display: flex; gap: 6px;">
-            <button type="button" class="btn btn-primary btn-sm" id="btn-tu-create" style="flex: 1; justify-content: center; font-weight: 700; background: #4F46E5; border-color: #4F46E5;">
-              🧪 Tạo User Test
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-tu-create" style="flex: 1.5; justify-content: center; font-weight: 700; background: #4F46E5; border-color: #4F46E5;">
+              🧪 Tạo User &amp; Kích Hoạt Test
             </button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-tu-delete-all" style="color: var(--danger); font-size: 11px; padding: 6px 12px;" title="Xóa toàn bộ tài khoản test và dữ liệu kiểm thử của chúng">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-tu-modal-random" style="font-size: 11px; padding: 6px 12px;" title="Tự động sinh ngẫu nhiên Tên &amp; SĐT">
+              🎲 Sinh ngẫu nhiên
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-tu-delete-all" style="color: var(--danger); font-size: 11px; padding: 6px 12px;" title="Xóa toàn bộ tài khoản test">
               🗑️ Xóa tất cả
             </button>
           </div>
